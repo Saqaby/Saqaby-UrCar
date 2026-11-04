@@ -1,0 +1,426 @@
+<title>سيارتك · UrCar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="urcar-build" content="__BUILD__">
+<style>
+  @font-face{font-family:'Thmanyah';font-weight:300;font-display:block;src:url("__F_LIGHT__") format("woff2")}
+  @font-face{font-family:'Thmanyah';font-weight:400;font-display:block;src:url("__F_REGULAR__") format("woff2")}
+  @font-face{font-family:'Thmanyah';font-weight:500;font-display:block;src:url("__F_MEDIUM__") format("woff2")}
+  @font-face{font-family:'ThmanyahDisplay';font-weight:700;font-display:block;src:url("__F_DISPLAY__") format("woff2")}
+  @font-face{font-family:'UthmanicHafs';font-weight:400;font-display:block;src:url("__F_HAFS__") format("woff2")}
+  @font-face{font-family:'NotoMarks';src:url("__F_MARKS__") format("woff2")}
+
+  /* Layout: one landscape screen, two zones — the day (clock, prayers, Ramadan) and four big shortcuts on the driver's side.
+     Dark-first: a head unit is read at night and in the sun through tinted glass; the light set is the daytime mode. */
+  :root{
+    --bg:#0b1314; --panel:#121d1f; --panel2:#18272a; --line:#24383b;
+    --fg:#eef1ea; --muted:#93a39f; --sand:#d9b46a; --sand-ink:#1b1408; --go:#58c49a; --warn:#e9a24b;
+    --f-body:'Thmanyah','IBM Plex Sans Arabic','Noto Sans Arabic',Tahoma,sans-serif;
+    --f-disp:'ThmanyahDisplay','Thmanyah','IBM Plex Sans Arabic',Tahoma,sans-serif;
+    --f-quran:'UthmanicHafs','NotoMarks','Thmanyah',serif;
+    color-scheme:dark;
+  }
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+    --bg:#e9ece6; --panel:#f8f9f5; --panel2:#ffffff; --line:#d3d9d1;
+    --fg:#122022; --muted:#5b6b67; --sand:#9a6d1c; --sand-ink:#fffaf0; --go:#1d8a62; --warn:#b5650f; color-scheme:light }}
+  :root[data-theme="light"]{
+    --bg:#e9ece6; --panel:#f8f9f5; --panel2:#ffffff; --line:#d3d9d1;
+    --fg:#122022; --muted:#5b6b67; --sand:#9a6d1c; --sand-ink:#fffaf0; --go:#1d8a62; --warn:#b5650f; color-scheme:light }
+
+  [hidden]{display:none!important}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:var(--f-body);direction:rtl;
+       padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px;box-sizing:border-box}
+  button{font:inherit;color:inherit}
+  :focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+
+  /* ---------- the review bar (preview only, not part of the car screen) ---------- */
+  .rev{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;max-width:1920px;margin:0 auto 12px;font-size:14px;color:var(--muted)}
+  .rev h1{font:500 16px var(--f-body);color:var(--fg);margin:0 0 0 6px}
+  .rev label{display:flex;gap:6px;align-items:center}
+  .rev select,.rev .chip{background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:6px 10px;font:inherit;font-size:14px;cursor:pointer}
+  .rev .chip[aria-pressed="true"]{border-color:var(--sand);color:var(--sand)}
+  .rev .sp{flex:1}
+
+  /* ---------- the car screen ---------- */
+  .stage{max-width:1920px;margin:0 auto}
+  .fit{position:relative;overflow:hidden;border-radius:14px;box-shadow:0 0 0 6px #050808, 0 18px 50px rgba(0,0,0,.35)}
+  .scr{position:absolute;top:0;right:0;transform-origin:top right;container-type:size;background:var(--bg);
+       display:grid;grid-template-rows:9cqh 1fr 15cqh;overflow:hidden}
+
+  /* top strip: Hijri first, then the Gregorian date; the place on the other side. The adhan bar replaces it. */
+  .top{display:flex;align-items:center;gap:2.2cqh;padding:0 3.4cqh;border-bottom:1px solid var(--line);font-size:3.3cqh;white-space:nowrap;overflow:hidden}
+  .top .hijri{color:var(--sand);font-weight:500}
+  .top .greg{color:var(--muted)}
+  .top .place{margin-inline-start:auto;display:flex;align-items:center;gap:1.2cqh;color:var(--muted)}
+  .top .place svg{width:3.2cqh;height:3.2cqh}
+  .top .place.gps svg{color:var(--go)}
+  .adbar{position:absolute;inset:0 0 auto 0;height:9cqh;display:flex;align-items:center;justify-content:center;gap:2cqh;
+         background:var(--sand);color:var(--sand-ink);font-size:3.8cqh;font-weight:500;z-index:3}
+
+  .main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);grid-template-areas:"day keys";gap:2.6cqh;padding:2.6cqh 3.4cqh;min-height:0}
+  .scr.drv-right .main{grid-template-areas:"keys day"}
+  .scr.wide .main{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}
+
+  /* the day */
+  .day{grid-area:day;display:grid;grid-template-rows:auto auto 1fr;gap:2.2cqh;min-height:0}
+  .clock{display:flex;align-items:baseline;gap:1.4cqh;font-family:var(--f-disp);font-weight:700;line-height:.95;font-variant-numeric:tabular-nums}
+  .clock .hm{font-size:19cqh;letter-spacing:-.02em;direction:ltr;unicode-bidi:isolate}
+  .clock .hm i{font-style:normal;display:inline-block;min-width:.56em;text-align:center}
+  .clock .ap{font:500 4.4cqh var(--f-body);color:var(--muted)}
+  .clock .wd{margin-inline-start:auto;font:400 3.6cqh var(--f-body);color:var(--muted);align-self:center}
+
+  .next{background:var(--panel);border:1px solid var(--line);border-radius:2.2cqh;padding:2.2cqh 2.8cqh;display:grid;grid-template-columns:1fr auto;align-items:center;gap:.6cqh 2cqh}
+  .next .lbl{font-size:2.9cqh;color:var(--muted);grid-column:1/-1}
+  .next .nm{font-size:6.4cqh;font-weight:500;line-height:1.1}
+  .next .tm{font-size:5cqh;font-variant-numeric:tabular-nums}
+  .next .cd{grid-column:1/-1;font-size:3.6cqh;color:var(--sand)}
+  .next.now{border-color:var(--sand);background:var(--panel2)}
+
+  .row5{display:grid;grid-template-columns:repeat(6,1fr);gap:1.2cqh;align-self:end}
+  .row5 div{background:var(--panel);border-radius:1.6cqh;padding:1.4cqh .8cqh;text-align:center;border:1px solid transparent}
+  .row5 b{display:block;font-weight:400;font-size:2.8cqh;color:var(--muted)}
+  .row5 span{display:block;font-size:3.5cqh;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .row5 .on{border-color:var(--sand)} .row5 .on b{color:var(--sand)}
+  .row5 .past span{color:var(--muted)}
+  .mid{font-size:2.7cqh;color:var(--muted);margin-top:-1cqh}
+
+  /* the shortcuts: four big targets, the radio fourth */
+  .keys{grid-area:keys;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2.2cqh;min-height:0}
+  .scr.wide .keys{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr}
+  .key{border:1px solid var(--line);background:var(--panel);border-radius:2.6cqh;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+       padding:2.6cqh 2.8cqh;cursor:pointer;text-align:right;min-height:0;transition:transform .08s, background .15s}
+  .key:active{transform:scale(.97);background:var(--panel2)}
+  .key svg{width:9cqh;height:9cqh;color:var(--sand)}
+  .key .t{display:block;font-size:5cqh;font-weight:500;line-height:1.1}
+  .key .s{display:block;font-size:2.8cqh;color:var(--muted);margin-top:.6cqh}
+  .key.radio.on{background:var(--sand);border-color:var(--sand);color:var(--sand-ink)}
+  .key.radio.on svg,.key.radio.on .s{color:var(--sand-ink)}
+
+  /* bottom: Ramadan window and the short text of the hour */
+  .bot{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);grid-template-areas:"ram quote";gap:2.6cqh;padding:0 3.4cqh 2.6cqh;min-height:0}
+  .scr.drv-right .bot{grid-template-areas:"quote ram"}
+  .scr.wide .bot{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}
+  .ram,.quote{background:var(--panel);border:1px solid var(--line);border-radius:2.2cqh;padding:1.4cqh 2.6cqh;display:flex;align-items:center;gap:2cqh;min-width:0;overflow:hidden}
+  .ram{grid-area:ram}
+  .ram .l{font-size:2.9cqh;color:var(--muted);white-space:nowrap}
+  .ram .v{font-size:5cqh;font-weight:500;color:var(--sand);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .ram .v small{font-size:2.9cqh;font-weight:400;color:var(--muted)}
+  .ram .s{font-size:2.7cqh;color:var(--muted);margin-inline-start:auto;text-align:left;white-space:nowrap}
+  .quote{grid-area:quote;flex-direction:column;align-items:flex-start;justify-content:center;gap:.4cqh}
+  .quote .q{font-size:3.2cqh;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .quote .q.quran{font-family:var(--f-quran);font-size:3.6cqh}
+  .quote .src{font-size:2.4cqh;color:var(--muted)}
+  .quote .orn{color:var(--sand)}
+
+  .toast{position:absolute;left:50%;bottom:19cqh;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:1.6cqh 3cqh;border-radius:99px;font-size:3cqh;z-index:4;white-space:nowrap}
+
+  .notes{max-width:1920px;margin:14px auto 0;font-size:14px;color:var(--muted);line-height:1.7}
+  .notes b{color:var(--fg);font-weight:500}
+  @media (prefers-reduced-motion: reduce){ .key{transition:none} }
+</style>
+
+<div class="rev" role="toolbar" aria-label="أدوات المعاينة">
+  <h1>معاينة سيارتك</h1>
+  <label>الشاشة
+    <select id="size">
+      <option value="1024x600">١٠٢٤×٦٠٠ (٧–٩ إنش)</option>
+      <option value="1280x720" selected>١٢٨٠×٧٢٠ (٩–١٠ إنش)</option>
+      <option value="1920x720">١٩٢٠×٧٢٠ (عريضة)</option>
+    </select></label>
+  <label>الموقع
+    <select id="loc"></select></label>
+  <label>السائق
+    <select id="drv"><option value="left" selected>يسار</option><option value="right">يمين</option></select></label>
+  <span class="sp"></span>
+  <button class="chip" id="t-adhan" aria-pressed="false">قبل الأذان بـ٨ دقائق</button>
+  <button class="chip" id="t-ram" aria-pressed="false">يوم في رمضان</button>
+  <button class="chip" id="t-now">الآن</button>
+</div>
+
+<div class="stage"><div class="fit" id="fit">
+  <div class="scr" id="scr">
+    <div class="top">
+      <span class="hijri" id="hijri">—</span>
+      <span class="greg" id="greg"></span>
+      <span class="place" id="place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="place-t">—</span></span>
+    </div>
+    <div class="adbar" id="adbar" hidden></div>
+
+    <div class="main">
+      <section class="day" aria-label="اليوم">
+        <div class="clock"><span class="hm" id="ck">—</span><span class="ap" id="ap"></span><span class="wd" id="wd"></span></div>
+        <div class="next" id="next">
+          <div class="lbl" id="n-lbl">الصلاة القادمة</div>
+          <div class="nm" id="n-nm">—</div><div class="tm" id="n-tm"></div>
+          <div class="cd" id="n-cd"></div>
+        </div>
+        <div>
+          <div class="row5" id="row5"></div>
+        </div>
+      </section>
+
+      <section class="keys" aria-label="الاختصارات">
+        <button class="key" data-app="nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 11 21 3l-8 18-2-8z"/></svg>
+          <span><span class="t">الملاحة</span><span class="s" id="s-nav">خرائط Google</span></span></button>
+        <button class="key" data-app="music"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+          <span><span class="t">الموسيقى</span><span class="s" id="s-music">آخر تطبيق صوت</span></span></button>
+        <button class="key" data-app="phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg>
+          <span><span class="t">الهاتف</span><span class="s">بلوتوث</span></span></button>
+        <button class="key radio" id="radio" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8 17 3"/><circle cx="15.5" cy="14" r="2.5"/><path d="M6 12h4M6 16h4"/></svg>
+          <span><span class="t" id="r-t">إذاعة القرآن</span><span class="s" id="r-s">السعودية، مباشر</span></span></button>
+      </section>
+    </div>
+
+    <div class="bot">
+      <div class="ram" id="ram"><span class="l" id="ram-l">—</span><span class="v" id="ram-v"></span><span class="s" id="ram-s"></span></div>
+      <div class="quote" id="quote"><div class="q" id="q"></div><div class="src" id="q-src"></div></div>
+    </div>
+    <div class="toast" id="toast" hidden></div>
+  </div>
+</div></div>
+
+<p class="notes"><b>معاينة فقط.</b> الأزرار هنا تُظهر ما سيُفتح؛ في الجهاز تفتح التطبيق مباشرة. الموقع: «موقعي الآن» يطلب GPS المتصفح، وإن رُفض تُستخدم المدينة المختارة. المواقيت بطريقة ISNA (الفجر والعشاء ١٥°) تُحسب محليًا بلا إنترنت وتُعاد كلما ابتعدت السيارة ١٠ كم. إذاعة القرآن والأذان يعملان عند فتح الملف محليًا؛ صفحة المعاينة المنشورة قد تمنع البث الخارجي.</p>
+
+<audio id="aud" preload="none"></audio>
+
+<script>
+// ---------- data copied from UrTV at build time ----------
+const VERSES = __VERSES__, HADITH = __HADITH__, SALAF = __SALAF__;
+const RADIO_URL = __RADIO__, ADHAN_URL = __ADHAN__;
+
+// ---------- place: GPS, or a city for the preview ----------
+const CITIES = [
+  ['الرياض',24.7136,46.6753,'Asia/Riyadh'],['جدة',21.4858,39.1925,'Asia/Riyadh'],['مكة المكرمة',21.4225,39.8262,'Asia/Riyadh'],
+  ['المدينة المنورة',24.4672,39.6024,'Asia/Riyadh'],['الدمام',26.4207,50.0888,'Asia/Riyadh'],['بريدة',26.3592,43.9818,'Asia/Riyadh'],
+  ['حائل',27.5114,41.7208,'Asia/Riyadh'],['تبوك',28.3835,36.5662,'Asia/Riyadh'],['أبها',18.2164,42.5053,'Asia/Riyadh'],
+  ['نجران',17.5656,44.2289,'Asia/Riyadh'],['الكويت',29.3759,47.9774,'Asia/Kuwait'],['المنامة',26.2285,50.586,'Asia/Bahrain'],
+  ['الدوحة',25.2854,51.531,'Asia/Qatar'],['دبي',25.2048,55.2708,'Asia/Dubai'],['مسقط',23.588,58.3829,'Asia/Muscat'],
+].map(([n,lat,lon,tz]) => ({n,lat,lon,tz}));
+const DEVICE_TZ = (() => { try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Riyadh'; }catch(e){ return 'Asia/Riyadh'; } })();
+let PLACE = {lat:24.7136, lon:46.6753, tz:'Asia/Riyadh', name:'الرياض', gps:false};
+let OFFSET = 0;                         // the review bar moves the clock; 0 = now
+const NOW = () => new Date(Date.now() + OFFSET);
+
+const km = (a, b) => { const r = x => x*Math.PI/180, dLa = r(b.lat-a.lat), dLo = r(b.lon-a.lon);
+  const h = Math.sin(dLa/2)**2 + Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLo/2)**2; return 12742*Math.asin(Math.sqrt(h)); };
+function nearName(p){   // «الرياض» within 40 km, «قرب حائل» within 120, else the coordinates
+  const c = CITIES.map(c => [c, km(p, c)]).sort((a,b) => a[1]-b[1])[0];
+  if(c[1] < 40) return c[0].n;
+  if(c[1] < 120) return 'قرب ' + c[0].n;
+  return ar(p.lat.toFixed(2)) + '، ' + ar(p.lon.toFixed(2));
+}
+
+// ---------- digits and the city's clock (from UrTV) ----------
+const AR = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+const ar = s => String(s).replace(/[0-9]/g, d => AR[+d]).replace('.', '٫');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+let F = {};
+function makeFormatters(){
+  const z = PLACE.tz;
+  F = {
+    all: new Intl.DateTimeFormat('en-GB',{timeZone:z,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+    hijri: new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-arab',{timeZone:z,day:'numeric',month:'long',year:'numeric'}),
+    hnum: new Intl.DateTimeFormat('en-u-ca-islamic-umalqura',{timeZone:z,year:'numeric',month:'numeric',day:'numeric'}),
+    greg: new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab',{timeZone:z,day:'numeric',month:'long',year:'numeric'}),
+    wd: new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab',{timeZone:z,weekday:'long'}),
+    wdEn: new Intl.DateTimeFormat('en-US',{timeZone:z,weekday:'short'}),
+  };
+}
+function parts(d = NOW()){
+  const f = F.all.formatToParts(d).reduce((a,p)=>(a[p.type]=p.value,a),{});
+  return {y:+f.year, mo:+f.month, d:+f.day, h:(+f.hour)%24, mi:+f.minute, s:+f.second};
+}
+const hnum = d => F.hnum.formatToParts(d).reduce((a,x) => (a[x.type] = +x.value.replace(/[^0-9]/g,''), a), {});
+function fmt12(h, mi){ h %= 24; const h12 = h % 12 === 0 ? 12 : h % 12; return `${ar(h12)}:${ar(pad(mi))} ${h < 12 ? 'ص' : 'م'}`; }
+const UNIT = {day:{two:'يومين',few:'أيام',many:'يومًا'}, hour:{two:'ساعتين',few:'ساعات',many:'ساعة'}, min:{two:'دقيقتين',few:'دقائق',many:'دقيقة'}};
+function qty(n,u){ if(n === 2) return u.two; if(n >= 3 && n <= 10) return `${ar(n)} ${u.few}`; return `${ar(n)} ${u.many}`; }
+function humanRemaining(sec){ const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), o = [];
+  if(h) o.push(qty(h,UNIT.hour)); if(m || !h) o.push(qty(m,UNIT.min)); return o.join(' و '); }
+const isFriday = () => F.wdEn.format(NOW()) === 'Fri';
+
+// ---------- prayer times: ISNA (Aladhan method 2), copied from UrTV computePrayers(), for the current place ----------
+function computePrayers(lat, lng){
+  const now = NOW(), p = parts(now);
+  const tz = Math.round((Date.UTC(p.y,p.mo-1,p.d,p.h,p.mi,p.s) - Math.floor(now.getTime()/1000)*1000) / 60000) / 60;
+  const rad = d => d*Math.PI/180, deg = r => r*180/Math.PI;
+  const fix = (a,b) => { a = a - b*Math.floor(a/b); return a < 0 ? a + b : a; };
+  const jd0 = Date.UTC(p.y,p.mo-1,p.d)/86400000 + 2440587.5 - lng/(15*24);
+  const sun = t => { const D = jd0 + t - 2451545;
+    const g = fix(357.529 + .98560028*D, 360), q = fix(280.459 + .98564736*D, 360);
+    const L = fix(q + 1.915*Math.sin(rad(g)) + .020*Math.sin(rad(2*g)), 360), e = 23.439 - .00000036*D;
+    const RA = fix(deg(Math.atan2(Math.cos(rad(e))*Math.sin(rad(L)), Math.cos(rad(L))))/15, 24);
+    return {decl: deg(Math.asin(Math.sin(rad(e))*Math.sin(rad(L)))), eqt: q/15 - RA}; };
+  const noon = t => fix(12 - sun(t/24).eqt, 24);
+  const angleTime = (angle, t, ccw) => { const d = sun(t/24).decl, n = noon(t);
+    const T = deg(Math.acos((-Math.sin(rad(angle)) - Math.sin(rad(d))*Math.sin(rad(lat))) / (Math.cos(rad(d))*Math.cos(rad(lat)))))/15;
+    return n + (ccw ? -T : T); };
+  const asrTime = t => { const d = sun(t/24).decl; return angleTime(-deg(Math.atan(1/(1 + Math.tan(rad(Math.abs(lat - d)))))), t, false); };
+  const adj = h => h + tz - lng/15;
+  const fajr0 = adj(angleTime(15, 5, true)), dhuhr = adj(noon(12)), asr = adj(asrTime(13));
+  const sunrise = adj(angleTime(.833, 6, true)), maghrib = adj(angleTime(.833, 18, false));
+  const fajr = isNaN(fajr0) ? sunrise - 1.5 : fajr0;
+  let isha = adj(angleTime(15, 18, false));
+  if(isNaN(isha)) isha = maghrib + 1.5; else if(isha < maghrib) isha += 24;
+  const m = h => Math.round(fix(h, 24)*60) % 1440;
+  return {Fajr:m(fajr), Sunrise:m(sunrise), Dhuhr:m(dhuhr), Asr:m(asr), Maghrib:m(maghrib), Isha:Math.round(isha*60)};
+}
+const KEYS = ['Fajr','Sunrise','Dhuhr','Asr','Maghrib','Isha'];
+const NAMES = {Fajr:'الفجر',Sunrise:'الشروق',Dhuhr:'الظهر',Asr:'العصر',Maghrib:'المغرب',Isha:'العشاء'};
+const IQAMA = {Fajr:25, Dhuhr:20, Asr:20, Maghrib:10, Isha:20};   // UrTV's defaults
+let T = null, T_AT = null;   // today's minutes; where and when they were computed
+const pname = k => k === 'Dhuhr' && isFriday() ? 'الجمعة' : NAMES[k];
+function ensurePrayers(){
+  const day = parts().d;
+  if(T && T_AT && T_AT.day === day && km(T_AT, PLACE) < 10) return;   // same day, moved less than 10 km
+  T = computePrayers(PLACE.lat, PLACE.lon);
+  T_AT = {lat:PLACE.lat, lon:PLACE.lon, day};
+}
+
+// ---------- drawing ----------
+const $ = id => document.getElementById(id);
+function setText(el, v){ if(el.textContent !== v) el.textContent = v; }
+function setHTML(el, h){ if(el.__h !== h){ el.__h = h; el.innerHTML = h; } }
+let adhanPlayedFor = '';
+
+function tick(){
+  ensurePrayers();
+  const now = NOW(), p = parts(now), mins = p.h*60 + p.mi + p.s/60;
+  const h12 = p.h % 12 === 0 ? 12 : p.h % 12;
+  setHTML($('ck'), [...ar(h12) + ':' + ar(pad(p.mi))].map(c => c === ':' ? ':' : '<i>' + c + '</i>').join(''));
+  setText($('ap'), p.h < 12 ? 'صباحًا' : 'مساءً');
+  setText($('wd'), F.wd.format(now));
+  setText($('hijri'), F.hijri.format(now).replace(/\s*هـ\s*$/,'') + ' هـ');
+  setText($('greg'), F.greg.format(now) + 'م');
+  const pl = $('place'); pl.classList.toggle('gps', PLACE.gps); setText($('place-t'), PLACE.name + (PLACE.gps ? '، GPS' : ''));
+
+  // the five prayers and the sunrise
+  const five = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
+  const nextK = five.find(k => T[k] > mins) || 'Fajr';
+  const nextAt = T[nextK] > mins ? T[nextK] : T.Fajr + 1440;
+  const cur = five.find(k => { const g = k === 'Dhuhr' && isFriday() ? 0 : IQAMA[k]; return mins >= T[k] && mins < T[k] + g; });
+  setHTML($('row5'), KEYS.map(k => `<div class="${k === nextK && !cur ? 'on' : ''}${T[k] < mins && k !== nextK ? ' past' : ''}">`
+    + `<b>${pname(k)}</b><span>${fmt12(Math.floor(T[k]/60), T[k]%60)}</span></div>`).join(''));
+
+  const next = $('next');
+  if(cur){
+    next.classList.add('now');
+    setText($('n-lbl'), 'حان الآن'); setText($('n-nm'), pname(cur)); setText($('n-tm'), fmt12(Math.floor(T[cur]/60), T[cur]%60));
+    setHTML($('n-cd'), 'الإقامة بعد ' + humanRemaining(Math.max(60, Math.ceil(T[cur] + IQAMA[cur] - mins)*60)));
+  }else{
+    next.classList.remove('now');
+    setText($('n-lbl'), 'الصلاة القادمة'); setText($('n-nm'), pname(nextK)); setText($('n-tm'), fmt12(Math.floor(T[nextK]/60), T[nextK]%60));
+    setText($('n-cd'), 'بعد ' + humanRemaining(Math.max(60, Math.round((nextAt - mins)*60))));
+  }
+
+  // the adhan bar: 10 minutes before, and from the adhan to the iqama
+  const left = nextAt - mins, bar = $('adbar');
+  let bt = '';
+  if(left > 0 && left <= 10) bt = 'أذان ' + pname(nextK) + ' بعد ' + humanRemaining(Math.max(60, Math.round(left*60)));
+  else if(cur) bt = 'حان الآن أذان ' + pname(cur);
+  bar.hidden = !bt; if(bt) setText(bar, bt);
+  if(cur && Math.floor(mins) === T[cur] && adhanPlayedFor !== p.d + cur){ adhanPlayedFor = p.d + cur; playAdhan(); }
+
+  tickRamadan(now, mins);
+  tickQuote(p);
+}
+
+// ---------- the Ramadan window (from UrTV tickOccasion): the countdown, or iftar and imsak in Ramadan ----------
+let RAM_CACHE = {key:'', val:null};
+function tickRamadan(now, mins){
+  const h = hnum(now);
+  if(h.month === 9){
+    let l, at;
+    if(mins < T.Fajr){ l = 'الإمساك'; at = T.Fajr; } else if(mins < T.Maghrib){ l = 'الإفطار'; at = T.Maghrib; } else { l = 'الإمساك'; at = T.Fajr + 1440; }
+    setText($('ram-l'), l + '، ' + ar(h.day) + ' رمضان');
+    setText($('ram-v'), fmt12(Math.floor((at % 1440)/60), at % 60));
+    setText($('ram-s'), 'بعد ' + humanRemaining(Math.max(0, Math.round((at - mins)*60))));
+    return;
+  }
+  const key = F.all.format(now).slice(0, 10) + PLACE.tz;
+  if(RAM_CACHE.key !== key){
+    let val = null;
+    for(let i = 1; i < 400; i++){ const d = new Date(now.getTime() + i*86400000), x = hnum(d);
+      if(x.month === 9 && x.day === 1){ val = {days:i, hy:x.year, d}; break; } }
+    RAM_CACHE = {key, val};
+  }
+  const v = RAM_CACHE.val; if(!v) return;
+  setText($('ram-l'), 'باقٍ على رمضان ' + ar(v.hy));
+  setHTML($('ram-v'), ar(v.days) + ' <small>' + (v.days >= 3 && v.days <= 10 ? 'أيام' : 'يومًا') + '</small>');
+  setText($('ram-s'), new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-arab',{timeZone:PLACE.tz,day:'numeric',month:'long'}).format(v.d) + '، متوقّع');
+}
+
+// ---------- the text of the hour (from UrTV quoteOfDay): verse from 00:00, hadith from 08:00, salaf from 16:00 ----------
+// In the car only the short ones: one glance, two lines at most.
+function tickQuote(p){
+  const part = Math.floor(p.h / 8), n = Math.floor(Date.UTC(p.y, p.mo-1, p.d) / 86400000), key = n + ':' + part;
+  if(tickQuote.k === key) return; tickQuote.k = key;
+  const q = $('q');
+  if(part === 0 && VERSES.length){ const v = VERSES[n % VERSES.length];
+    q.className = 'q quran'; q.innerHTML = `<span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span>`; setText($('q-src'), v.surah + '، الآية ' + ar(v.ayah)); return; }
+  if(part === 2 && SALAF.length){ const s = SALAF[n % SALAF.length];
+    q.className = 'q'; q.textContent = 'قال ' + s.who + ': «' + s.text + '»'; setText($('q-src'), s.src); return; }
+  const h = HADITH[n % HADITH.length];
+  q.className = 'q'; q.innerHTML = h.parts.map(([k, t]) => k === 'q' ? '«' + esc(t) + '»' : esc(t)).join(' '); setText($('q-src'), h.source.replace(/ · /g, '، '));
+}
+
+// ---------- audio: the Quran radio, and the adhan over it ----------
+const aud = $('aud'); let radioOn = false;
+function toast(t){ const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2600); }
+function setRadio(on){
+  radioOn = on; const k = $('radio'); k.classList.toggle('on', on); k.setAttribute('aria-pressed', on);
+  setText($('r-t'), on ? 'إيقاف الإذاعة' : 'إذاعة القرآن');
+  if(on){ aud.src = RADIO_URL; aud.play().catch(() => toast('البث لا يعمل في هذه المعاينة؛ يعمل في الجهاز')); }
+  else { aud.pause(); aud.removeAttribute('src'); }
+}
+function playAdhan(){
+  const wasRadio = radioOn; if(wasRadio) setRadio(false);
+  aud.src = ADHAN_URL; aud.play().catch(() => toast('حان وقت الأذان (الصوت محجوب في المعاينة)'));
+  aud.onended = () => { aud.onended = null; if(wasRadio) setRadio(true); };   // the radio comes back after the adhan
+}
+$('radio').onclick = () => setRadio(!radioOn);
+const OPENS = {nav:'يفتح: خرائط Google (أو Waze إن اخترته)', music:'يفتح: آخر تطبيق صوت (Spotify، أنغامي، ...)', phone:'يفتح: الهاتف عبر البلوتوث'};
+document.querySelectorAll('.key[data-app]').forEach(b => b.onclick = () => toast(OPENS[b.dataset.app]));
+
+// ---------- the review bar ----------
+const scr = $('scr'), fit = $('fit');
+let W = 1280, H = 720;
+function layout(){
+  const [w, h] = $('size').value.split('x').map(Number); W = w; H = h;
+  scr.style.width = W + 'px'; scr.style.height = H + 'px';
+  scr.classList.toggle('wide', W / H > 2.2);
+  const s = Math.min(1, fit.parentElement.clientWidth / W);
+  scr.style.transform = `scale(${s})`; fit.style.height = H*s + 'px'; fit.style.width = W*s + 'px';
+}
+$('size').onchange = layout; addEventListener('resize', layout);
+$('drv').onchange = () => scr.classList.toggle('drv-right', $('drv').value === 'right');
+
+const loc = $('loc');
+loc.innerHTML = '<option value="gps">موقعي الآن (GPS)</option>' + CITIES.map((c, i) => `<option value="${i}"${i === 0 ? ' selected' : ''}>${c.n}</option>`).join('');
+function usePlace(pl){ PLACE = pl; makeFormatters(); T = null; tickQuote.k = ''; tick(); }
+loc.onchange = () => {
+  if(loc.value !== 'gps'){ const c = CITIES[+loc.value]; usePlace({lat:c.lat, lon:c.lon, tz:c.tz, name:c.n, gps:false}); return; }
+  if(!navigator.geolocation){ toast('لا يوجد GPS هنا'); loc.value = '0'; return; }
+  navigator.geolocation.watchPosition(pos => {
+    const p = {lat:pos.coords.latitude, lon:pos.coords.longitude};
+    usePlace({...p, tz:DEVICE_TZ, name:nearName(p), gps:true});   // in the car the device clock already follows the place
+  }, () => { toast('رُفض الوصول للموقع؛ استخدمتُ الرياض'); loc.value = '0'; loc.onchange(); }, {enableHighAccuracy:false, maximumAge:60000});
+};
+const chips = ['t-adhan','t-ram'];
+function press(id){ chips.forEach(c => $(c).setAttribute('aria-pressed', c === id)); }
+$('t-now').onclick = () => { OFFSET = 0; press(''); T = null; tick(); };
+$('t-adhan').onclick = () => {   // eight minutes before the next adhan
+  OFFSET = 0; T = null; ensurePrayers(); const p = parts(), mins = p.h*60 + p.mi + p.s/60;
+  const at = ['Fajr','Dhuhr','Asr','Maghrib','Isha'].map(k => T[k]).find(m => m > mins + 8) ?? T.Fajr + 1440;
+  OFFSET = (at - 8 - mins) * 60000; press('t-adhan'); T = null; tick();
+};
+$('t-ram').onclick = () => {   // the fifth day of the coming Ramadan, at 4:30 pm: iftar is near
+  OFFSET = 0; const now = new Date();
+  let i = 0; for(; i < 400; i++){ const x = hnum(new Date(now.getTime() + i*86400000)); if(x.month === 9 && x.day === 5) break; }
+  const p = parts(now); OFFSET = i*86400000 + ((16*60 + 30) - (p.h*60 + p.mi)) * 60000;
+  press('t-ram'); T = null; tick();
+};
+
+makeFormatters(); layout(); tick(); setInterval(tick, 1000);
+document.fonts && document.fonts.ready.then(layout);
+</script>

@@ -1,0 +1,5 @@
+The Thmanyah*.woff2 files here and android/launcher/src/main/assets/fonts/Thmanyah*.otf are IBM Plex Sans Arabic
+(Light, Regular, Medium, and Bold for the display face), released under the SIL Open Font License 1.1
+(IBMPlexSansArabic-OFL.txt). They carry the Thmanyah file names only because the code loads those names;
+this copy of UrTV has no access to the Thmanyah fonts, which are licensed for the original builds only.
+Source: https://github.com/google/fonts/tree/main/ofl/ibmplexsansarabic
