@@ -85,8 +85,7 @@ public class ProbeActivity extends Activity {
         side.setOrientation(LinearLayout.VERTICAL);
         side.setPadding(16, 16, 16, 16);
         side.addView(button("تقسيم الشاشة", new View.OnClickListener() { public void onClick(View v) { testSplit(); } }));
-        side.addView(button("فتح كاميرا الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("camera|avm|reverse|backcar|360|dvr|rightview|com\\.tw\\.service|carinfoservice"); } }));
-        side.addView(button("الكاميرا داخل التطبيق", new View.OnClickListener() { public void onClick(View v) { testAndroidCamera(); } }));
+        side.addView(button("انسخ واجهة الشاشة", new View.OnClickListener() { public void onClick(View v) { copyLauncher(); } }));
         side.addView(button("راقب ما يُفتح (٦٠ ثانية)", new View.OnClickListener() { public void onClick(View v) { watchForeground(); } }));
         side.addView(button("الإشعارات والموسيقى", new View.OnClickListener() { public void onClick(View v) { testNotifications(); } }));
         side.addView(button("فتح راديو الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("radio|fm|tuner"); } }));
@@ -105,7 +104,7 @@ public class ProbeActivity extends Activity {
         root.addView(sv, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 3));
         setContentView(root);
 
-        report = "probe v6\n" + collect() + embedInfo() + "\n[earlier tests]\n" + prefs().getString("tests", "");
+        report = "probe v7\n" + collect() + embedInfo() + "\n[earlier tests]\n" + prefs().getString("tests", "");
         out.setText(report);
     }
 
@@ -287,6 +286,7 @@ public class ProbeActivity extends Activity {
     public void onRequestPermissionsResult(int code, String[] p, int[] r) {
         boolean ok = r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED;
         if (code == 2) { if (ok) testAndroidCamera(); else toast("بلا إذن الكاميرا لا أستطيع التجربة"); return; }
+        if (code == 3) { if (ok) copyLauncher(); else toast("بلا إذن التخزين لا أستطيع النسخ"); return; }
         if (ok) save(); else toast("بلا إذن التخزين لا أستطيع الحفظ في التنزيلات");
     }
 
@@ -496,6 +496,14 @@ public class ProbeActivity extends Activity {
                 s.append(n).append(" allow_embedded=").append((a.flags & FLAG_ALLOW_EMBEDDED) != 0).append("\n");
             } catch (Exception e) { s.append(n).append(" ").append(e.getClass().getSimpleName()).append("\n"); }
         }
+        try {   // what the screen's launcher asks for, and what it got: how it can put the map in a rectangle
+            PackageInfo pi = pm.getPackageInfo("com.dofun.variety", PackageManager.GET_PERMISSIONS);
+            s.append("com.dofun.variety source=").append(pi.applicationInfo.sourceDir)
+                    .append(" size_mb=").append(new File(pi.applicationInfo.sourceDir).length() / (1024 * 1024)).append("\n");
+            if (pi.requestedPermissions != null) for (int i = 0; i < pi.requestedPermissions.length; i++)
+                s.append("  perm ").append(pi.requestedPermissions[i].replace("android.permission.", ""))
+                        .append((pi.requestedPermissionsFlags[i] & PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0 ? " granted" : "").append("\n");
+        } catch (Exception e) { s.append("dofun ").append(e.getClass().getSimpleName()).append("\n"); }
         s.append("multi_display_feature=").append(pm.hasSystemFeature("android.software.activities_on_secondary_displays")).append("\n");
         return s.toString();
     }
@@ -659,6 +667,32 @@ public class ProbeActivity extends Activity {
                         + " width=" + (PanelTest.live == null ? -1 : PanelTest.live.getWindow().getDecorView().getWidth())), 2500);
             }, 2000);
         }, 1500);
+    }
+
+    // ---------------------------------------------------------------- v7: a copy of the screen's launcher, to read how it hosts the map
+    private void copyLauncher() {
+        if (Build.VERSION.SDK_INT <= 29 && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 3);
+            return;
+        }
+        toast("يُنسخ…");
+        new Thread(() -> {
+            try {
+                ApplicationInfo ai = getPackageManager().getApplicationInfo("com.dofun.variety", 0);
+                File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                dir.mkdirs();
+                File to = new File(dir, "dofun-variety.apk");
+                try (java.io.InputStream in = new java.io.FileInputStream(ai.sourceDir); FileOutputStream o = new FileOutputStream(to)) {
+                    byte[] buf = new byte[65536];
+                    for (int n; (n = in.read(buf)) > 0; ) o.write(buf, 0, n);
+                }
+                note("launcher copied " + to.getAbsolutePath() + " " + (to.length() / (1024 * 1024)) + " MB");
+                runOnUiThread(() -> toast("نُسخ إلى Download/dofun-variety.apk (" + (to.length() / (1024 * 1024)) + " ميغابايت)"));
+            } catch (Exception e) {
+                note("launcher copy " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                runOnUiThread(() -> toast("لم يُنسخ: " + e.getClass().getSimpleName()));
+            }
+        }).start();
     }
 
     private void toast(String t) { Toast.makeText(this, t, Toast.LENGTH_LONG).show(); }
