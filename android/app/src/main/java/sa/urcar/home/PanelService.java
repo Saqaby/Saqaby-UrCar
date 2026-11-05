@@ -108,9 +108,9 @@ public class PanelService extends Service implements Panel.Actions {
     private String foreground() {
         AppOpsManager ops = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
         if (ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), getPackageName()) != AppOpsManager.MODE_ALLOWED)
-            return HomeActivity.resumed ? getPackageName() : Prefs.nav(this);   // without the permission: always show
+            return HomeActivity.resumed ? getPackageName() : "";   // without the permission we cannot tell: only on our home screen
         long now = System.currentTimeMillis();
-        UsageEvents ev = ((UsageStatsManager) getSystemService(USAGE_STATS_SERVICE)).queryEvents(now - 10_000, now);
+        UsageEvents ev = ((UsageStatsManager) getSystemService(USAGE_STATS_SERVICE)).queryEvents(now - (lastFg.isEmpty() ? 3600_000 : 10_000), now);   // the first time: the last hour
         UsageEvents.Event e = new UsageEvents.Event();
         while (ev.hasNextEvent()) {
             ev.getNextEvent(e);

@@ -15,6 +15,7 @@ final class Prefs {
             {"com.here.app.maps", "HERE WeGo"},
             {"com.sygic.aura", "Sygic"},
             {"net.osmand", "OsmAnd"},
+            {"com.vialsoft.radarbot_free", "Radarbot"},
     };
 
     static SharedPreferences of(Context c) { return c.getSharedPreferences("urcar", Context.MODE_PRIVATE); }

@@ -74,7 +74,7 @@ public class HomeActivity extends Activity {
                 () -> startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()))));
         item(th, location, "الموقع", "للمواقيت والحرارة حسب مكان السيارة. مطلوب.",
                 () -> requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1));
-        item(th, usage, "الوصول إلى بيانات الاستخدام", "لتختفي اللوحة حين تفتح تطبيقًا آخر.",
+        item(th, usage, "الوصول إلى بيانات الاستخدام", "لتظهر اللوحة بجانب الخريطة وتختفي فوق يوتيوب والتطبيقات الأخرى. مطلوب.",
                 () -> startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)));
         item(th, noti, "الوصول إلى الإشعارات", "لصفحة الموسيقى: ما يعمل الآن وأزرار التحكّم.",
                 () -> startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")));
@@ -88,7 +88,7 @@ public class HomeActivity extends Activity {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.topMargin = 24;
         list.addView(note, lp);
-        return overlay && location && nav;
+        return overlay && location && usage && nav;
     }
 
     private void item(Ui.Theme th, boolean done, String title, String sub, Runnable fix) {

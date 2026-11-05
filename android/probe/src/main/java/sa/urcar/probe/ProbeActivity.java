@@ -84,7 +84,7 @@ public class ProbeActivity extends Activity {
         LinearLayout side = new LinearLayout(this);
         side.setOrientation(LinearLayout.VERTICAL);
         side.setPadding(16, 16, 16, 16);
-        side.addView(button("الخريطة تحت لوحة عائمة", new View.OnClickListener() { public void onClick(View v) { testOverlay(); } }));
+        side.addView(button("تقسيم الشاشة", new View.OnClickListener() { public void onClick(View v) { testSplit(); } }));
         side.addView(button("فتح كاميرا الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("camera|avm|reverse|backcar|360|dvr|rightview|com\\.tw\\.service|carinfoservice"); } }));
         side.addView(button("الكاميرا داخل التطبيق", new View.OnClickListener() { public void onClick(View v) { testAndroidCamera(); } }));
         side.addView(button("راقب ما يُفتح (٦٠ ثانية)", new View.OnClickListener() { public void onClick(View v) { watchForeground(); } }));
@@ -105,7 +105,7 @@ public class ProbeActivity extends Activity {
         root.addView(sv, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 3));
         setContentView(root);
 
-        report = "probe v5\n" + collect() + embedInfo() + "\n[earlier tests]\n" + prefs().getString("tests", "");
+        report = "probe v6\n" + collect() + embedInfo() + "\n[earlier tests]\n" + prefs().getString("tests", "");
         out.setText(report);
     }
 
@@ -629,6 +629,36 @@ public class ProbeActivity extends Activity {
         lp.gravity = Gravity.LEFT | Gravity.TOP;
         try { wm.addView(box, lp); panel = box; note("overlay shown over " + maps.getPackage()); }
         catch (Exception e) { note("overlay " + e.getClass().getSimpleName() + ": " + e.getMessage()); }
+    }
+
+    // ---------------------------------------------------------------- v6: Android's split screen, the panel on one side, the map on the other
+    /** Opens the panel stand-in, asks Android to split the screen, then starts the navigation app in the other half. */
+    private void testSplit() {
+        if (SplitA11y.live == null) {
+            toast("فعّل «فحص سيارتك» في إمكانية الوصول (الخدمات المثبّتة)، ثم ارجع واضغط الزر مرة أخرى");
+            try { startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)); } catch (Exception e) { toast("لم تُفتح الصفحة"); }
+            return;
+        }
+        note("split: start; device says multiwindow_feature=" + getPackageManager().hasSystemFeature("android.software.activities_on_secondary_displays"));
+        startActivity(new Intent(this, PanelTest.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        final Handler hd = new Handler();
+        hd.postDelayed(() -> {
+            boolean ok = SplitA11y.live != null && SplitA11y.live.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN);
+            note("split: toggle -> " + ok);
+            hd.postDelayed(() -> {
+                note("split: panel in multiwindow=" + (PanelTest.live != null && PanelTest.live.isInMultiWindowMode())
+                        + " width=" + (PanelTest.live == null ? -1 : PanelTest.live.getWindow().getDecorView().getWidth()));
+                Intent maps = null;
+                for (String n : NAV_ALL) { maps = getPackageManager().getLaunchIntentForPackage(n); if (maps != null) break; }
+                if (maps == null) { note("split: no navigation app"); return; }
+                try {
+                    startActivity(maps.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT | Intent.FLAG_ACTIVITY_MULTIPLE_TASK));
+                    note("split: started " + maps.getPackage() + " adjacent");
+                } catch (Exception e) { note("split: start " + e.getClass().getSimpleName() + ": " + e.getMessage()); }
+                hd.postDelayed(() -> note("split: after map, panel in multiwindow=" + (PanelTest.live != null && PanelTest.live.isInMultiWindowMode())
+                        + " width=" + (PanelTest.live == null ? -1 : PanelTest.live.getWindow().getDecorView().getWidth())), 2500);
+            }, 2000);
+        }, 1500);
     }
 
     private void toast(String t) { Toast.makeText(this, t, Toast.LENGTH_LONG).show(); }
