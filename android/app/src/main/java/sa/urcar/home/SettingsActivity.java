@@ -145,7 +145,7 @@ public class SettingsActivity extends Activity {
         LinearLayout du = grid();
         for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}}) {
             boolean have = Sound.duaFile(this, d[0]).exists();
-            du.addView(chip("اختر ملف " + d[1] + (have ? " (محفوظ)" : ""), have, () -> {
+            du.addView(chip(have ? d[1] + ": صوتك (استبدله)" : d[1] + ": الصوت الأساسي (استبدله بصوتك)", have, () -> {
                 pending = d[0];
                 Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("audio/*");
                 try { startActivityForResult(i, 7); } catch (Exception e) { Toast.makeText(this, "لا يوجد مدير ملفات لاختيار الصوت", Toast.LENGTH_LONG).show(); }
@@ -157,10 +157,14 @@ public class SettingsActivity extends Activity {
         du2.addView(chip("الصوت يعمل", on, () -> { Prefs.of(this).edit().putBoolean("dua_sound", true).apply(); build(); }));
         du2.addView(chip("بلا صوت (النص فقط)", !on, () -> { Prefs.of(this).edit().putBoolean("dua_sound", false).apply(); build(); }));
         for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}})
-            if (Sound.duaFile(this, d[0]).exists())
-                du2.addView(chip("جرّب " + d[1], false, () -> { if (PanelService.live != null) PanelService.live.testDua(d[0]); }));
+            du2.addView(chip("جرّب " + d[1], false, () -> { if (PanelService.live != null) PanelService.live.testDua(d[0]); }));
         list.addView(du2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
-        list.addView(note("انقل الملفين إلى الشاشة (فلاش أو تنزيل) ثم اختر كلًّا منهما. يُحفظان داخل التطبيق، ولا يُرفعان إلى أي مكان. الصوت بمستوى صوت الأذان."));
+        LinearLayout du3 = grid();
+        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}})
+            if (Sound.duaFile(this, d[0]).exists())
+                du3.addView(chip("أرجع " + d[1] + " إلى الصوت الأساسي", false, () -> { Sound.duaFile(this, d[0]).delete(); build(); }));
+        if (du3.getChildCount() > 0) list.addView(du3, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+        list.addView(note("في التطبيق صوتان أساسيان. ولك أن تستبدل أيًّا منهما بتسجيل على الشاشة، فيُحفظ داخل التطبيق ولا يُرفع إلى أي مكان. الصوت بمستوى صوت الأذان."));
 
         head("ختمة السيارة");
         Khatma k = PanelService.live != null ? PanelService.live.khatmaPlayer() : new Khatma(this);

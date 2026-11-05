@@ -105,6 +105,7 @@ final class Sound {
     }
 
     /** The owner's own recordings of the riding dhikr and the travel du'a (chosen in the settings, kept in the app). */
+    /** The owner's own recording, if chosen in the settings; else the app's own in assets/dua (made for the app, free to use). */
     static File duaFile(Context c, String which) { return new File(c.getFilesDir(), "dua_" + which + ".mp3"); }
 
     private MediaPlayer dua;
@@ -112,7 +113,7 @@ final class Sound {
     /** Plays it once over what is playing (the music pauses for it and comes back), unless the adhan is on. */
     void playDua(String which, float volume) {
         File f = duaFile(c, which);
-        if (!f.exists() || adhan != null) return;
+        if (adhan != null) return;
         stopDua();
         AudioAttributes aa = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build();
         duaFocus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK).setAudioAttributes(aa).build();
@@ -120,7 +121,12 @@ final class Sound {
         try {
             dua = new MediaPlayer();
             dua.setAudioAttributes(aa);
-            dua.setDataSource(f.getPath());
+            if (f.exists()) dua.setDataSource(f.getPath());
+            else {
+                android.content.res.AssetFileDescriptor fd = c.getAssets().openFd("dua/" + which + ".mp3");
+                dua.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
+                fd.close();
+            }
             dua.setVolume(volume, volume);
             dua.setOnCompletionListener(mp -> stopDua());
             dua.setOnErrorListener((mp, w, e) -> { stopDua(); return true; });

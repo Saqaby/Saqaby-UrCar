@@ -1,0 +1,3 @@
+riding.mp3 (9 s): the riding dhikr (Az-Zukhruf 43:13-14). travel.mp3 (35 s): the travel du'a (Sunan Abi Dawud 2598).
+Both made for this app by its owner with an AI voice tool and given by him as free of others' rights (2026-11-05).
+Their texts are in assets/duas.json with their sources. Which file is which was told by their length (the files had no names inside).
