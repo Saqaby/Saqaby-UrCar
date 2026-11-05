@@ -1,0 +1,44 @@
+سيارتك (UrCar)
+حقوق النشر © 2026 Saqaby. جميع الحقوق محفوظة.
+
+أولًا: ما يُسمح به
+لأي شخص أن ينزّل تطبيق «سيارتك» ويركّبه ويستخدمه على شاشة سيارته، مجانًا، للاستخدام الشخصي.
+
+ثانيًا: ما لا يُسمح به دون إذن كتابي من صاحب الحقوق
+1. نسخ الكود أو التصميم أو أي جزء منهما، أو تعديلهما، أو بناء عمل مشتق منهما.
+2. إعادة نشر التطبيق أو الكود أو بيعه أو تأجيره أو تضمينه في منتج آخر، مجانًا أو بمقابل.
+3. نشر نسخة معدّلة من التطبيق، أو نسخة تحمل اسمًا أو هوية أخرى.
+4. استخراج التسجيلين الصوتيين لذكر الركوب ودعاء السفر (android/app/src/main/assets/dua) واستعمالهما خارج التطبيق.
+وكون المستودع مفتوحًا للاطلاع لا يمنح أيًّا من هذه الحقوق.
+
+ثالثًا: ما ليس لصاحب الحقوق
+لا تشمل هذه الحقوق أجزاء لأصحابها، وتبقى على رخصها، وهي مذكورة في THIRD-PARTY.md،
+ومنها: الخطوط، ونصوص القرآن والأحاديث، وأجزاء منقولة من مشروع UrTV، وبيانات الطقس، والتلاوات.
+
+رابعًا: بلا ضمان
+يُقدَّم التطبيق «كما هو»، بلا أي ضمان. المواقيت والقبلة والسرعة والاتجاه وتنبيهات الطريق للمساعدة فقط،
+والسائق وحده مسؤول عن قيادته وعن التحقق من مواقيت صلاته. ولا يتحمّل صاحب الحقوق أي ضرر ينشأ عن استخدام التطبيق.
+
+للإذن أو الاستفسار: github.com/Saqaby
+
+----------------------------------------------------------------------
+
+UrCar («سيارتك»)
+Copyright © 2026 Saqaby. All rights reserved.
+
+1. Permitted: anyone may download, install and use the UrCar app on their own car's screen, free of charge, for personal use.
+
+2. Not permitted without the copyright holder's written permission: copying, modifying or making derivative works of the
+   code or the design or any part of them; redistributing, selling, renting or including the app or the code in another
+   product, free or paid; publishing a modified version or one under another name or brand; taking the two recordings of
+   the riding dhikr and the travel du'a (android/app/src/main/assets/dua) for use outside the app.
+   That this repository can be read publicly grants none of these rights.
+
+3. Not covered: the parts that belong to others keep their own licences, listed in THIRD-PARTY.md (among them the fonts,
+   the Quran and hadith texts, parts taken from the UrTV project, the weather data and the recitations).
+
+4. No warranty: the app is provided «as is», without warranty of any kind. Prayer times, qibla, speed, heading and road
+   alerts are aids only; the driver alone is responsible for their driving and for checking their prayer times. The
+   copyright holder is not liable for any damage arising from the use of the app.
+
+Permission or questions: github.com/Saqaby
