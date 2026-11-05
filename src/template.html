@@ -45,49 +45,58 @@
   .stage{max-width:1920px;margin:0 auto}
   .fit{position:relative;overflow:hidden;border-radius:14px;box-shadow:0 0 0 6px #050808, 0 18px 50px rgba(0,0,0,.35)}
   .scr{position:absolute;top:0;right:0;transform-origin:top right;container-type:size;background:var(--bg);
-       display:grid;grid-template-rows:9cqh 1fr;overflow:hidden}
+       display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);grid-template-areas:"map panel";overflow:hidden}
+  .scr.drv-right{grid-template-areas:"panel map";grid-template-columns:minmax(0,2fr) minmax(0,3fr)}
+  .scr.wide{grid-template-columns:minmax(0,5fr) minmax(0,2fr)} .scr.drv-right.wide{grid-template-columns:minmax(0,2fr) minmax(0,5fr)}
 
-  .top{display:flex;align-items:center;gap:2.2cqh;padding:0 3cqh;border-bottom:1px solid var(--line);font-size:3.2cqh;white-space:nowrap;overflow:hidden}
-  .top .clock{font:700 4.6cqh var(--f-disp);direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
-  .top .ap{color:var(--muted);font-size:2.8cqh;margin-inline-start:-1.4cqh}
-  .top .hijri{color:var(--sand);font-weight:500}
-  .top .greg{color:var(--muted)}
-  .top .wx{margin-inline-start:auto;display:flex;align-items:center;gap:.8cqh;font-weight:500;font-variant-numeric:tabular-nums}
-  .top .wx svg{width:3.6cqh;height:3.6cqh;fill:none;stroke:var(--sand);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-  .top .wx.stale{color:var(--muted)}
-  .top .place{display:flex;align-items:center;gap:1cqh;color:var(--muted)}
-  .top .place svg{width:3cqh;height:3cqh}
-  .top .place.gps svg{color:var(--go)}
-  .top .radio{display:flex;align-items:center;gap:1cqh;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:.8cqh 2.2cqh;font-size:2.8cqh;cursor:pointer}
-  .top .radio svg{width:3cqh;height:3cqh;color:var(--sand)}
-  .top .radio.on{background:var(--sand);border-color:var(--sand);color:var(--sand-ink)} .top .radio.on svg{color:var(--sand-ink)}
-  .top .radio .mhz{font-variant-numeric:tabular-nums;font-weight:500}
+  /* the map side: on the device the navigation app itself, full screen, under our panel (a floating window) */
+  .mapz{grid-area:map;position:relative;overflow:hidden;background:var(--map)}
+  .mapz svg{position:absolute;inset:0;width:100%;height:100%}
+  .maplbl{position:absolute;bottom:2.4cqh;inset-inline:2.4cqh;font-size:2.5cqh;color:var(--muted);background:var(--panel);border:1px dashed var(--line);border-radius:1.6cqh;padding:1.2cqh 2cqh;line-height:1.5}
+  .maplbl b{color:var(--fg);font-weight:500}
+
+  /* our panel: everything of ours, on the driver's side */
+  .panel{grid-area:panel;position:relative;display:grid;grid-template-rows:auto auto auto auto minmax(14cqh,1fr);gap:1.6cqh;padding:2cqh 2.6cqh;background:var(--bg);border-inline-start:1px solid var(--line);min-height:0}
+  .ptop{display:grid;gap:.6cqh;white-space:nowrap;overflow:hidden}
+  .ptop .r1,.ptop .r3{display:flex;align-items:center;gap:1.6cqh}
+  .ptop .clock{font:700 6.2cqh var(--f-disp);direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;line-height:1}
+  .ptop .ap{color:var(--muted);font-size:3cqh}
+  .ptop .wx{margin-inline-start:auto;display:flex;align-items:center;gap:.8cqh;font-size:4cqh;font-weight:500;font-variant-numeric:tabular-nums}
+  .ptop .wx svg{width:4.2cqh;height:4.2cqh;fill:none;stroke:var(--sand);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .ptop .wx.stale{color:var(--muted)}
+  .ptop .hijri{color:var(--sand);font-weight:500;font-size:3.3cqh}
+  .ptop .greg{color:var(--muted);font-size:2.7cqh}
+  .ptop .place{margin-inline-start:auto;display:flex;align-items:center;gap:.8cqh;color:var(--muted);font-size:2.7cqh}
+  .ptop .place svg{width:2.8cqh;height:2.8cqh}
+  .ptop .place.gps svg{color:var(--go)}
+  .prow{display:flex;gap:1.6cqh;align-items:stretch}
+  .nv-speed{flex:none;width:12cqh;height:12cqh;border-radius:50%;border:.7cqh solid var(--line);background:var(--panel2);display:grid;place-content:center;text-align:center;line-height:1}
+  .nv-speed b{font:700 5cqh var(--f-disp);font-variant-numeric:tabular-nums}
+  .nv-speed span{font-size:1.9cqh;color:var(--muted);margin-top:.4cqh}
+  .nv-speed.still b{color:var(--muted)}
+  .radio{flex:1;display:flex;align-items:center;gap:1.4cqh;border:1px solid var(--line);background:var(--panel);border-radius:2cqh;padding:0 2.4cqh;font-size:3.2cqh;cursor:pointer;text-align:right}
+  .radio svg{flex:none;width:4.4cqh;height:4.4cqh;color:var(--sand)}
+  .radio .mhz{font-variant-numeric:tabular-nums;font-weight:500;color:var(--muted)}
+  .panel .m-art{width:8cqh;height:8cqh;font-size:3.6cqh}
+  .panel .m-ctl button{width:7cqh;height:7cqh} .panel .m-ctl button.play{width:8cqh;height:8cqh}
+  .panel .m-top .m-title{font-size:3.4cqh}
+  .panel .card{padding:1.2cqh 2.4cqh 1.8cqh;gap:.8cqh}
+  .panel .keys{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr;gap:1.4cqh}
+  .panel .key{gap:1cqh;padding:1cqh .6cqh}
+  .panel .key svg{width:6.4cqh;height:6.4cqh;flex:none}
+  .panel .key span{font-size:2.7cqh;white-space:nowrap}
+  .radio.on{background:var(--sand);border-color:var(--sand);color:var(--sand-ink)} .radio.on svg,.radio.on .mhz{color:var(--sand-ink)}
+
   .fmrow{display:flex;flex-wrap:wrap;align-items:center;gap:1.4cqh 2cqh;font-size:3cqh}
   .fmrow .big{font-size:5cqh;font-weight:500;color:var(--sand);font-variant-numeric:tabular-nums}
   .fmrow .warn{font-size:2.5cqh;color:var(--muted);flex-basis:100%;line-height:1.5}
   .fmrow input{width:18cqh;font:inherit;font-size:3.4cqh;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:1.4cqh;padding:1cqh 1.6cqh;text-align:center}
   .fmrow .btn{border:1px solid var(--line);background:var(--bg);border-radius:1.4cqh;padding:1.2cqh 2.2cqh;font-size:2.8cqh;cursor:pointer}
-  .adbar{position:absolute;inset:0 0 auto 0;height:9cqh;display:flex;align-items:center;justify-content:center;
+  .adbar{border-radius:1.6cqh;height:7cqh;display:flex;align-items:center;justify-content:center;
          background:var(--sand);color:var(--sand-ink);font-size:3.8cqh;font-weight:500;z-index:3}
 
-  .main{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);grid-template-areas:"nav side";gap:2.4cqh;padding:2.4cqh 3cqh 3cqh;min-height:0}
-  .scr.wide .main{grid-template-columns:minmax(0,2.3fr) minmax(0,1fr)}
-  .scr.drv-right .main{grid-template-areas:"side nav";grid-template-columns:minmax(0,1fr) minmax(0,1.75fr)}
-  .scr.drv-right.wide .main{grid-template-columns:minmax(0,1fr) minmax(0,2.3fr)}
 
-  /* the navigation window: in the device, the chosen app runs here */
-  .nav{grid-area:nav;position:relative;border-radius:2.6cqh;overflow:hidden;border:1px solid var(--line);background:var(--map);min-height:0}
-  .nav svg.map{position:absolute;inset:0;width:100%;height:100%}
-  .nav .app{position:absolute;top:2cqh;right:2cqh;display:flex;align-items:center;gap:1.2cqh;background:var(--panel);border:1px solid var(--line);
-            border-radius:99px;padding:1cqh 2.2cqh;font-size:3cqh;cursor:pointer}
-  .nav .app svg{width:2.6cqh;height:2.6cqh;color:var(--muted)}
-  .nav .nbtns{position:absolute;bottom:2cqh;left:2cqh;display:flex;gap:1.4cqh}
-  .nav .full{display:flex;align-items:center;gap:1cqh;background:var(--panel);border:1px solid var(--line);
-             border-radius:1.8cqh;padding:1.4cqh 2.4cqh;font-size:3cqh;cursor:pointer}
-  .nav .full svg{width:3cqh;height:3cqh}
-  .nav .demo{position:absolute;bottom:2.4cqh;right:2.4cqh;font-size:2.4cqh;color:var(--muted);background:var(--panel);padding:.6cqh 1.6cqh;border-radius:99px;opacity:.9}
 
-  .side{grid-area:side;display:grid;grid-template-rows:auto 1fr;gap:2.4cqh;min-height:0}
   /* the card beside the map: two pages, the next prayer and the music, by tab or by swipe */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:2.6cqh;padding:1.6cqh 3cqh 2.4cqh;display:grid;gap:1.2cqh;touch-action:pan-y;user-select:none}
   .card.now{border-color:var(--sand);background:var(--panel2)}
@@ -101,7 +110,7 @@
   .pages>.page[aria-hidden="true"]{visibility:hidden}
   .next{display:grid;gap:.4cqh;align-content:start}
   .next .row{display:flex;align-items:baseline;justify-content:space-between;gap:2cqh}
-  .next .nm{font-size:7.4cqh;font-weight:500;line-height:1.1}
+  .next .nm{font-size:6cqh;font-weight:500;line-height:1.1}
   .next .tm{font-size:4.6cqh;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
   .next .cd{font-size:4.4cqh;color:var(--sand);font-weight:500}
   .next .ram{font-size:2.7cqh;color:var(--muted);border-top:1px solid var(--line);padding-top:1.4cqh;margin-top:1.2cqh}
@@ -127,8 +136,8 @@
   .key{border:1px solid var(--line);background:var(--panel);border-radius:2.4cqh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2cqh;
        cursor:pointer;min-height:0;transition:transform .08s, background .15s}
   .key:active{transform:scale(.96);background:var(--panel2)}
-  .key svg{width:8cqh;height:8cqh;color:var(--sand)}
-  .key span{font-size:3.6cqh;font-weight:500}
+  .key svg{width:6.4cqh;height:6.4cqh;color:var(--sand)}
+  .key span{font-size:3.2cqh;font-weight:500}
 
   /* sheets: the launcher's settings and the apps list */
   .sheet{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:5;display:flex;align-items:center;justify-content:center}
@@ -145,23 +154,6 @@
   .apps button{border:0;background:var(--bg);border-radius:2cqh;padding:2.4cqh 1cqh;display:flex;flex-direction:column;align-items:center;gap:1.2cqh;font-size:2.8cqh;cursor:pointer}
   .apps i{width:9cqh;height:9cqh;border-radius:2.2cqh;display:grid;place-items:center;font-style:normal;font-size:4cqh;font-weight:500;color:var(--sand-ink);background:var(--sand)}
 
-  /* the navigation card: what the navigation app's own notification says (the device can't host the live map) */
-  .nav{display:grid;place-items:center;padding:6cqh 5cqh}
-  .nv{display:grid;gap:3cqh;width:100%}
-  .nv-turn{display:flex;align-items:center;gap:3.4cqh}
-  .nv-ico{flex:none;width:18cqh;height:18cqh;color:var(--route);background:var(--panel2);border-radius:3cqh;padding:2.4cqh;box-sizing:border-box}
-  .nv-txt{min-width:0}
-  .nv-dist{font:700 11cqh var(--f-disp);line-height:1;font-variant-numeric:tabular-nums}
-  .nv-step{font-size:4.6cqh;font-weight:500;line-height:1.35;margin-top:1.4cqh}
-  .nv-eta{font-size:3.6cqh;color:var(--muted);border-top:1px solid var(--line);padding-top:2.4cqh}
-  /* the car's speed from GPS, top left of the navigation card, with or without a route */
-  .nv-speed{position:absolute;top:2cqh;left:2cqh;width:17cqh;height:17cqh;border-radius:50%;border:.9cqh solid var(--line);background:var(--panel2);
-            display:grid;place-content:center;text-align:center;line-height:1}
-  .nv-speed b{font:700 7cqh var(--f-disp);font-variant-numeric:tabular-nums}
-  .nv-speed span{font-size:2.3cqh;color:var(--muted);margin-top:.6cqh}
-  .nv-speed.still b{color:var(--muted)}
-  .nv-off{display:grid;gap:3cqh;justify-items:center;font-size:4cqh;color:var(--muted)}
-  .nv-go{border:0;background:var(--sand);color:var(--sand-ink);border-radius:2.4cqh;padding:2.6cqh 4.4cqh;font-size:4.2cqh;font-weight:500;cursor:pointer}
   .toast{position:absolute;left:50%;bottom:6cqh;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:1.6cqh 3cqh;border-radius:99px;font-size:3cqh;z-index:6;white-space:nowrap}
   .notes{max-width:1920px;margin:14px auto 0;font-size:14px;color:var(--muted);line-height:1.7}
   .notes b{color:var(--fg);font-weight:500}
@@ -179,7 +171,6 @@
   <label>الموقع <select id="loc"></select></label>
   <label>آخر تطبيق صوت
     <select id="sess"><option value="soundcloud" selected>SoundCloud</option><option value="youtube">يوتيوب</option><option value="spotify">Spotify</option><option value="anghami">أنغامي</option><option value="">لا شيء</option></select></label>
-  <button class="chip" id="t-nav" aria-pressed="true">ملاحة تعمل</button>
   <span class="sp"></span>
   <button class="chip" id="t-adhan" aria-pressed="false">قبل الأذان بـ٢٥ دقيقة</button>
   <button class="chip" id="t-after" aria-pressed="false">بعد الأذان بـ٧ دقائق</button>
@@ -189,38 +180,30 @@
 
 <div class="stage"><div class="fit" id="fit">
   <div class="scr" id="scr">
-    <div class="top">
-      <span class="clock" id="ck">—</span><span class="ap" id="ap"></span>
-      <span class="hijri" id="hijri">—</span>
-      <span class="greg" id="greg"></span>
-      <span class="wx" id="wx" title="درجة الحرارة الآن"><i id="wx-i"></i><span id="wx-t">—</span></span>
-      <span class="place" id="place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="place-t">—</span></span>
-      <button class="radio" id="radio" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8 17 3"/><circle cx="15.5" cy="14" r="2.5"/></svg><span id="r-t">إذاعة القرآن</span> <span class="mhz" id="r-f"></span></button>
-    </div>
-    <div class="adbar" id="adbar" hidden></div>
+    <section class="mapz" aria-label="الخريطة">
+        <svg viewBox="0 0 800 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <rect width="800" height="720" fill="var(--map)"/>
+          <g fill="var(--block)"><rect x="40" y="40" width="190" height="150" rx="8"/><rect x="280" y="40" width="170" height="150" rx="8"/><rect x="500" y="40" width="260" height="150" rx="8"/>
+            <rect x="40" y="250" width="190" height="200" rx="8"/><rect x="500" y="250" width="110" height="200" rx="8"/><rect x="650" y="250" width="110" height="200" rx="8"/>
+            <rect x="40" y="510" width="400" height="170" rx="8"/><rect x="500" y="510" width="260" height="170" rx="8"/></g>
+          <g stroke="var(--road)" stroke-width="22" fill="none" stroke-linecap="round"><path d="M0 220H800M0 480H800M255 0V720M475 0V720"/></g>
+          <path d="M0 120 C200 130 330 400 800 380" stroke="var(--road2)" stroke-width="30" fill="none"/>
+          <path d="M255 720V480H475V220H640" stroke="var(--route)" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="640" cy="220" r="13" fill="var(--route)"/><circle cx="640" cy="220" r="5" fill="var(--map)"/>
+          <g transform="translate(365 480)"><circle r="26" fill="var(--route)" opacity=".22"/><path d="M0-15 12 13 0 6-12 13z" fill="var(--fg)" stroke="var(--route)" stroke-width="3" transform="rotate(90)"/></g>
+        </svg>
+      <span class="maplbl"><b id="map-app">خرائط Google</b> تعمل هنا بنفسها: الخريطة الحيّة والملاحة وأزرارها. لا نضع فوقها شيئًا.</span>
+    </section>
 
-    <div class="main">
-      <section class="nav" aria-label="الملاحة">
-        <div class="nv-speed" id="nv-speed" aria-label="السرعة الحالية"><b id="nv-spd">٠</b><span>كم/س</span></div>
-        <div class="nv" id="nv-on">
-          <div class="nv-turn">
-            <svg class="nv-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5M6 11l6-6 6 6"/></svg>
-            <div class="nv-txt"><div class="nv-dist" id="nv-dist"></div><div class="nv-step" id="nv-step"></div></div>
-          </div>
-          <div class="nv-eta" id="nv-eta"></div>
-        </div>
-        <div class="nv-off" id="nv-off" hidden>
-          <span>لا توجد ملاحة الآن</span>
-          <button class="nv-go" id="nv-go">ابدأ الملاحة في <span id="nv-go-app">خرائط Google</span></button>
-        </div>
-        <button class="app" id="nav-app"><span id="nav-name">خرائط Google</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="nbtns">
-        <button class="full" id="nav-full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>افتح الخريطة</button>
-        </div>
-        <span class="demo">من إشعار تطبيق الملاحة؛ مثال حقيقي من شاشتك</span>
-      </section>
-
-      <section class="side">
+    <section class="panel" aria-label="لوحة سيارتك">
+      <div class="ptop">
+        <div class="r1"><span class="clock" id="ck">—</span><span class="ap" id="ap"></span>
+          <span class="wx" id="wx" title="درجة الحرارة الآن"><i id="wx-i"></i><span id="wx-t">—</span></span></div>
+        <div class="r2"><span class="hijri" id="hijri">—</span></div>
+        <div class="r3"><span class="greg" id="greg"></span>
+          <span class="place" id="place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="place-t">—</span></span></div>
+      </div>
+      <div class="adbar" id="adbar" hidden></div>
         <div class="card" id="card">
           <div class="tabs" role="tablist">
             <button role="tab" id="tab-p" aria-selected="true" aria-controls="next"><span id="n-lbl">الصلاة القادمة</span></button>
@@ -246,18 +229,21 @@
             </div>
           </div>
         </div>
+      <div class="prow">
+        <div class="nv-speed" id="nv-speed" aria-label="السرعة الحالية"><b id="nv-spd">٠</b><span>كم/س</span></div>
+        <button class="radio" id="radio" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8 17 3"/><circle cx="15.5" cy="14" r="2.5"/></svg><span><span id="r-t">إذاعة القرآن</span> <span class="mhz" id="r-f"></span></span></button>
+      </div>
         <div class="keys" aria-label="الاختصارات">
           <button class="key" data-act="youtube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg><span>يوتيوب</span></button>
           <button class="key" data-act="bt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg><span>بلوتوث</span></button>
           <button class="key" data-act="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>الإعدادات</span></button>
           <button class="key" data-act="apps"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg><span>التطبيقات</span></button>
         </div>
-      </section>
-    </div>
+    </section>
 
     <div class="sheet" id="set" hidden role="dialog" aria-label="الإعدادات"><div class="box">
       <h2>الإعدادات <button class="x" data-close aria-label="إغلاق">✕</button></h2>
-      <h3>تطبيق الملاحة في الشاشة الرئيسية</h3>
+      <h3>تطبيق الملاحة بجانب اللوحة</h3>
       <div class="opts" id="nav-opts" role="radiogroup"></div>
       <h3>جهة السائق</h3>
       <div class="opts" id="drv-opts" role="radiogroup">
@@ -290,7 +276,7 @@
   </div>
 </div></div>
 
-<p class="notes"><b>معاينة فقط.</b> بطاقة الملاحة تعرض ما ينشره تطبيق الملاحة في إشعاره (المسافة، الخطوة، وقت الوصول)، والضغط يفتح الخريطة بملء الشاشة؛ شاشتك لا تسمح بخريطة حيّة داخل الواجهة. درجة الحرارة من Open-Meteo لموقع السيارة (في المعاينة المنشورة قد تظهر قيمة مثال). المواقيت بطريقة ISNA تُحسب محليًا للموقع الحالي وتُعاد كلما ابتعدت السيارة ١٠ كم.</p>
+<p class="notes"><b>معاينة فقط.</b> في الشاشة يعمل تطبيق الملاحة المختار بملء الشاشة، ولوحتنا نافذة عائمة على جهة السائق فوق جزء منه (ثبت في فحص v5: الخريطة تتحرك، والملاحة تعمل، وأزرارها ظاهرة). الرسم هنا مكان الخريطة فقط. درجة الحرارة من Open-Meteo لموقع السيارة. المواقيت بطريقة ISNA تُحسب محليًا وتُعاد كلما ابتعدت السيارة ١٠ كم.</p>
 
 <audio id="aud" preload="none"></audio>
 
@@ -410,7 +396,7 @@ function tick(){
   const nextAt = T[nextK] > mins ? T[nextK] : T.Fajr + 1440;
   const cur = FIVE.find(k => mins >= T[k] && mins < T[k] + AFTER_MIN);
   const since = cur ? Math.floor(mins - T[cur]) : 0;   // whole minutes since its adhan
-  const sinceText = since < 1 ? 'حان الآن' : 'مضى على الأذان ' + qty(since, UNIT.min);
+  const sinceText = since < 1 ? 'وقت الأذان' : 'مضى على الأذان ' + qty(since, UNIT.min);
   const next = $('card');
   if(cur){
     next.classList.add('now');
@@ -546,8 +532,7 @@ const store = {get(k, d){ try{ return localStorage.getItem(k) || d; }catch(e){ r
 let NAV = store.get('urcar.nav', 'gmaps'), DRV = store.get('urcar.drv', 'left');
 function drawSettings(){
   const a = NAV_APPS.find(x => x.id === NAV) || NAV_APPS[0];
-  setText($('nav-name'), a.n);
-  if($('nv-go-app')) setText($('nv-go-app'), a.n);
+  setText($('map-app'), a.n);
   $('nav-opts').innerHTML = NAV_APPS.map(x => `<button class="opt" role="radio" data-nav="${x.id}" aria-checked="${x.id === NAV}">${esc(x.n)}<small>${esc(x.pkg)}</small></button>`).join('');
   document.querySelectorAll('[data-drv]').forEach(b => b.setAttribute('aria-checked', b.dataset.drv === DRV));
   $('scr').classList.toggle('drv-right', DRV === 'right');
@@ -570,33 +555,18 @@ $('drv-opts').onclick = e => { const b = e.target.closest('[data-drv]'); if(!b) 
 const open = id => { $(id).hidden = false; }, closeAll = () => document.querySelectorAll('.sheet').forEach(s => s.hidden = true);
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeAll);
 document.querySelectorAll('.sheet').forEach(s => s.onclick = e => { if(e.target === s) closeAll(); });
-$('nav-app').onclick = () => open('set');
 // ---------- the navigation card: on the device it reads the navigation app's ongoing notification
 // (title = the distance to the next step, text = the step, subText = time, distance and arrival). Example below from the owner's screen.
-let NAVON = true, NAVKM = 8.5;
-function drawNav(){
-  $('nv-on').hidden = !NAVON; $('nv-off').hidden = NAVON;
-  setText($('nv-go-app'), $('nav-name').textContent);
-  if(!NAVON) return;
-  setText($('nv-dist'), NAVKM >= 1 ? ar(NAVKM.toFixed(1)) + ' كم' : ar(Math.round(NAVKM * 1000 / 50) * 50) + ' م');
-  setText($('nv-step'), 'استمر في القيادة على طريق أبو حدرية');
-  const min = Math.max(1, Math.round(NAVKM * 1.6 + 1));
-  setText($('nv-eta'), ar(min) + ' د، ' + ar(Math.round(NAVKM + 13.5)) + ' كم، الوصول ٢:٢٣ م');
-}
-setInterval(() => { if(NAVON){ NAVKM = NAVKM > .2 ? NAVKM - .1 : 8.5; drawNav(); } }, 4000);
 // the speed: GPS speed (m/s) on the device; in the preview, GPS if the browser gives it, else an example drive
 let SPEED = null, SPEED_AT = 0;
 function drawSpeed(){
   let v = SPEED !== null && Date.now() - SPEED_AT < 10000 ? SPEED : null;
-  if(v === null) v = NAVON ? 62 + Math.round(8 * Math.sin(Date.now() / 7000)) : 0;   // the example
+  if(v === null) v = 62 + Math.round(8 * Math.sin(Date.now() / 7000));   // the example drive
   setText($('nv-spd'), ar(Math.max(0, Math.round(v))));
   $('nv-speed').classList.toggle('still', v < 1);
 }
 setInterval(drawSpeed, 1000);
-$('t-nav').onclick = () => { NAVON = !NAVON; $('t-nav').setAttribute('aria-pressed', NAVON); drawNav(); };
-$('nv-go').onclick = () => toast('يفتح ' + $('nav-name').textContent + ' بملء الشاشة');
-$('nav-full').onclick = () => toast('يفتح ' + $('nav-name').textContent + ' بملء الشاشة');
-drawNav(); drawSpeed();
+drawSpeed();
 $('sys-set').onclick = () => toast('يفتح: إعدادات أندرويد');
 
 const EXAMPLE_APPS = ['يوتيوب','Spotify','أنغامي','واتساب','خرائط Google','Waze','الهاتف','الراديو FM','الكاميرا الخلفية','الملفات','المتجر','الإعدادات'];
