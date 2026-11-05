@@ -164,7 +164,7 @@ public class PanelService extends Service implements Panel.Actions {
             if (alert == null && dust >= 150 && now - dustAt < 3 * 3600_000L) alert = dust >= 400 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
             drive.showAlert(alert);
             drive.setMosqueHot(day.bar(now) != null);
-            drive.showTrip(tripStart > 0 && tripKm >= 0.5 ? "الرحلة " + Ui.ar(String.format(java.util.Locale.US, tripKm < 10 ? "%.1f" : "%.0f", tripKm))
+            drive.showTrip(tripStart > 0 ? "الرحلة " + Ui.ar(String.format(java.util.Locale.US, tripKm < 10 ? "%.1f" : "%.0f", tripKm))
                     + " كم، " + Ui.remaining((now - tripStart) / 1000) : "");
             drive.showRemind(day.remind(now));
             // the quote card: the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
@@ -235,21 +235,31 @@ public class PanelService extends Service implements Panel.Actions {
      *  last move is kept on the screen, so a restart of the screen alone does not count as a stop). */
     private void trip(Location l, long now) {
         if (kmh >= 10) {
-            if (lastMoveAt == 0) lastMoveAt = Prefs.of(this).getLong("last_move", 0);
+            if (lastMoveAt == 0) {   // the screen (re)started: a short stop goes on with the saved trip
+                lastMoveAt = Prefs.of(this).getLong("last_move", 0);
+                if (now - lastMoveAt < STOP_MS) {
+                    tripStart = Prefs.of(this).getLong("trip_start", 0);
+                    tripKm = Prefs.of(this).getFloat("trip_km", 0);
+                    if (tripStart == 0) tripStart = now;   // a trip from before this version: counted from now
+                }
+            }
             if (now - lastMoveAt >= STOP_MS) {
                 tripStart = now; tripKm = 0; prevLat = 999;
                 duaUntil = now + 60_000;
-                final boolean far = travelDuaFor(l);
+                travelDua = travelDuaFor(l);   // far from home: the travel du'a
+                final boolean far = travelDua;
                 if (Prefs.of(this).getBoolean("dua_sound", true))
                     h.postDelayed(() -> sound.playDua(far ? "travel" : "riding", Prefs.of(this).getFloat("adhan_vol", 1f)), 1500);
-                float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
-                travelDua = hl < 90 && Day.km(hl, ho, l.getLatitude(), l.getLongitude()) > 80;   // far from home: the travel du'a
             }
             lastMoveAt = now;
-            if (now - savedMoveAt > 30_000) { savedMoveAt = now; Prefs.of(this).edit().putLong("last_move", now).apply(); }
         }
         if (kmh >= 3 && prevLat < 90) tripKm += Day.km(prevLat, prevLon, l.getLatitude(), l.getLongitude());
         prevLat = l.getLatitude(); prevLon = l.getLongitude();
+        // kept on the screen every 30 seconds, so a restart of the screen goes on with the same trip
+        if (tripStart > 0 && now - savedMoveAt > 30_000) {
+            savedMoveAt = now;
+            Prefs.of(this).edit().putLong("last_move", lastMoveAt).putLong("trip_start", tripStart).putFloat("trip_km", (float) tripKm).apply();
+        }
     }
 
     /** «جرّب» in the settings. */
