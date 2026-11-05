@@ -142,20 +142,17 @@
   .apps button{border:0;background:var(--bg);border-radius:2cqh;padding:2.4cqh 1cqh;display:flex;flex-direction:column;align-items:center;gap:1.2cqh;font-size:2.8cqh;cursor:pointer}
   .apps i{width:9cqh;height:9cqh;border-radius:2.2cqh;display:grid;place-items:center;font-style:normal;font-size:4cqh;font-weight:500;color:var(--sand-ink);background:var(--sand)}
 
-  .nav .full.camb{background:var(--sand);border-color:var(--sand);color:var(--sand-ink);font-weight:500;padding:1.6cqh 2.8cqh;font-size:3.4cqh}
-  .nav .full.camb svg{width:3.6cqh;height:3.6cqh}
-  /* the camera: over the whole screen, whatever the gear */
-  .cam{position:absolute;inset:0;z-index:7;background:#050707;color:#eef1ea;display:grid}
-  .cam .feed{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 85%,#3a4442 0,#1b2321 45%,#070a0a 100%)}
-  .cam .feed span{position:absolute;top:46%;left:0;right:0;text-align:center;font-size:3cqh;color:#93a39f}
-  .cam svg.guide{position:absolute;inset:0;width:100%;height:100%}
-  .cam .bar{position:absolute;top:2.4cqh;inset-inline:2.4cqh;display:flex;align-items:center;gap:1.6cqh}
-  .cam .pill{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);border-radius:99px;padding:1.2cqh 2.4cqh;font-size:3cqh;color:#eef1ea}
-  .cam .gear{font-weight:500;font-variant-numeric:tabular-nums}
-  .cam .sw{cursor:pointer}
-  .cam .sw[aria-pressed="true"]{background:#d9b46a;border-color:#d9b46a;color:#1b1408}
-  .cam .close{margin-inline-start:auto;background:#eef1ea;color:#0b1314;border:0;border-radius:99px;padding:1.8cqh 3.6cqh;font-size:3.6cqh;font-weight:500;cursor:pointer}
-  .cam .hint{position:absolute;bottom:2.4cqh;inset-inline:0;text-align:center;font-size:2.6cqh;color:#c9d2cf}
+  /* the navigation card: what the navigation app's own notification says (the device can't host the live map) */
+  .nav{display:grid;place-items:center;padding:6cqh 5cqh}
+  .nv{display:grid;gap:3cqh;width:100%}
+  .nv-turn{display:flex;align-items:center;gap:3.4cqh}
+  .nv-ico{flex:none;width:18cqh;height:18cqh;color:var(--route);background:var(--panel2);border-radius:3cqh;padding:2.4cqh;box-sizing:border-box}
+  .nv-txt{min-width:0}
+  .nv-dist{font:700 11cqh var(--f-disp);line-height:1;font-variant-numeric:tabular-nums}
+  .nv-step{font-size:4.6cqh;font-weight:500;line-height:1.35;margin-top:1.4cqh}
+  .nv-eta{font-size:3.6cqh;color:var(--muted);border-top:1px solid var(--line);padding-top:2.4cqh}
+  .nv-off{display:grid;gap:3cqh;justify-items:center;font-size:4cqh;color:var(--muted)}
+  .nv-go{border:0;background:var(--sand);color:var(--sand-ink);border-radius:2.4cqh;padding:2.6cqh 4.4cqh;font-size:4.2cqh;font-weight:500;cursor:pointer}
   .toast{position:absolute;left:50%;bottom:6cqh;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:1.6cqh 3cqh;border-radius:99px;font-size:3cqh;z-index:6;white-space:nowrap}
   .notes{max-width:1920px;margin:14px auto 0;font-size:14px;color:var(--muted);line-height:1.7}
   .notes b{color:var(--fg);font-weight:500}
@@ -173,8 +170,7 @@
   <label>الموقع <select id="loc"></select></label>
   <label>آخر تطبيق صوت
     <select id="sess"><option value="soundcloud" selected>SoundCloud</option><option value="youtube">يوتيوب</option><option value="spotify">Spotify</option><option value="anghami">أنغامي</option><option value="">لا شيء</option></select></label>
-  <label>ناقل الحركة
-    <select id="gear"><option>P</option><option>R</option><option>N</option><option selected>D</option></select></label>
+  <button class="chip" id="t-nav" aria-pressed="true">ملاحة تعمل</button>
   <span class="sp"></span>
   <button class="chip" id="t-adhan" aria-pressed="false">قبل الأذان بـ٢٥ دقيقة</button>
   <button class="chip" id="t-after" aria-pressed="false">بعد الأذان بـ٧ دقائق</button>
@@ -195,23 +191,22 @@
 
     <div class="main">
       <section class="nav" aria-label="الملاحة">
-        <svg class="map" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-          <rect width="800" height="520" fill="var(--map)"/>
-          <g fill="var(--block)"><rect x="40" y="40" width="190" height="120" rx="8"/><rect x="280" y="40" width="170" height="120" rx="8"/><rect x="500" y="40" width="260" height="120" rx="8"/>
-            <rect x="40" y="210" width="190" height="130" rx="8"/><rect x="500" y="210" width="110" height="130" rx="8"/><rect x="650" y="210" width="110" height="130" rx="8"/>
-            <rect x="40" y="390" width="400" height="100" rx="8"/><rect x="500" y="390" width="260" height="100" rx="8"/></g>
-          <g stroke="var(--road)" stroke-width="22" fill="none" stroke-linecap="round"><path d="M0 185H800M0 365H800M255 0V520M475 0V520"/></g>
-          <path d="M0 100 C200 110 330 300 800 280" stroke="var(--road2)" stroke-width="30" fill="none"/>
-          <path d="M255 520V365H475V185H640" stroke="var(--route)" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="640" cy="185" r="13" fill="var(--route)"/><circle cx="640" cy="185" r="5" fill="var(--map)"/>
-          <g transform="translate(365 365)"><circle r="26" fill="var(--route)" opacity=".22"/><path d="M0-15 12 13 0 6-12 13z" fill="var(--fg)" stroke="var(--route)" stroke-width="3" transform="rotate(90)"/></g>
-        </svg>
+        <div class="nv" id="nv-on">
+          <div class="nv-turn">
+            <svg class="nv-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5M6 11l6-6 6 6"/></svg>
+            <div class="nv-txt"><div class="nv-dist" id="nv-dist"></div><div class="nv-step" id="nv-step"></div></div>
+          </div>
+          <div class="nv-eta" id="nv-eta"></div>
+        </div>
+        <div class="nv-off" id="nv-off" hidden>
+          <span>لا توجد ملاحة الآن</span>
+          <button class="nv-go" id="nv-go">ابدأ الملاحة في <span id="nv-go-app">خرائط Google</span></button>
+        </div>
         <button class="app" id="nav-app"><span id="nav-name">خرائط Google</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
         <div class="nbtns">
-        <button class="full camb" id="cam-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>الكاميرا</button>
-        <button class="full" id="nav-full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>ملء الشاشة</button>
+        <button class="full" id="nav-full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>افتح الخريطة</button>
         </div>
-        <span class="demo">رسم توضيحي، في الجهاز يعمل التطبيق هنا</span>
+        <span class="demo">من إشعار تطبيق الملاحة؛ مثال حقيقي من شاشتك</span>
       </section>
 
       <section class="side">
@@ -280,25 +275,11 @@
       <h3>أمثلة؛ في الجهاز تظهر التطبيقات المثبّتة فعلًا</h3>
     </div></div>
 
-    <div class="cam" id="cam" hidden role="dialog" aria-label="الكاميرا">
-      <div class="feed"><span id="cam-feed">صورة الكاميرا الخلفية تظهر هنا</span></div>
-      <svg class="guide" id="cam-guide" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M250 600 360 300M750 600 640 300" stroke="#e9a24b" stroke-width="6" fill="none"/>
-        <path d="M300 470H700" stroke="#e0533d" stroke-width="6"/><path d="M330 385H670" stroke="#e9c84b" stroke-width="5"/><path d="M355 315H645" stroke="#58c49a" stroke-width="5"/>
-      </svg>
-      <div class="bar">
-        <span class="pill gear" id="cam-gear">D</span>
-        <button class="pill sw" data-cam="rear" aria-pressed="true">الخلفية</button>
-        <button class="pill sw" data-cam="front" aria-pressed="false">الأمامية</button>
-        <button class="close" id="cam-close">إغلاق</button>
-      </div>
-      <div class="hint" id="cam-hint"></div>
-    </div>
     <div class="toast" id="toast" hidden></div>
   </div>
 </div></div>
 
-<p class="notes"><b>معاينة فقط.</b> الخريطة رسم توضيحي؛ في الجهاز يعمل تطبيق الملاحة المختار في هذه المساحة. اختره من «الإعدادات» أو من اسمه أعلى الخريطة. المواقيت بطريقة ISNA تُحسب محليًا للموقع الحالي وتُعاد كلما ابتعدت السيارة ١٠ كم.</p>
+<p class="notes"><b>معاينة فقط.</b> بطاقة الملاحة تعرض ما ينشره تطبيق الملاحة في إشعاره (المسافة، الخطوة، وقت الوصول)، والضغط يفتح الخريطة بملء الشاشة؛ شاشتك لا تسمح بخريطة حيّة داخل الواجهة. المواقيت بطريقة ISNA تُحسب محليًا للموقع الحالي وتُعاد كلما ابتعدت السيارة ١٠ كم.</p>
 
 <audio id="aud" preload="none"></audio>
 
@@ -555,6 +536,7 @@ let NAV = store.get('urcar.nav', 'gmaps'), DRV = store.get('urcar.drv', 'left');
 function drawSettings(){
   const a = NAV_APPS.find(x => x.id === NAV) || NAV_APPS[0];
   setText($('nav-name'), a.n);
+  if($('nv-go-app')) setText($('nv-go-app'), a.n);
   $('nav-opts').innerHTML = NAV_APPS.map(x => `<button class="opt" role="radio" data-nav="${x.id}" aria-checked="${x.id === NAV}">${esc(x.n)}<small>${esc(x.pkg)}</small></button>`).join('');
   document.querySelectorAll('[data-drv]').forEach(b => b.setAttribute('aria-checked', b.dataset.drv === DRV));
   $('scr').classList.toggle('drv-right', DRV === 'right');
@@ -578,26 +560,23 @@ const open = id => { $(id).hidden = false; }, closeAll = () => document.querySel
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeAll);
 document.querySelectorAll('.sheet').forEach(s => s.onclick = e => { if(e.target === s) closeAll(); });
 $('nav-app').onclick = () => open('set');
-// ---------- the camera: the button opens it in any gear; in R the screen's own system opens it by itself ----------
-let GEAR = 'D', CAM = 'rear', camByR = false;
-function drawCam(){
-  setText($('cam-gear'), GEAR);
-  document.querySelectorAll('[data-cam]').forEach(b => b.setAttribute('aria-pressed', b.dataset.cam === CAM));
-  $('cam-guide').style.display = CAM === 'rear' ? '' : 'none';
-  setText($('cam-feed'), CAM === 'rear' ? 'صورة الكاميرا الخلفية تظهر هنا' : 'صورة الكاميرا الأمامية تظهر هنا');
-  setText($('cam-hint'), GEAR === 'R' ? 'فُتحت لأن ناقل الحركة على R، وتُغلق وحدها عند الخروج منه' : 'فُتحت من الزر، وتبقى حتى تضغط «إغلاق»');
+// ---------- the navigation card: on the device it reads the navigation app's ongoing notification
+// (title = the distance to the next step, text = the step, subText = time, distance and arrival). Example below from the owner's screen.
+let NAVON = true, NAVKM = 8.5;
+function drawNav(){
+  $('nv-on').hidden = !NAVON; $('nv-off').hidden = NAVON;
+  setText($('nv-go-app'), $('nav-name').textContent);
+  if(!NAVON) return;
+  setText($('nv-dist'), NAVKM >= 1 ? ar(NAVKM.toFixed(1)) + ' كم' : ar(Math.round(NAVKM * 1000 / 50) * 50) + ' م');
+  setText($('nv-step'), 'استمر في القيادة على طريق أبو حدرية');
+  const min = Math.max(1, Math.round(NAVKM * 1.6 + 1));
+  setText($('nv-eta'), ar(min) + ' د، ' + ar(Math.round(NAVKM + 13.5)) + ' كم، الوصول ٢:٢٣ م');
 }
-function openCam(byR){ camByR = byR; $('cam').hidden = false; drawCam(); }
-$('cam-btn').onclick = () => openCam(false);
-$('cam-close').onclick = () => { $('cam').hidden = true; };
-document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => { CAM = b.dataset.cam; drawCam(); });
-$('gear').onchange = () => {
-  GEAR = $('gear').value;
-  if(GEAR === 'R'){ CAM = 'rear'; openCam(true); }
-  else if(camByR && !$('cam').hidden){ $('cam').hidden = true; camByR = false; }   // R opened it, leaving R closes it
-  else drawCam();
-};
+setInterval(() => { if(NAVON){ NAVKM = NAVKM > .2 ? NAVKM - .1 : 8.5; drawNav(); } }, 4000);
+$('t-nav').onclick = () => { NAVON = !NAVON; $('t-nav').setAttribute('aria-pressed', NAVON); drawNav(); };
+$('nv-go').onclick = () => toast('يفتح ' + $('nav-name').textContent + ' بملء الشاشة');
 $('nav-full').onclick = () => toast('يفتح ' + $('nav-name').textContent + ' بملء الشاشة');
+drawNav();
 $('sys-set').onclick = () => toast('يفتح: إعدادات أندرويد');
 
 const EXAMPLE_APPS = ['يوتيوب','Spotify','أنغامي','واتساب','خرائط Google','Waze','الهاتف','الراديو FM','الكاميرا الخلفية','الملفات','المتجر','الإعدادات'];
