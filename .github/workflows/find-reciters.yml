@@ -1,0 +1,26 @@
+name: find-reciters
+# Looks up reciters by name in mp3quran.net's own API (the khatma's source) and checks that their first surah answers.
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/find-reciters.yml']
+jobs:
+  find:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
+          curl -sS --max-time 40 'https://www.mp3quran.net/api/v3/reciters?language=ar' -o r.json
+          python3 - <<'PY'
+          import json, re, subprocess
+          d = json.load(open('r.json'))
+          strip = lambda s: re.sub('[ً-ْـ ]', '', s)
+          for want in ['الحيدان', 'الموسى']:
+              print('#####', want)
+              for r in d['reciters']:
+                  if want in strip(r['name']).replace('ال', 'ال'):
+                      for m in r['moshaf']:
+                          print('RECITER', r['id'], r['name'], '|', m['name'], '| surahs', m['surah_total'], '|', m['server'])
+                          u = m['server'] + '001.mp3'
+                          out = subprocess.run(['curl', '-sS', '-o', '/dev/null', '-r', '0-1023', '-L', '--max-time', '25', '-w', '%{http_code} %{content_type}', u], capture_output=True, text=True).stdout
+                          print('  CHECK', u, out)
+          PY
