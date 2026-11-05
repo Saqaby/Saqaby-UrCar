@@ -95,7 +95,7 @@ final class Khatma {
                 if (mp.isPlaying()) { mp.pause(); pausedByFocus = true; save(); }
             } else if (fc == AudioManager.AUDIOFOCUS_GAIN) {
                 if (pausedByFocus) { pausedByFocus = false; mp.start(); }
-            } else if (fc == AudioManager.AUDIOFOCUS_LOSS) stop();   // another app took the sound for good
+            } else if (fc == AudioManager.AUDIOFOCUS_LOSS) { stop(); p().edit().putString("k_err", "أوقفها تطبيق آخر أخذ الصوت").apply(); }   // another app took the sound for good
         }).build();
         am.requestAudioFocus(focus);
         final int s = surah(), pos = p().getInt("k_pos", 0);
@@ -109,7 +109,12 @@ final class Khatma {
                 m.start();
             });
             mp.setOnCompletionListener(m -> next());
-            mp.setOnErrorListener((m, w, e) -> { stop(); return true; });
+            mp.setOnErrorListener((m, w, e) -> {
+                stop();
+                p().edit().putString("k_err", "الخطأ " + w + "/" + e + " في " + surahName()).apply();
+                android.widget.Toast.makeText(c, "لم تعمل التلاوة (" + w + "/" + e + "). تأكد من الإنترنت ثم أعد المحاولة", android.widget.Toast.LENGTH_LONG).show();
+                return true;
+            });
             mp.prepareAsync();
             on = true;
             h.postDelayed(saver, 10_000);

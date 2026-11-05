@@ -179,6 +179,8 @@ public class SettingsActivity extends Activity {
         LinearLayout kr2 = grid();
         kr2.addView(chip("ابدأ من الفاتحة", false, () -> { k.restart(); build(); }));
         list.addView(kr2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+        String kerr = Prefs.of(this).getString("k_err", "");
+        if (!kerr.isEmpty()) list.addView(note("آخر ما أوقف الختمة: " + kerr));
         list.addView(note("تبدأ مع الرحلة إن لم يكن صوت آخر يعمل، وتتوقف بعد ٣ دقائق من الوقوف، وتكمل حين تتحرك. التلاوات من mp3quran.net وتحتاج إنترنت."));
 
         head("دفتر الطريق");

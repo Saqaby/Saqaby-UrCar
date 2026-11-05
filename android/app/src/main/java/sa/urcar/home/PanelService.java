@@ -58,7 +58,7 @@ public class PanelService extends Service implements Panel.Actions {
     private Khatma khatma;
     private long stillSince, restUntil;
     private int restFor;
-    private boolean khatmaPausedByStop;
+    private boolean khatmaPausedByStop, khatmaMoved;
     private double[] wx;   // {°C, code}
     private long wxAt, fmAt, updAt;
     private double wxLat, wxLon;
@@ -198,12 +198,14 @@ public class PanelService extends Service implements Panel.Actions {
             int hours = (int) ((now - tripStart) / 3600_000L);
             if (hours >= 2 && hours % 2 == 0 && hours != restFor && moving) { restFor = hours; restUntil = now + 60_000; }
         }
+        // only a khatma that played while the car moved pauses after 3 minutes still: one started while parked plays on
         if (moving) {
             stillSince = 0;
+            if (khatma.on) khatmaMoved = true;
             if (khatmaPausedByStop) { khatmaPausedByStop = false; khatma.start(); }
         } else {
             if (stillSince == 0) stillSince = now;
-            if (khatma.on && now - stillSince > 3 * 60_000L) { khatma.stop(); khatmaPausedByStop = true; }
+            if (khatma.on && khatmaMoved && now - stillSince > 3 * 60_000L) { khatma.stop(); khatmaPausedByStop = true; khatmaMoved = false; }
         }
     }
 
@@ -387,6 +389,7 @@ public class PanelService extends Service implements Panel.Actions {
     @Override public void khatma() {
         if (khatma.on) { khatma.stop(); khatmaPausedByStop = false; return; }
         sound.stopRadio();
+        khatmaMoved = false;
         khatma.start();
     }
     /** The nearest stations (the rest reminder). */
