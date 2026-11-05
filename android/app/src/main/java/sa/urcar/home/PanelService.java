@@ -120,11 +120,11 @@ public class PanelService extends Service implements Panel.Actions {
         if (cur >= 0) {
             int since = (int) ((now - day.at(cur)) / 60_000L);
             panel.showPrayer(since < 1 ? "حان الآن" : "الصلاة الحالية", day.name(cur, now), Day.clockOf(day.at(cur)),
-                    since < 1 ? "وقت الأذان" : "مضى على الأذان " + Ui.minutes(since), day.ramadan(now), true);
+                    since < 1 ? "وقت الأذان" : "مضى على الأذان " + Ui.minutes(since), day.ramadan(now), day.ramadanDays(now), true);
         } else {
             long[] n = day.next(now);
             panel.showPrayer("الصلاة القادمة", day.name((int) n[0], now), Day.clockOf(n[1]),
-                    "باقٍ " + Ui.remaining(Math.max(60, Math.round((n[1] - now) / 1000.0))), day.ramadan(now), false);
+                    "باقٍ " + Ui.remaining(Math.max(60, Math.round((n[1] - now) / 1000.0))), day.ramadan(now), day.ramadanDays(now), false);
             // half an hour before an adhan the card turns back to the prayer, once
             String key = n[0] + "@" + n[1];
             if (n[1] - now <= Day.BEFORE_MIN * 60_000L && !key.equals(turnedFor)) { turnedFor = key; panel.showPage("p"); }
@@ -215,7 +215,11 @@ public class PanelService extends Service implements Panel.Actions {
         if (i == null) Toast.makeText(this, "التطبيق غير مثبّت", Toast.LENGTH_SHORT).show(); else launch(i);
     }
     @Override public void youtube() { launchPkg("com.google.android.youtube"); }
-    @Override public void bluetooth() { launch(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)); }
+    /** The screen's own «بلوتوث» app (com.tw.bt: calls, the phone's music); Android's Bluetooth settings if it is missing. */
+    @Override public void bluetooth() {
+        Intent i = getPackageManager().getLaunchIntentForPackage("com.tw.bt");
+        launch(i != null ? i : new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+    }
     @Override public void settings() { launch(new Intent(this, SettingsActivity.class)); }
     @Override public void apps() { launch(new Intent(this, AppsActivity.class)); }
     /** The speed card opens the chosen navigation app. */

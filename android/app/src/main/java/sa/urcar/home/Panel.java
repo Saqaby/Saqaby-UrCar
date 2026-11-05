@@ -23,6 +23,8 @@ final class Panel extends LinearLayout {
     private Ui.Theme th;
     private boolean day;
 
+    private LinearLayout ramRow;
+    private TextView ramL, ramN, ramU;
     private TextView clock, ap, temp, hijri, greg, place, bar, tabP, tabM, nm, tm, cd, ram, mApp, mTitle, mArtist, mEmpty, rT, rF;
     private Ui.Icon wxIcon, pinIcon, rIcon, playIcon, prevIcon, nextIcon;
     private LinearLayout card, prayerPage, musicPage, musicOn, radioBtn, keysRow, tabs;
@@ -95,6 +97,12 @@ final class Panel extends LinearLayout {
         prayerPage.addView(cd, lp(px(0.6f)));
         ram = Ui.text(c, px(2.6f), reg, 0);
         prayerPage.addView(ram, lp(px(1.6f)));
+        ramRow = row();   // «باقٍ على رمضان  ٩٥  يومًا»: the number big
+        ramL = Ui.text(c, px(3), reg, 0); ramL.setText("باقٍ على رمضان");
+        ramN = Ui.text(c, px(6.4f), disp, 0); ramN.setPadding(px(1.6f), 0, px(1.2f), 0);
+        ramU = Ui.text(c, px(3), reg, 0);
+        ramRow.addView(ramL); ramRow.addView(ramN); ramRow.addView(ramU);
+        prayerPage.addView(ramRow, lp(px(1.4f)));
         pages.addView(prayerPage);
 
         musicPage = new LinearLayout(c);
@@ -208,7 +216,7 @@ final class Panel extends LinearLayout {
         hijri.setTextColor(th.sand); greg.setTextColor(th.muted); place.setTextColor(th.muted); pinIcon.set(Ui.Icon.PIN, th.muted);
         bar.setBackground(Ui.box(th.sand, 0, px(1.6f))); bar.setTextColor(th.sandInk);
         card.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
-        nm.setTextColor(th.fg); tm.setTextColor(th.muted); cd.setTextColor(th.sand); ram.setTextColor(th.muted);
+        nm.setTextColor(th.fg); tm.setTextColor(th.muted); cd.setTextColor(th.sand); ram.setTextColor(th.muted); ramL.setTextColor(th.muted); ramN.setTextColor(th.sand); ramU.setTextColor(th.muted);
         mApp.setTextColor(th.muted); mTitle.setTextColor(th.fg); mArtist.setTextColor(th.muted); mEmpty.setTextColor(th.muted);
         prevBtn.setBackground(Ui.box(th.bg, th.line, px(5))); nextBtn.setBackground(Ui.box(th.bg, th.line, px(5)));
         playBtn.setBackground(Ui.box(th.sand, 0, px(5)));
@@ -256,9 +264,12 @@ final class Panel extends LinearLayout {
         if (text != null) set(bar, text);
     }
     private boolean nowState;
-    void showPrayer(String label, String name, String time, String count, String ramadan, boolean now) {
-        set(tabP, label); set(nm, name); set(tm, time); set(cd, count); set(ram, ramadan);
-        ram.setVisibility(ramadan.isEmpty() ? GONE : VISIBLE);
+    void showPrayer(String label, String name, String time, String count, String ramadan, int ramadanDays, boolean now) {
+        set(tabP, label); set(nm, name); set(tm, time); set(cd, count);
+        ramRow.setVisibility(ramadanDays > 0 ? VISIBLE : GONE);
+        if (ramadanDays > 0) { set(ramN, Ui.ar(ramadanDays)); set(ramU, ramadanDays >= 3 && ramadanDays <= 10 ? "أيام" : "يومًا"); }
+        set(ram, ramadanDays > 0 ? "" : ramadan);   // during Ramadan: iftar and imsak
+        ram.setVisibility(ramadanDays > 0 || ramadan.isEmpty() ? GONE : VISIBLE);
         if (now != nowState) { nowState = now; card.setBackground(Ui.box(now ? th.panel2 : th.panel, now ? th.sand : th.line, px(2.6f))); }
     }
     void showMusic(MediaController mc, String appName, String title, String artist, boolean playing) {

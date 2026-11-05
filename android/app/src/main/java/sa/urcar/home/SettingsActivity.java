@@ -72,7 +72,7 @@ public class SettingsActivity extends Activity {
         list.addView(radio);
         float lat = Prefs.of(this).getFloat("lat", 24.7136f), lon = Prefs.of(this).getFloat("lon", 46.6753f);
         Object[] fm = Net.fmHere(this, lat, lon);
-        TextView fmInfo = note(fm == null ? "لا تردد معروف قرب موقعك؛ الزر يشغّل الإذاعة عبر الإنترنت. إن عرفت التردد فاكتبه هنا:"
+        TextView fmInfo = note(fm == null ? "لا تردد معروف قرب موقعك؛ الزر يشغّل الإذاعة عبر الإنترنت. اكتب التردد هنا ليُحفظ لهذا المكان:"
                 : "التردد هنا (" + fm[0] + "): " + Ui.ar(String.format(java.util.Locale.US, "%.1f", ((Number) fm[1]).doubleValue()))
                 + (Boolean.TRUE.equals(fm[2]) ? "" : "، غير مؤكد. صحّحه إن لم يكن الإذاعة:"));
         list.addView(fmInfo);
@@ -86,9 +86,10 @@ public class SettingsActivity extends Activity {
             float v;
             try { v = Float.parseFloat(in.getText().toString().replace('٫', '.')); } catch (Exception e) { v = 0; }
             if (v < 87.5f || v > 108f) { Toast.makeText(this, "التردد بين 87.5 و108", Toast.LENGTH_SHORT).show(); return; }
-            if (fm == null) { Toast.makeText(this, "لا مدينة في الجدول قرب موقعك بعد؛ أرسل التردد ليُضاف إلى الجدول", Toast.LENGTH_LONG).show(); return; }
-            String city = (String) fm[0];
-            Prefs.of(this).edit().putFloat("fm_own_" + city, v).apply();
+            Day here = new Day();
+            here.lat = lat; here.lon = lon;
+            String city = here.placeName().isEmpty() ? (fm != null ? (String) fm[0] : "موقعك") : here.placeName();
+            Net.saveMine(this, city, lat, lon, v);   // kept for this place (80 km around it), table or not
             Toast.makeText(this, "حُفظ " + Ui.ar(v) + " لـ" + city, Toast.LENGTH_SHORT).show();
             changed();
         }));

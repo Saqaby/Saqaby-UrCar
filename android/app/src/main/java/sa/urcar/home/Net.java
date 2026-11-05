@@ -87,7 +87,30 @@ final class Net {
         } catch (Exception ignored) { }
     }
     /** {city, MHz} of the nearest station within 80 km, the owner's own correction first; null when none. */
+    /** The frequencies the owner saved where the table has none (or a wrong one): [{name, lat, lon, mhz}] */
+    static JSONArray mine(Context c) {
+        try { return new JSONArray(Prefs.of(c).getString("fm_mine", "[]")); } catch (Exception e) { return new JSONArray(); }
+    }
+    /** Saves the owner's frequency for this place; one within 10 km is replaced. */
+    static void saveMine(Context c, String name, double lat, double lon, double mhz) {
+        JSONArray old = mine(c), out = new JSONArray();
+        for (int i = 0; i < old.length(); i++) {
+            JSONObject o = old.optJSONObject(i);
+            if (o != null && Day.km(lat, lon, o.optDouble("lat"), o.optDouble("lon")) > 10) out.put(o);
+        }
+        try { out.put(new JSONObject().put("name", name).put("lat", lat).put("lon", lon).put("mhz", mhz)); } catch (Exception ignored) { }
+        Prefs.put(c, "fm_mine", out.toString());
+    }
     static Object[] fmHere(Context c, double lat, double lon) {
+        JSONArray my = mine(c);   // the owner's own first, within 80 km
+        JSONObject near = null; double dm = 1e9;
+        for (int i = 0; i < my.length(); i++) {
+            JSONObject o = my.optJSONObject(i);
+            if (o == null) continue;
+            double k = Day.km(lat, lon, o.optDouble("lat"), o.optDouble("lon"));
+            if (k < dm) { dm = k; near = o; }
+        }
+        if (near != null && dm <= 80) return new Object[]{near.optString("name"), near.optDouble("mhz"), true};
         JSONArray st = fmStations(c);
         JSONObject best = null; double d = 1e9;
         for (int i = 0; i < st.length(); i++) {

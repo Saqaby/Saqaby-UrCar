@@ -114,6 +114,16 @@ final class Day {
         return "";
     }
 
+    /** Days to the first of Ramadan, -1 during Ramadan (then ramadan() gives iftar and imsak). */
+    int ramadanDays(long now) {
+        if (hijri(now).get(IslamicCalendar.MONTH) == 8) return -1;
+        for (int i = 1; i < 400; i++) {
+            IslamicCalendar d = hijri(now + i * 86_400_000L);
+            if (d.get(IslamicCalendar.MONTH) == 8 && d.get(IslamicCalendar.DAY_OF_MONTH) == 1) return i;
+        }
+        return -1;
+    }
+
     // ---------------------------------------------------------------- the place
     static final Object[][] CITIES = {
             {"الرياض", 24.7136, 46.6753}, {"جدة", 21.4858, 39.1925}, {"مكة المكرمة", 21.4225, 39.8262}, {"المدينة المنورة", 24.4672, 39.6024},
