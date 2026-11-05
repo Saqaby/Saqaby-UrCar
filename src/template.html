@@ -298,6 +298,7 @@
 
 <script>
 const RADIO_URL = __RADIO__, ADHAN_URL = __ADHAN__;
+const DEVICE = __DEVICE__;   // device/profile.json from tools/probe.sh, or null before the screen is probed
 let FM = __FM__;   // assets/shared/fm-quran.json as bundled; refreshed from the repo whenever the screen is online
 const FM_URL = 'https://raw.githubusercontent.com/Saqaby/UrCar/main/assets/shared/fm-quran.json';
 // ---------- place: GPS, or a city for the preview ----------
@@ -536,6 +537,11 @@ const NAV_APPS = [
   {id:'petal', n:'Petal Maps', pkg:'com.huawei.maps.app'},
   {id:'builtin', n:'ملاحة الشاشة', pkg:'تطبيق الملاحة المثبّت مع الشاشة'},
 ];
+// after a probe: only the navigation apps installed on the screen (plus its own); before it, all of them
+if(DEVICE && Array.isArray(DEVICE.nav_apps)){
+  const have = new Set(DEVICE.nav_apps);
+  for(let i = NAV_APPS.length - 1; i >= 0; i--) if(NAV_APPS[i].id !== 'builtin' && !have.has(NAV_APPS[i].pkg)) NAV_APPS.splice(i, 1);
+}
 const store = {get(k, d){ try{ return localStorage.getItem(k) || d; }catch(e){ return d; } }, set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }};
 let NAV = store.get('urcar.nav', 'gmaps'), DRV = store.get('urcar.drv', 'left');
 function drawSettings(){
@@ -638,6 +644,12 @@ function layout(){
   scr.classList.toggle('wide', W / H > 2.2);
   const s = Math.min(1, fit.parentElement.clientWidth / W);
   scr.style.transform = `scale(${s})`; fit.style.height = H*s + 'px'; fit.style.width = W*s + 'px';
+}
+if(DEVICE && /^\d+x\d+$/.test(DEVICE.screen || '')){   // the probed screen becomes the first choice
+  const sel = $('size'), [w, h] = DEVICE.screen.split('x').map(Number), v = Math.max(w, h) + 'x' + Math.min(w, h);
+  if(![...sel.options].some(o => o.value === v)) sel.insertAdjacentHTML('afterbegin', `<option value="${v}">${ar(v.replace('x','×'))}</option>`);
+  [...sel.options].forEach(o => { if(o.value === v) o.textContent += '، شاشتك'; });
+  sel.value = v;
 }
 $('size').onchange = layout; addEventListener('resize', layout);
 

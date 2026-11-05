@@ -29,9 +29,12 @@ def main():
              if len(s["text"]) + len(s["who"]) <= SALAF_MAX]
     radio = json.loads((ROOT / "assets/shared/stations.json").read_text("utf-8"))["stations"][0]["url"]
     fm = json.loads((ROOT / "assets/shared/fm-quran.json").read_text("utf-8"))
+    # device/profile.json from tools/probe.sh: the real screen's size and apps; none yet = the preview's defaults
+    prof = ROOT / "device/profile.json"
+    device = json.loads(prof.read_text("utf-8")) if prof.is_file() else None
     page = (ROOT / "src/template.html").read_text("utf-8")
     for token, value in {"__VERSES__": verses, "__HADITH__": hadith, "__SALAF__": salaf,
-                         "__RADIO__": radio, "__FM__": fm, "__ADHAN__": ADHAN}.items():
+                         "__RADIO__": radio, "__FM__": fm, "__DEVICE__": device, "__ADHAN__": ADHAN}.items():
         page = page.replace(token, content.js_json(value))
     for token, font in FONTS.items():
         page = page.replace(token, content.data_uri(ROOT / "assets/fonts" / font, "font/woff2"))
