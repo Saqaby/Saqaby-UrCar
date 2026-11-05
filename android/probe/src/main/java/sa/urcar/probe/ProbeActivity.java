@@ -24,6 +24,9 @@ import android.media.session.MediaSessionManager;
 import android.service.notification.StatusBarNotification;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.WindowManager;
+import android.graphics.PixelFormat;
+import android.net.Uri;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -81,7 +84,7 @@ public class ProbeActivity extends Activity {
         LinearLayout side = new LinearLayout(this);
         side.setOrientation(LinearLayout.VERTICAL);
         side.setPadding(16, 16, 16, 16);
-        side.addView(button("الخرائط داخل التطبيق", new View.OnClickListener() { public void onClick(View v) { pickEmbed(); } }));
+        side.addView(button("الخريطة تحت لوحة عائمة", new View.OnClickListener() { public void onClick(View v) { testOverlay(); } }));
         side.addView(button("فتح كاميرا الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("camera|avm|reverse|backcar|360|dvr|rightview|com\\.tw\\.service|carinfoservice"); } }));
         side.addView(button("الكاميرا داخل التطبيق", new View.OnClickListener() { public void onClick(View v) { testAndroidCamera(); } }));
         side.addView(button("راقب ما يُفتح (٦٠ ثانية)", new View.OnClickListener() { public void onClick(View v) { watchForeground(); } }));
@@ -102,7 +105,7 @@ public class ProbeActivity extends Activity {
         root.addView(sv, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 3));
         setContentView(root);
 
-        report = "probe v4\n" + collect() + embedInfo() + "\n[earlier tests]\n" + prefs().getString("tests", "");
+        report = "probe v5\n" + collect() + embedInfo() + "\n[earlier tests]\n" + prefs().getString("tests", "");
         out.setText(report);
     }
 
@@ -581,6 +584,51 @@ public class ProbeActivity extends Activity {
         getWindowManager().getDefaultDisplay().getRealMetrics(m);
         if (d.getWindow() != null) d.getWindow().setLayout(m.widthPixels * 3 / 5, m.heightPixels * 3 / 4);
         return d;
+    }
+
+    // ---------------------------------------------------------------- v5: the map full screen, our panel floating over part of it
+    static View panel;   // the floating panel, kept while the process lives
+
+    /** Starts Google Maps full screen, then floats a panel over the left two fifths. Touches outside the panel reach the map. */
+    private void testOverlay() {
+        if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+            toast("فعّل «الظهور فوق التطبيقات» لـ«فحص سيارتك»، ثم ارجع واضغط الزر مرة أخرى");
+            try { startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()))); }
+            catch (Exception e) { toast("لم تُفتح صفحة الإذن: " + e.getClass().getSimpleName()); }
+            return;
+        }
+        Intent maps = null;
+        for (String n : NAV_ALL) { maps = getPackageManager().getLaunchIntentForPackage(n); if (maps != null) break; }
+        if (maps == null) { toast("لا يوجد تطبيق ملاحة"); return; }
+        startActivity(maps.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        final WindowManager wm = (WindowManager) getApplicationContext().getSystemService(WINDOW_SERVICE);
+        if (panel != null) { try { wm.removeView(panel); } catch (Exception ignored) { } panel = null; }
+        DisplayMetrics m = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getRealMetrics(m);
+
+        LinearLayout box = new LinearLayout(getApplicationContext());
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setBackgroundColor(Color.rgb(18, 29, 31));
+        box.setPadding(24, 24, 24, 24);
+        TextView t = new TextView(getApplicationContext());
+        t.setText("لوحة تجربة\nالصلاة القادمة: العصر\nباقٍ ٣٤ دقيقة\n\nجرّب تحريك الخريطة بجانبها");
+        t.setTextColor(Color.rgb(238, 241, 234));
+        t.setTextSize(22);
+        box.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+        Button close = new Button(getApplicationContext());
+        close.setText("إغلاق اللوحة");
+        close.setTextSize(20);
+        close.setOnClickListener(v -> { try { wm.removeView(panel); } catch (Exception ignored) { } panel = null; note("overlay closed by the owner"); });
+        box.addView(close, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                m.widthPixels * 2 / 5, WindowManager.LayoutParams.MATCH_PARENT,
+                Build.VERSION.SDK_INT >= 26 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                PixelFormat.TRANSLUCENT);
+        lp.gravity = Gravity.LEFT | Gravity.TOP;
+        try { wm.addView(box, lp); panel = box; note("overlay shown over " + maps.getPackage()); }
+        catch (Exception e) { note("overlay " + e.getClass().getSimpleName() + ": " + e.getMessage()); }
     }
 
     private void toast(String t) { Toast.makeText(this, t, Toast.LENGTH_LONG).show(); }

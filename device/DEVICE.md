@@ -27,6 +27,12 @@
 - **صورة داخل صورة مدعومة** (`picture_in_picture=true`). خرائط Google تدخلها وحدها أثناء الملاحة عند الضغط على الرئيسية. لم يُجرَّب بعد.
 - القرار المبدئي: بطاقة المنعطف من إشعار تطبيق الملاحة + الضغط يفتح التطبيق؛ وصورة داخل صورة لخرائط Google إن نجحت التجربة. تجربة الإشعار في فحص v2.
 
+### نتيجة فحص v4 (device/probe-report-5.txt)
+- تشغيل خرائط Google وWaze وiGO على شاشة افتراضية لنا أو في ActivityView: `SecurityException: Permission Denial … with launchDisplayId` في كل المحاولات.
+- لا يسمح أيٌّ منها بالتضمين (`allow_embedded=false`).
+- واجهة الشاشة `com.dofun.variety`: تطبيق نظام، غير موقّع بمفتاح المنصة، بلا ACTIVITY_EMBEDDING ولا MANAGE_ACTIVITY_STACKS. استنتاج: هي لا تضمّن الخريطة؛ الأرجح أن الخريطة تعمل بملء الشاشة ولوحاتها عائمة فوقها.
+- فحص v5 يجرّب ذلك: خرائط Google بملء الشاشة ولوحة عائمة (الظهور فوق التطبيقات) فوق خُمسيها الأيسر.
+
 ## الكاميرا
 - `com.tw.reverse/cn.cardoor.desktop.window.floating.e` لم يفتح شيئًا (ثلاث محاولات).
 - أندرويد يرى 7 كاميرات (Camera2) و4 أجهزة `/dev/video`؛ قراءة خصائصها أعطت CameraAccessException بلا إذن الكاميرا.
