@@ -7,6 +7,11 @@ import android.app.ActivityOptions;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.Notification;
+import android.app.AppOpsManager;
+import android.app.usage.UsageEvents;
+import android.app.usage.UsageStatsManager;
+import android.content.SharedPreferences;
+import android.os.Handler;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
@@ -77,6 +82,7 @@ public class ProbeActivity extends Activity {
         side.addView(button("الخرائط في نافذة", new View.OnClickListener() { public void onClick(View v) { testFreeform(); } }));
         side.addView(button("فتح كاميرا الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("camera|avm|reverse|backcar|360|dvr|rightview|com\\.tw\\.service|carinfoservice"); } }));
         side.addView(button("الكاميرا داخل التطبيق", new View.OnClickListener() { public void onClick(View v) { testAndroidCamera(); } }));
+        side.addView(button("راقب ما يُفتح (٦٠ ثانية)", new View.OnClickListener() { public void onClick(View v) { watchForeground(); } }));
         side.addView(button("الإشعارات والموسيقى", new View.OnClickListener() { public void onClick(View v) { testNotifications(); } }));
         side.addView(button("فتح راديو الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("radio|fm|tuner"); } }));
         side.addView(button("حفظ التقرير", new View.OnClickListener() { public void onClick(View v) { save(); } }));
@@ -94,7 +100,7 @@ public class ProbeActivity extends Activity {
         root.addView(sv, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 3));
         setContentView(root);
 
-        report = "probe v2\n" + collect();
+        report = "probe v3\n" + collect() + "\n[earlier tests]\n" + prefs().getString("tests", "");
         out.setText(report);
     }
 
@@ -244,8 +250,8 @@ public class ProbeActivity extends Activity {
                 .setItems(labels.toArray(new String[0]), (d, i) -> {
                     try {
                         startActivity(new Intent().setComponent(found.get(i)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                        report += "\n[test] opened " + found.get(i).flattenToShortString() + "\n";
-                    } catch (Exception e) { toast("لم تُفتح: " + e.getClass().getSimpleName()); }
+                        note("opened " + found.get(i).flattenToShortString());
+                    } catch (Exception e) { toast("لم تُفتح: " + e.getClass().getSimpleName()); note("failed " + found.get(i).flattenToShortString() + " " + e.getClass().getSimpleName() + " " + e.getMessage()); }
                 })
                 .show();
     }
@@ -410,13 +416,49 @@ public class ProbeActivity extends Activity {
                         .append(" actions=").append(c.getPlaybackState() == null ? "?" : c.getPlaybackState().getActions()).append("\n");
             }
         } catch (Exception e) { s.append("media error ").append(e.getClass().getSimpleName()).append("\n"); }
-        report += s;
-        out.setText(report);
+        note(s.toString());
         new AlertDialog.Builder(this).setTitle("ما تنشره التطبيقات الآن").setMessage(s.toString()).setPositiveButton("حسنًا", null).show();
     }
 
+    private SharedPreferences prefs() { return getSharedPreferences("probe", MODE_PRIVATE); }
+
+    /** Every test result is kept at once, so a test done in another session of the app is not lost. */
     private void note(final String t) {
-        runOnUiThread(() -> { report += "\n[test] " + t + "\n"; out.setText(report); });
+        final String line = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date()) + " " + t + "\n";
+        prefs().edit().putString("tests", prefs().getString("tests", "") + line).apply();
+        runOnUiThread(() -> { report += "[test] " + line; out.setText(report); });
+    }
+
+    // ---------------------------------------------------------------- v3: what the screen's own launcher opens
+    /** For 60 seconds, records every screen that comes to the front (needs «الوصول إلى بيانات الاستخدام» once). */
+    private void watchForeground() {
+        AppOpsManager ops = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
+        int mode = ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), getPackageName());
+        if (mode != AppOpsManager.MODE_ALLOWED) {
+            toast("فعّل «فحص سيارتك» في الصفحة التالية، ثم ارجع واضغط الزر مرة أخرى");
+            try { startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)); } catch (Exception e) { toast("لم تُفتح صفحة الإذن"); }
+            return;
+        }
+        final long start = System.currentTimeMillis();
+        note("watch start");
+        toast("خلال دقيقة: افتح الكاميرا من واجهة الشاشة، ثم ارجع إلى هنا");
+        new Handler().postDelayed(() -> {
+            UsageStatsManager um = (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
+            UsageEvents ev = um.queryEvents(start - 1000, System.currentTimeMillis());
+            UsageEvents.Event e = new UsageEvents.Event();
+            String last = "";
+            StringBuilder seen = new StringBuilder();
+            while (ev.hasNextEvent()) {
+                ev.getNextEvent(e);
+                if (e.getEventType() != UsageEvents.Event.MOVE_TO_FOREGROUND) continue;
+                String c = e.getPackageName() + "/" + e.getClassName();
+                if (c.equals(last)) continue;
+                last = c;
+                seen.append("  ").append(new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date(e.getTimeStamp()))).append(" ").append(c).append("\n");
+            }
+            note("watch end, screens in front:\n" + (seen.length() == 0 ? "  (none)\n" : seen));
+            new AlertDialog.Builder(this).setTitle("ما فُتح خلال الدقيقة").setMessage(seen.length() == 0 ? "لا شيء" : seen.toString()).setPositiveButton("حسنًا", null).show();
+        }, 60000);
     }
 
     private void toast(String t) { Toast.makeText(this, t, Toast.LENGTH_LONG).show(); }
