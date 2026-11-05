@@ -258,6 +258,12 @@
         <button class="opt" data-drv="left" aria-checked="true">يسار<small>الأزرار يسار الشاشة</small></button>
         <button class="opt" data-drv="right" aria-checked="false">يمين<small>الأزرار يمين الشاشة</small></button>
       </div>
+      <h3>المظهر</h3>
+      <div class="opts" id="theme-opts" role="radiogroup">
+        <button class="opt" data-theme-opt="auto" aria-checked="true">تلقائي<small id="theme-auto-s">نهاري من الشروق إلى المغرب</small></button>
+        <button class="opt" data-theme-opt="light" aria-checked="false">نهاري<small>فاتح دائمًا</small></button>
+        <button class="opt" data-theme-opt="dark" aria-checked="false">ليلي<small>داكن دائمًا</small></button>
+      </div>
       <h3>إذاعة القرآن</h3>
       <div class="opts" id="src-opts" role="radiogroup">
         <button class="opt" data-src="fm" aria-checked="true">FM من راديو الشاشة<small>التردد يتغيّر تلقائيًا حسب موقعك</small></button>
@@ -436,6 +442,7 @@ function tick(){
   if(cur && Math.floor(mins) === T[cur] && adhanPlayedFor !== p.d + cur){ adhanPlayedFor = p.d + cur; playAdhan(); }
 
   tickRamadan(now, mins);
+  applyTheme(mins);
 }
 
 // ---------- the Ramadan line (from UrTV tickOccasion): the countdown, or iftar / imsak in Ramadan ----------
@@ -553,6 +560,18 @@ function drawSettings(){
 }
 $('nav-opts').onclick = e => { const b = e.target.closest('[data-nav]'); if(!b) return; NAV = b.dataset.nav; store.set('urcar.nav', NAV); drawSettings();
   toast('صار ' + NAV_APPS.find(x => x.id === NAV).n + ' في الشاشة الرئيسية'); };
+// ---------- the look: day, night, or by the sun at the car's place (sunrise to Maghrib = day) ----------
+let THEME = store.get('urcar.theme', 'auto');
+function applyTheme(mins){
+  if(mins === undefined){ const p = parts(); mins = p.h*60 + p.mi; }
+  const day = THEME === 'light' || (THEME === 'auto' && T && mins >= T.Sunrise && mins < T.Maghrib);
+  const want = day ? 'light' : 'dark';
+  if(document.documentElement.dataset.theme !== want) document.documentElement.dataset.theme = want;
+  if(T) setText($('theme-auto-s'), (THEME === 'auto' ? (day ? 'نهاري الآن، ليلي من المغرب ' + fmt12(Math.floor(T.Maghrib/60), T.Maghrib%60)
+    : 'ليلي الآن، نهاري من الشروق ' + fmt12(Math.floor(T.Sunrise/60), T.Sunrise%60)) : 'نهاري من الشروق إلى المغرب'));
+  document.querySelectorAll('[data-theme-opt]').forEach(b => b.setAttribute('aria-checked', b.dataset.themeOpt === THEME));
+}
+$('theme-opts').onclick = e => { const b = e.target.closest('[data-theme-opt]'); if(!b) return; THEME = b.dataset.themeOpt; store.set('urcar.theme', THEME); applyTheme(); };
 $('drv-opts').onclick = e => { const b = e.target.closest('[data-drv]'); if(!b) return; DRV = b.dataset.drv; store.set('urcar.drv', DRV); drawSettings(); };
 const open = id => { $(id).hidden = false; }, closeAll = () => document.querySelectorAll('.sheet').forEach(s => s.hidden = true);
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeAll);
