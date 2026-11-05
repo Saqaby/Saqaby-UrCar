@@ -202,7 +202,7 @@ public class SettingsActivity extends Activity {
         String v;
         try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { v = "?"; }
         list.addView(note("الإصدار " + v + ". التحديثات من github.com/Saqaby/Saqaby-UrCar"));
-        list.addView(note("© ٢٠٢٦ Saqaby. جميع الحقوق محفوظة. الاستخدام الشخصي مجاني؛ ولا يُنسخ التطبيق أو يُعدَّل أو يُعاد نشره بلا إذن.\n"
+        list.addView(note("© ٢٠٢٦ سلمان الصقعبي (Salman Alsaqabi). جميع الحقوق محفوظة. الاستخدام الشخصي مجاني؛ ولا يُنسخ التطبيق أو يُعدَّل أو يُعاد نشره بلا إذن.\n"
                 + "بيانات الطقس من Open-Meteo.com (CC BY 4.0). الخط IBM Plex Sans Arabic (OFL). التلاوات من mp3quran.net. التفاصيل في LICENSE وTHIRD-PARTY.md في المستودع."));
     }
 
