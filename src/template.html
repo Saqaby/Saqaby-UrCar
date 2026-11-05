@@ -52,7 +52,10 @@
   .top .ap{color:var(--muted);font-size:2.8cqh;margin-inline-start:-1.4cqh}
   .top .hijri{color:var(--sand);font-weight:500}
   .top .greg{color:var(--muted)}
-  .top .place{margin-inline-start:auto;display:flex;align-items:center;gap:1cqh;color:var(--muted)}
+  .top .wx{margin-inline-start:auto;display:flex;align-items:center;gap:.8cqh;font-weight:500;font-variant-numeric:tabular-nums}
+  .top .wx svg{width:3.6cqh;height:3.6cqh;fill:none;stroke:var(--sand);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .top .wx.stale{color:var(--muted)}
+  .top .place{display:flex;align-items:center;gap:1cqh;color:var(--muted)}
   .top .place svg{width:3cqh;height:3cqh}
   .top .place.gps svg{color:var(--go)}
   .top .radio{display:flex;align-items:center;gap:1cqh;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:.8cqh 2.2cqh;font-size:2.8cqh;cursor:pointer}
@@ -190,6 +193,7 @@
       <span class="clock" id="ck">—</span><span class="ap" id="ap"></span>
       <span class="hijri" id="hijri">—</span>
       <span class="greg" id="greg"></span>
+      <span class="wx" id="wx" title="درجة الحرارة الآن"><i id="wx-i"></i><span id="wx-t">—</span></span>
       <span class="place" id="place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="place-t">—</span></span>
       <button class="radio" id="radio" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8 17 3"/><circle cx="15.5" cy="14" r="2.5"/></svg><span id="r-t">إذاعة القرآن</span> <span class="mhz" id="r-f"></span></button>
     </div>
@@ -286,7 +290,7 @@
   </div>
 </div></div>
 
-<p class="notes"><b>معاينة فقط.</b> بطاقة الملاحة تعرض ما ينشره تطبيق الملاحة في إشعاره (المسافة، الخطوة، وقت الوصول)، والضغط يفتح الخريطة بملء الشاشة؛ شاشتك لا تسمح بخريطة حيّة داخل الواجهة. المواقيت بطريقة ISNA تُحسب محليًا للموقع الحالي وتُعاد كلما ابتعدت السيارة ١٠ كم.</p>
+<p class="notes"><b>معاينة فقط.</b> بطاقة الملاحة تعرض ما ينشره تطبيق الملاحة في إشعاره (المسافة، الخطوة، وقت الوصول)، والضغط يفتح الخريطة بملء الشاشة؛ شاشتك لا تسمح بخريطة حيّة داخل الواجهة. درجة الحرارة من Open-Meteo لموقع السيارة (في المعاينة المنشورة قد تظهر قيمة مثال). المواقيت بطريقة ISNA تُحسب محليًا للموقع الحالي وتُعاد كلما ابتعدت السيارة ١٠ كم.</p>
 
 <audio id="aud" preload="none"></audio>
 
@@ -670,7 +674,7 @@ $('size').onchange = layout; addEventListener('resize', layout);
 
 const loc = $('loc');
 loc.innerHTML = '<option value="gps">موقعي الآن (GPS)</option>' + CITIES.map((c, i) => `<option value="${i}"${i === 0 ? ' selected' : ''}>${c.n}</option>`).join('');
-function usePlace(pl){ PLACE = pl; makeFormatters(); T = null; tick(); drawRadio(); drawFmRow(); }
+function usePlace(pl){ PLACE = pl; makeFormatters(); T = null; tick(); drawRadio(); drawFmRow(); loadWeather(); }
 loc.onchange = () => {
   if(loc.value !== 'gps'){ const c = CITIES[+loc.value]; usePlace({lat:c.lat, lon:c.lon, tz:c.tz, name:c.n, gps:false}); return; }
   if(!navigator.geolocation){ toast('لا يوجد GPS هنا'); loc.value = '0'; return; }
@@ -699,6 +703,56 @@ $('t-ram').onclick = () => {   // the fifth day of the coming Ramadan, at 4:30 p
 
 $('sess').onchange = () => { useSession($('sess').value); showPage('m'); };
 useSession('soundcloud'); showPage(PAGE);
+// ---------- the temperature now: Open-Meteo (free, no key, as in UrTV) at the car's place, every 30 minutes and after 10 km ----------
+// Icons and codes from UrTV (wxIcon); night = before sunrise or after Maghrib from today's prayer times.
+const WX_SVG = {
+  sun:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7"/></svg>',
+  moon:'<svg viewBox="0 0 24 24"><path d="M19 14.3A7.6 7.6 0 0 1 9.7 5a7.6 7.6 0 1 0 9.3 9.3z"/></svg>',
+  part:'<svg viewBox="0 0 24 24"><circle cx="8.5" cy="8.5" r="3"/><path d="M8.5 2.5v1.4M2.5 8.5h1.4M4.3 4.3l1 1M12.7 4.3l-1 1"/><path d="M8 20h9.5a3.6 3.6 0 0 0 .5-7.2A5 5 0 0 0 8.6 12 4 4 0 0 0 8 20z"/></svg>',
+  partnight:'<svg viewBox="0 0 24 24"><path d="M10.5 3.5a4.6 4.6 0 0 0 5.6 6.6 4.6 4.6 0 1 1-5.6-6.6z"/><path d="M8 20.5h9.5a3.6 3.6 0 0 0 .5-7.2A5 5 0 0 0 8.6 12.5 4 4 0 0 0 8 20.5z"/></svg>',
+  cloud:'<svg viewBox="0 0 24 24"><path d="M7 18.5h10.2a4 4 0 0 0 .6-7.95A5.6 5.6 0 0 0 7.2 9.4 4.6 4.6 0 0 0 7 18.5z"/></svg>',
+  fog:'<svg viewBox="0 0 24 24"><path d="M7 14h10.2a3.6 3.6 0 0 0 .5-7.1A5.2 5.2 0 0 0 7.2 6 4.1 4.1 0 0 0 7 14z"/><path d="M5 17.5h14M8 21h8"/></svg>',
+  rain:'<svg viewBox="0 0 24 24"><path d="M7 14.5h10.2a3.6 3.6 0 0 0 .5-7.1A5.2 5.2 0 0 0 7.2 6.5 4.1 4.1 0 0 0 7 14.5z"/><path d="M8.5 17.5l-1 2.5M12.5 17.5l-1 2.5M16.5 17.5l-1 2.5"/></svg>',
+  snow:'<svg viewBox="0 0 24 24"><path d="M7 14.5h10.2a3.6 3.6 0 0 0 .5-7.1A5.2 5.2 0 0 0 7.2 6.5 4.1 4.1 0 0 0 7 14.5z"/><path d="M8.5 18v.1M12 20v.1M15.5 18v.1M12 17.5v.1"/></svg>',
+  storm:'<svg viewBox="0 0 24 24"><path d="M7 14h10.2a3.6 3.6 0 0 0 .5-7.1A5.2 5.2 0 0 0 7.2 6 4.1 4.1 0 0 0 7 14z"/><path d="M12.5 14.5L10 18.5h3.5L11.5 22"/></svg>',
+};
+function wxIcon(code, night){
+  if(code <= 1) return night ? WX_SVG.moon : WX_SVG.sun;
+  if(code === 2) return night ? WX_SVG.partnight : WX_SVG.part;
+  if(code === 3) return WX_SVG.cloud;
+  if(code === 45 || code === 48) return WX_SVG.fog;
+  if(code >= 95) return WX_SVG.storm;
+  if((code >= 71 && code <= 77) || code === 85 || code === 86) return WX_SVG.snow;
+  return WX_SVG.rain;   // drizzle, rain and showers
+}
+const WX_WORDS = {0:'صافي',1:'صافي غالبًا',2:'غائم جزئيًا',3:'غائم',45:'ضباب',48:'ضباب',51:'رذاذ',53:'رذاذ',55:'رذاذ',61:'مطر خفيف',63:'مطر',65:'مطر غزير',
+  80:'زخات',81:'زخات مطر',82:'زخات غزيرة',95:'عواصف رعدية',96:'عواصف وبرد',99:'عواصف قوية'};
+let WXNOW = null;   // {t, code, at, lat, lon}
+function drawWeather(){
+  const el = $('wx');
+  if(!WXNOW){ setText($('wx-t'), '—'); $('wx-i').innerHTML = ''; return; }
+  const p = parts(), mins = p.h*60 + p.mi, night = T ? (mins < T.Sunrise || mins >= T.Maghrib) : (p.h < 6 || p.h >= 18);
+  setHTML($('wx-i'), wxIcon(WXNOW.code, night));
+  setText($('wx-t'), ar(Math.round(WXNOW.t)) + '°');
+  el.title = (WX_WORDS[WXNOW.code] || '') + (WXNOW.example ? '، مثال (المعاينة لا تصل إلى خدمة الطقس)' : '');
+  el.classList.toggle('stale', Date.now() - WXNOW.at > 3*3600000);   // older than 3 hours: muted, as UrTV
+}
+async function loadWeather(){
+  if(WXNOW && !WXNOW.example && Date.now() - WXNOW.at < 30*60000 && km(WXNOW, PLACE) < 10){ drawWeather(); return; }
+  try{
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${PLACE.lat.toFixed(3)}&longitude=${PLACE.lon.toFixed(3)}&current=temperature_2m,weather_code`);
+    const j = await r.json();
+    if(typeof j?.current?.temperature_2m !== 'number') throw 0;
+    WXNOW = {t:j.current.temperature_2m, code:j.current.weather_code, at:Date.now(), lat:PLACE.lat, lon:PLACE.lon};
+  }catch(e){
+    if(!WXNOW) WXNOW = {t:31, code:0, at:Date.now(), lat:PLACE.lat, lon:PLACE.lon, example:true};   // the preview without the internet
+  }
+  drawWeather();
+}
+setInterval(loadWeather, 5*60000);
+setInterval(drawWeather, 60000);
+loadWeather();
+
 makeFormatters(); drawSettings(); drawRadio(); drawFmRow(); layout(); tick(); setInterval(tick, 1000);
 if(navigator.onLine) refreshFm(false);
 document.fonts && document.fonts.ready.then(layout);
