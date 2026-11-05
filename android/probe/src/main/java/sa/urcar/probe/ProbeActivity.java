@@ -13,6 +13,8 @@ import android.app.usage.UsageStatsManager;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.graphics.SurfaceTexture;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
@@ -79,7 +81,7 @@ public class ProbeActivity extends Activity {
         LinearLayout side = new LinearLayout(this);
         side.setOrientation(LinearLayout.VERTICAL);
         side.setPadding(16, 16, 16, 16);
-        side.addView(button("الخرائط في نافذة", new View.OnClickListener() { public void onClick(View v) { testFreeform(); } }));
+        side.addView(button("الخرائط داخل التطبيق", new View.OnClickListener() { public void onClick(View v) { pickEmbed(); } }));
         side.addView(button("فتح كاميرا الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("camera|avm|reverse|backcar|360|dvr|rightview|com\\.tw\\.service|carinfoservice"); } }));
         side.addView(button("الكاميرا داخل التطبيق", new View.OnClickListener() { public void onClick(View v) { testAndroidCamera(); } }));
         side.addView(button("راقب ما يُفتح (٦٠ ثانية)", new View.OnClickListener() { public void onClick(View v) { watchForeground(); } }));
@@ -100,7 +102,7 @@ public class ProbeActivity extends Activity {
         root.addView(sv, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 3));
         setContentView(root);
 
-        report = "probe v3\n" + collect() + "\n[earlier tests]\n" + prefs().getString("tests", "");
+        report = "probe v4\n" + collect() + embedInfo() + "\n[earlier tests]\n" + prefs().getString("tests", "");
         out.setText(report);
     }
 
@@ -459,6 +461,126 @@ public class ProbeActivity extends Activity {
             note("watch end, screens in front:\n" + (seen.length() == 0 ? "  (none)\n" : seen));
             new AlertDialog.Builder(this).setTitle("ما فُتح خلال الدقيقة").setMessage(seen.length() == 0 ? "لا شيء" : seen.toString()).setPositiveButton("حسنًا", null).show();
         }, 60000);
+    }
+
+    // ---------------------------------------------------------------- v4: can a navigation app run inside our screen?
+    private static final int FLAG_ALLOW_EMBEDDED = 0x80000000;   // ActivityInfo.FLAG_ALLOW_EMBEDDED (hidden)
+    private static final String[] NAV_ALL = {"com.google.android.apps.maps", "com.waze", "com.nng.igo.primong.igoworld"};
+
+    /** How the screen's own launcher can host the map, and whether the navigation apps allow being hosted. Read-only. */
+    private String embedInfo() {
+        StringBuilder s = new StringBuilder("\n[embedding]\n");
+        PackageManager pm = getPackageManager();
+        String[] perms = {"android.permission.ACTIVITY_EMBEDDING", "android.permission.MANAGE_ACTIVITY_STACKS",
+                "android.permission.INJECT_EVENTS", "android.permission.CAPTURE_VIDEO_OUTPUT", "android.permission.INTERNAL_SYSTEM_WINDOW"};
+        for (String pkg : new String[]{"com.dofun.variety", getPackageName()}) {
+            s.append("== ").append(pkg).append("\n");
+            try {
+                ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
+                s.append("  system_app=").append((ai.flags & ApplicationInfo.FLAG_SYSTEM) != 0)
+                        .append("  platform_signed=").append(pm.checkSignatures("android", pkg) == PackageManager.SIGNATURE_MATCH)
+                        .append("  shared_uid=").append(pm.getNameForUid(ai.uid)).append("\n");
+            } catch (Exception e) { s.append("  ").append(e.getClass().getSimpleName()).append("\n"); }
+            for (String perm : perms)
+                s.append("  ").append(perm.replace("android.permission.", "")).append("=")
+                        .append(pm.checkPermission(perm, pkg) == PackageManager.PERMISSION_GRANTED).append("\n");
+        }
+        for (String n : NAV_ALL) {
+            Intent li = pm.getLaunchIntentForPackage(n);
+            if (li == null || li.getComponent() == null) continue;
+            try {
+                ActivityInfo a = pm.getActivityInfo(li.getComponent(), 0);
+                s.append(n).append(" allow_embedded=").append((a.flags & FLAG_ALLOW_EMBEDDED) != 0).append("\n");
+            } catch (Exception e) { s.append(n).append(" ").append(e.getClass().getSimpleName()).append("\n"); }
+        }
+        s.append("multi_display_feature=").append(pm.hasSystemFeature("android.software.activities_on_secondary_displays")).append("\n");
+        return s.toString();
+    }
+
+    private void pickEmbed() {
+        final List<String> pk = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (String n : NAV_ALL) if (getPackageManager().getLaunchIntentForPackage(n) != null) {
+            pk.add("vd:" + n); labels.add("شاشة افتراضية: " + n);
+            pk.add("av:" + n); labels.add("ActivityView: " + n);
+        }
+        if (pk.isEmpty()) { toast("لا يوجد تطبيق ملاحة"); return; }
+        new AlertDialog.Builder(this).setTitle("أيّها أظهر الخريطة داخل الإطار؟ رجوع يغلق")
+                .setItems(labels.toArray(new String[0]), (d, i) -> {
+                    String k = pk.get(i);
+                    if (k.startsWith("vd:")) embedVirtualDisplay(k.substring(3)); else embedActivityView(k.substring(3));
+                }).show();
+    }
+
+    /** Our own virtual display drawn in a frame; the navigation app is started on it. Shows the map only (no touch). */
+    private void embedVirtualDisplay(final String pkg) {
+        final TextureView tv = new TextureView(this);
+        final Dialog d = frame(tv);
+        final VirtualDisplay[] vd = new VirtualDisplay[1];
+        tv.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            public void onSurfaceTextureAvailable(SurfaceTexture st, int w, int h) {
+                DisplayManager dm = (DisplayManager) getSystemService(DISPLAY_SERVICE);
+                int[] flagSets = {DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY,
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY};
+                for (int f : flagSets) {
+                    try {
+                        vd[0] = dm.createVirtualDisplay("urcar-nav", w, h, 160, new Surface(st), f);
+                        note("virtual display flags=" + f + " created id=" + vd[0].getDisplay().getDisplayId());
+                        Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+                        ActivityOptions o = ActivityOptions.makeBasic();
+                        o.setLaunchDisplayId(vd[0].getDisplay().getDisplayId());
+                        startActivity(i, o.toBundle());
+                        note("virtual display start " + pkg + " sent (no exception)");
+                        return;
+                    } catch (Exception e) {
+                        note("virtual display flags=" + f + " " + pkg + " " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                        if (vd[0] != null) { vd[0].release(); vd[0] = null; }
+                    }
+                }
+            }
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture st) { if (vd[0] != null) vd[0].release(); return true; }
+            public void onSurfaceTextureSizeChanged(SurfaceTexture st, int w, int h) { }
+            public void onSurfaceTextureUpdated(SurfaceTexture st) { }
+        });
+        d.setOnDismissListener(x -> { if (vd[0] != null) { vd[0].release(); vd[0] = null; } });
+        d.show();
+    }
+
+    /** android.app.ActivityView (hidden, what system launchers use), through reflection. */
+    private void embedActivityView(final String pkg) {
+        try {
+            Class<?> c = Class.forName("android.app.ActivityView");
+            final View av = (View) c.getConstructor(android.content.Context.class).newInstance(this);
+            final Dialog d = frame(av);
+            final java.lang.reflect.Method start = c.getMethod("startActivity", Intent.class);
+            note("ActivityView created");
+            d.show();
+            av.postDelayed(() -> {
+                try {
+                    Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+                    start.invoke(av, i);
+                    note("ActivityView start " + pkg + " sent (no exception)");
+                } catch (Throwable t) {
+                    Throwable x = t.getCause() != null ? t.getCause() : t;
+                    note("ActivityView start " + pkg + " " + x.getClass().getSimpleName() + ": " + x.getMessage());
+                }
+            }, 1500);
+        } catch (Throwable t) {
+            Throwable x = t.getCause() != null ? t.getCause() : t;
+            note("ActivityView " + x.getClass().getSimpleName() + ": " + x.getMessage());
+        }
+    }
+
+    /** A frame over the left three fifths of the screen, like the launcher's map area. */
+    private Dialog frame(View content) {
+        Dialog d = new Dialog(this, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
+        d.setContentView(content);
+        DisplayMetrics m = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getRealMetrics(m);
+        if (d.getWindow() != null) d.getWindow().setLayout(m.widthPixels * 3 / 5, m.heightPixels * 3 / 4);
+        return d;
     }
 
     private void toast(String t) { Toast.makeText(this, t, Toast.LENGTH_LONG).show(); }
