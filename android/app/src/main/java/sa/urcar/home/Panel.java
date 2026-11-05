@@ -16,7 +16,7 @@ import android.widget.TextView;
  * the screen is 1280×720 at density 1.0, so sizes are pixels of a 720-high panel (H = 1% of it, the preview's cqh).
  */
 final class Panel extends LinearLayout {
-    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void openMusic(); }
+    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); }
 
     private final Actions act;
     private final float H;
@@ -27,7 +27,10 @@ final class Panel extends LinearLayout {
     private TextView ramL, ramN, ramU;
     private TextView clock, ap, temp, hijri, greg, place, bar, tabP, tabM, nm, tm, cd, ram, mApp, mTitle, mArtist, mEmpty, rT, rF;
     private Ui.Icon wxIcon, pinIcon, rIcon, playIcon, prevIcon, nextIcon;
-    private LinearLayout card, prayerPage, musicPage, musicOn, radioBtn, keysRow, tabs;
+    private LinearLayout card, prayerPage, musicPage, musicOn, radioBtn, kBtn, keysRow, tabs;
+    private TextView kT, kF;
+    private Ui.Icon kIcon;
+    private boolean kOn;
     private final LinearLayout[] keys = new LinearLayout[4];
     private final Ui.Icon[] keyIcons = new Ui.Icon[4];
     private final TextView[] keyLabels = new TextView[4];
@@ -137,16 +140,34 @@ final class Panel extends LinearLayout {
         card.setOnTouchListener(new SwipeTouch());
         addView(card, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1) {{ topMargin = px(1.6f); }});
 
-        // ---- the Quran radio
+        // ---- the Quran radio and the car's khatma, side by side: a title and a line under it each
+        LinearLayout quran = row();
         radioBtn = row();
-        radioBtn.setPadding(px(2.4f), 0, px(2.4f), 0);
+        radioBtn.setPadding(px(2), 0, px(2), 0);
         rIcon = new Ui.Icon(c, Ui.Icon.RADIO, 0);
-        rT = Ui.text(c, px(3.2f), reg, 0); rT.setPadding(px(1.4f), 0, px(1.2f), 0);
-        rF = Ui.text(c, px(3.2f), med, 0);
-        radioBtn.addView(rIcon, new LayoutParams(px(4.4f), px(4.4f)));
-        radioBtn.addView(rT); radioBtn.addView(rF);
+        LinearLayout rTx = new LinearLayout(c); rTx.setOrientation(VERTICAL); rTx.setPadding(px(1.2f), 0, 0, 0);
+        rT = Ui.text(c, px(3), med, 0);
+        rF = Ui.text(c, px(2.5f), reg, 0);
+        rTx.addView(rT); rTx.addView(rF);
+        radioBtn.addView(rIcon, new LayoutParams(px(4.2f), px(4.2f)));
+        radioBtn.addView(rTx);
         radioBtn.setOnClickListener(v -> act.radio());
-        addView(radioBtn, new LayoutParams(LayoutParams.MATCH_PARENT, px(9)) {{ topMargin = px(1.6f); }});
+        kBtn = row();
+        kBtn.setPadding(px(2), 0, px(2), 0);
+        kIcon = new Ui.Icon(c, Ui.Icon.PLAY, 0);
+        LinearLayout kTx = new LinearLayout(c); kTx.setOrientation(VERTICAL); kTx.setPadding(px(1.2f), 0, 0, 0);
+        kT = Ui.text(c, px(3), med, 0);
+        kF = Ui.text(c, px(2.5f), reg, 0);
+        kF.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        kTx.addView(kT); kTx.addView(kF);
+        kBtn.addView(kIcon, new LayoutParams(px(4.2f), px(4.2f)));
+        kBtn.addView(kTx);
+        kBtn.setOnClickListener(v -> act.khatma());
+        quran.addView(radioBtn, new LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
+        LayoutParams kl = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+        kl.setMarginStart(px(1.4f));
+        quran.addView(kBtn, kl);
+        addView(quran, new LayoutParams(LayoutParams.MATCH_PARENT, px(10)) {{ topMargin = px(1.6f); }});
 
         // ---- the four buttons
         keysRow = row();
@@ -226,7 +247,7 @@ final class Panel extends LinearLayout {
             keyIcons[i].set(keyIcons[i].kind, th.sand);
             keyLabels[i].setTextColor(th.fg);
         }
-        paintRadio(false);
+        paintRadio(radioOn);
         paintTabs();
     }
     boolean isDay() { return day; }
@@ -246,6 +267,15 @@ final class Panel extends LinearLayout {
         rIcon.set(Ui.Icon.RADIO, on ? th.sandInk : th.sand);
         rT.setTextColor(on ? th.sandInk : th.fg);
         rF.setTextColor(on ? th.sandInk : th.muted);
+        kBtn.setBackground(kOn ? Ui.box(th.sand, 0, px(2)) : Ui.box(th.panel, th.line, px(2)));
+        kIcon.set(kOn ? Ui.Icon.PAUSE : Ui.Icon.PLAY, kOn ? th.sandInk : th.sand);
+        kT.setTextColor(kOn ? th.sandInk : th.fg);
+        kF.setTextColor(kOn ? th.sandInk : th.muted);
+    }
+    /** «ختمة السيارة»: «الختمة» or «إيقاف الختمة», and «٣٧٪، يوسف» under it. */
+    void showKhatma(String label, String line, boolean on) {
+        set(kT, label); set(kF, line);
+        if (on != kOn) { kOn = on; paintRadio(radioOn); }
     }
 
     // ---------------------------------------------------------------- the content, every second

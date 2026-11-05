@@ -162,6 +162,28 @@ public class SettingsActivity extends Activity {
         list.addView(du2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
         list.addView(note("انقل الملفين إلى الشاشة (فلاش أو تنزيل) ثم اختر كلًّا منهما. يُحفظان داخل التطبيق، ولا يُرفعان إلى أي مكان. الصوت بمستوى صوت الأذان."));
 
+        head("ختمة السيارة");
+        Khatma k = PanelService.live != null ? PanelService.live.khatmaPlayer() : new Khatma(this);
+        list.addView(note("وصلت إلى " + Ui.ar(k.percent()) + "٪، سورة " + k.surahName() + (k.done() > 0 ? "، وأتممت " + Ui.ar(k.done()) + " ختمة" : "") + ". القارئ: " + k.reciterName() + "."));
+        LinearLayout kr = grid();
+        kr.addView(chip("تغيير القارئ", false, () -> {
+            org.json.JSONArray rs = k.reciters();
+            String[] names = new String[rs.length()];
+            for (int i = 0; i < rs.length(); i++) names[i] = rs.optJSONObject(i).optString("name");
+            new android.app.AlertDialog.Builder(this).setTitle("القارئ").setItems(names, (d, i) -> { k.setReciter(rs.optJSONObject(i).optString("id")); build(); }).show();
+        }));
+        boolean ka = Prefs.of(this).getBoolean("khatma_auto", true);
+        kr.addView(chip("تبدأ وحدها مع الرحلة", ka, () -> { Prefs.of(this).edit().putBoolean("khatma_auto", true).apply(); build(); }));
+        kr.addView(chip("بالزر فقط", !ka, () -> { Prefs.of(this).edit().putBoolean("khatma_auto", false).apply(); build(); }));
+        list.addView(kr);
+        LinearLayout kr2 = grid();
+        kr2.addView(chip("ابدأ من الفاتحة", false, () -> { k.restart(); build(); }));
+        list.addView(kr2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+        list.addView(note("تبدأ مع الرحلة إن لم يكن صوت آخر يعمل، وتتوقف بعد ٣ دقائق من الوقوف، وتكمل حين تتحرك. التلاوات من mp3quran.net وتحتاج إنترنت."));
+
+        head("دفتر الطريق");
+        list.addView(note(tripLog()));
+
         head("الجهاز");
         LinearLayout dev = grid();
         dev.addView(chip("إعدادات أندرويد", false, () -> startActivity(new Intent(Settings.ACTION_SETTINGS))));
@@ -174,6 +196,34 @@ public class SettingsActivity extends Activity {
         String v;
         try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { v = "?"; }
         list.addView(note("الإصدار " + v + ". التحديثات من github.com/Saqaby/Saqaby-UrCar"));
+    }
+
+    /** «هذا الشهر: ٤٢ رحلة، ١٢٣٠ كم، ٣١ ساعة» and the month before, from the trips kept on the screen. */
+    private String tripLog() {
+        org.json.JSONArray a;
+        try { a = new org.json.JSONArray(Prefs.of(this).getString("trips", "[]")); } catch (Exception e) { a = new org.json.JSONArray(); }
+        java.util.Calendar c = java.util.Calendar.getInstance();
+        int ym = c.get(java.util.Calendar.YEAR) * 12 + c.get(java.util.Calendar.MONTH);
+        int[] n = new int[2]; double[] km = new double[2]; long[] ms = new long[2];
+        for (int i = 0; i < a.length(); i++) {
+            org.json.JSONArray t = a.optJSONArray(i);
+            if (t == null) continue;
+            c.setTimeInMillis(t.optLong(0));
+            int k = ym - (c.get(java.util.Calendar.YEAR) * 12 + c.get(java.util.Calendar.MONTH));
+            if (k < 0 || k > 1) continue;
+            n[k]++; km[k] += t.optDouble(2); ms[k] += Math.max(0, t.optLong(1) - t.optLong(0));
+        }
+        String[] lbl = {"هذا الشهر", "الشهر الماضي"};
+        StringBuilder b = new StringBuilder();
+        for (int k = 0; k < 2; k++) {
+            if (k > 0) b.append("\n");
+            b.append(lbl[k]).append(": ");
+            if (n[k] == 0) { b.append("لا رحلات بعد"); continue; }
+            b.append(Ui.ar(n[k])).append(n[k] >= 3 && n[k] <= 10 ? " رحلات" : " رحلة").append("، ").append(Ui.ar(Math.round(km[k]))).append(" كم، ")
+             .append(Ui.remaining(ms[k] / 1000));
+        }
+        b.append("\nتُسجَّل الرحلة حين تنتهي (وقوف ٢٥ دقيقة أو أكثر)، وتبقى على الشاشة فقط.");
+        return b.toString();
     }
 
     private void changed() {

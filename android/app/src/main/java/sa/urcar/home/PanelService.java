@@ -55,6 +55,10 @@ public class PanelService extends Service implements Panel.Actions {
     static volatile boolean prefsChanged;
     private final Day day = new Day();
     private Sound sound;
+    private Khatma khatma;
+    private long stillSince, restUntil;
+    private int restFor;
+    private boolean khatmaPausedByStop;
     private double[] wx;   // {°C, code}
     private long wxAt, fmAt, updAt;
     private double wxLat, wxLon;
@@ -83,6 +87,8 @@ public class PanelService extends Service implements Panel.Actions {
         } catch (Exception ignored) { }
         sound = new Sound(this);
         sound.changed = () -> h.post(this::drawRadio);
+        khatma = new Khatma(this);
+        khatma.changed = () -> h.post(this::drawRadio);
         day.lat = Prefs.of(this).getFloat("lat", (float) day.lat);
         day.lon = Prefs.of(this).getFloat("lon", (float) day.lon);
         startLocation();
@@ -95,6 +101,7 @@ public class PanelService extends Service implements Panel.Actions {
     @Override public void onDestroy() {
         h.removeCallbacksAndMessages(null);
         sound.release();
+        khatma.stop();
         if (lm != null) try { lm.removeUpdates(gps); } catch (Exception ignored) { }
         if (live == this) live = null;
         super.onDestroy();
@@ -116,6 +123,7 @@ public class PanelService extends Service implements Panel.Actions {
         @Override public void run() {
             long now = System.currentTimeMillis();
             adhan(now);
+            restAndStop(now);
             if (panel != null && HomeActivity.resumed) draw(now);
             background(now);
             h.postDelayed(this, 1000);
@@ -161,6 +169,9 @@ public class PanelService extends Service implements Panel.Actions {
             drive.showQibla(day.qibla());
             // Radarbot first; else dust (PM10 or dust >= 150 µg/m³ in the last 3 hours, as UrTV)
             String alert = now - NotiListener.radarAt < 20_000 ? NotiListener.radar : null;
+            boolean rest = false;
+            if (alert == null && now < restUntil) { alert = "قدت " + Ui.hours((int) ((now - tripStart) / 3600_000L)) + "، قف للراحة. اضغط لأقرب محطة"; rest = true; }
+            drive.setAlertAction(rest ? this::station : null);
             if (alert == null && dust >= 150 && now - dustAt < 3 * 3600_000L) alert = dust >= 400 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
             drive.showAlert(alert);
             drive.setMosqueHot(day.bar(now) != null);
@@ -180,8 +191,26 @@ public class PanelService extends Service implements Panel.Actions {
         return t.equals("light") || (t.equals("auto") && !day.night(now));
     }
 
+    /** Every two hours of a trip, a minute's reminder to rest; the khatma pauses after 3 minutes still and goes on when moving. */
+    private void restAndStop(long now) {
+        boolean moving = now - fixAt < 6000 && kmh >= 10;
+        if (tripStart > 0) {
+            int hours = (int) ((now - tripStart) / 3600_000L);
+            if (hours >= 2 && hours % 2 == 0 && hours != restFor && moving) { restFor = hours; restUntil = now + 60_000; }
+        }
+        if (moving) {
+            stillSince = 0;
+            if (khatmaPausedByStop) { khatmaPausedByStop = false; khatma.start(); }
+        } else {
+            if (stillSince == 0) stillSince = now;
+            if (khatma.on && now - stillSince > 3 * 60_000L) { khatma.stop(); khatmaPausedByStop = true; }
+        }
+    }
+
     private void drawRadio() {
         if (panel == null) return;
+        panel.showKhatma(khatma.on ? "إيقاف الختمة" : "ختمة السيارة", Ui.ar(khatma.percent()) + "٪، " + khatma.surahName()
+                + (khatma.done() > 0 ? "، الختمة " + Ui.ar(khatma.done() + 1) : ""), khatma.on);
         Object[] fm = Prefs.radioSource(this).equals("fm") ? Net.fmHere(this, day.lat, day.lon) : null;
         panel.showRadio(sound.radioOn ? "إيقاف الإذاعة" : "إذاعة القرآن",
                 fm != null ? "FM " + Ui.ar(String.format(java.util.Locale.US, "%.1f", ((Number) fm[1]).doubleValue())) : (sound.radioOn ? "" : "عبر الإنترنت"), sound.radioOn);
@@ -244,7 +273,14 @@ public class PanelService extends Service implements Panel.Actions {
                 }
             }
             if (now - lastMoveAt >= STOP_MS) {
-                tripStart = now; tripKm = 0; prevLat = 999;
+                logTrip();
+                tripStart = now; tripKm = 0; prevLat = 999; restFor = 0;
+                if (Prefs.of(this).getBoolean("khatma_auto", true) && !khatma.on && !sound.radioOn) {
+                    h.postDelayed(() -> {   // after the dhikr, and only if nothing else is playing
+                        MediaController mc = NotiListener.session(this);
+                        if (!khatma.on && !sound.radioOn && (mc == null || !NotiListener.playing(mc))) khatma.start();
+                    }, 20_000);
+                }
                 duaUntil = now + 60_000;
                 travelDua = travelDuaFor(l);   // far from home: the travel du'a
                 final boolean far = travelDua;
@@ -260,6 +296,17 @@ public class PanelService extends Service implements Panel.Actions {
             savedMoveAt = now;
             Prefs.of(this).edit().putLong("last_move", lastMoveAt).putLong("trip_start", tripStart).putFloat("trip_km", (float) tripKm).apply();
         }
+    }
+
+    /** «دفتر الطريق»: the trip that ended, kept on the screen: {start, end, km}. The last 600. */
+    private void logTrip() {
+        if (tripStart == 0 || tripKm < 0.3) return;
+        try {
+            org.json.JSONArray a = new org.json.JSONArray(Prefs.of(this).getString("trips", "[]"));
+            a.put(new org.json.JSONArray().put(tripStart).put(lastMoveAt).put(Math.round(tripKm * 10) / 10.0));
+            while (a.length() > 600) a.remove(0);
+            Prefs.put(this, "trips", a.toString());
+        } catch (Exception ignored) { }
     }
 
     /** «جرّب» in the settings. */
@@ -337,6 +384,19 @@ public class PanelService extends Service implements Panel.Actions {
         String last = Prefs.of(this).getString("last_audio", "com.google.android.youtube");
         launchPkg(last);
     }
+    @Override public void khatma() {
+        if (khatma.on) { khatma.stop(); khatmaPausedByStop = false; return; }
+        sound.stopRadio();
+        khatma.start();
+    }
+    /** The nearest stations (the rest reminder). */
+    void station() {
+        Intent i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + day.lat + "," + day.lon + "?q=" + android.net.Uri.encode("محطة وقود")));
+        if (Prefs.installed(this, "com.google.android.apps.maps")) i.setPackage("com.google.android.apps.maps");
+        launch(i);
+    }
+    Khatma khatmaPlayer() { return khatma; }
+
     /** FM near: the screen's radio opens and the frequency is shown (probe: com.tw.radio takes no command). Else the stream. */
     @Override public void radio() {
         if (sound.radioOn) { sound.stopRadio(); return; }
@@ -349,6 +409,7 @@ public class PanelService extends Service implements Panel.Actions {
             return;
         }
         if (!Net.online(this)) { Toast.makeText(this, "لا إنترنت، ولا تردد FM معروف هنا", Toast.LENGTH_LONG).show(); return; }
+        khatma.stop();
         sound.startRadio();
     }
 

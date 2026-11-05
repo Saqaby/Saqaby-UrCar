@@ -174,6 +174,9 @@ final class Drive extends LinearLayout {
             set(heading, DIRS[Math.round(bearing / 45f) % 8]);
         } else if (compass.bearing < 0) set(heading, "الاتجاه أثناء السير");
     }
+    /** What a tap on the orange line does (the rest reminder: a search for a station); null: nothing. */
+    void setAlertAction(Runnable r) { alertBox.setOnClickListener(r == null ? null : v -> r.run()); alertBox.setClickable(r != null); }
+
     void showAlert(String text) {
         alertBox.setVisibility(text == null ? GONE : VISIBLE);
         if (text != null) set(alert, text);
