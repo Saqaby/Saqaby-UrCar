@@ -5,6 +5,18 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.Notification;
+import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CaptureRequest;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
+import android.service.notification.StatusBarNotification;
+import android.view.Surface;
+import android.view.TextureView;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -63,7 +75,9 @@ public class ProbeActivity extends Activity {
         side.setOrientation(LinearLayout.VERTICAL);
         side.setPadding(16, 16, 16, 16);
         side.addView(button("الخرائط في نافذة", new View.OnClickListener() { public void onClick(View v) { testFreeform(); } }));
-        side.addView(button("فتح كاميرا الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("camera|avm|cam|reverse|backcar|360"); } }));
+        side.addView(button("فتح كاميرا الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("camera|avm|reverse|backcar|360|dvr|rightview|com\\.tw\\.service|carinfoservice"); } }));
+        side.addView(button("الكاميرا داخل التطبيق", new View.OnClickListener() { public void onClick(View v) { testAndroidCamera(); } }));
+        side.addView(button("الإشعارات والموسيقى", new View.OnClickListener() { public void onClick(View v) { testNotifications(); } }));
         side.addView(button("فتح راديو الشاشة", new View.OnClickListener() { public void onClick(View v) { pickAndOpen("radio|fm|tuner"); } }));
         side.addView(button("حفظ التقرير", new View.OnClickListener() { public void onClick(View v) { save(); } }));
         root.addView(side, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
@@ -80,7 +94,7 @@ public class ProbeActivity extends Activity {
         root.addView(sv, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 3));
         setContentView(root);
 
-        report = collect();
+        report = "probe v2\n" + collect();
         out.setText(report);
     }
 
@@ -260,7 +274,149 @@ public class ProbeActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int code, String[] p, int[] r) {
-        if (r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED) save(); else toast("بلا إذن التخزين لا أستطيع الحفظ في التنزيلات");
+        boolean ok = r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED;
+        if (code == 2) { if (ok) testAndroidCamera(); else toast("بلا إذن الكاميرا لا أستطيع التجربة"); return; }
+        if (ok) save(); else toast("بلا إذن التخزين لا أستطيع الحفظ في التنزيلات");
+    }
+
+    // ---------------------------------------------------------------- v2: the camera shown by this app itself
+    /** Lists the cameras Android knows (Camera2 ids and the old Camera API), and shows the one picked full screen. */
+    private void testAndroidCamera() {
+        if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, 2);
+            return;
+        }
+        final List<String> keys = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        try {
+            CameraManager cm = (CameraManager) getSystemService(CAMERA_SERVICE);
+            for (String id : cm.getCameraIdList()) {
+                String facing = "?";
+                try { Integer f = cm.getCameraCharacteristics(id).get(CameraCharacteristics.LENS_FACING);
+                    facing = f == null ? "?" : f == 0 ? "أمامية" : f == 1 ? "خلفية" : "خارجية"; } catch (Exception ignored) { }
+                keys.add("c2:" + id); labels.add("كاميرا " + id + " (" + facing + ")");
+            }
+        } catch (Exception e) { note("camera2 list " + e.getClass().getSimpleName()); }
+        int legacy = 0;
+        try { legacy = android.hardware.Camera.getNumberOfCameras(); } catch (Exception ignored) { }
+        for (int i = 0; i < legacy; i++) { keys.add("old:" + i); labels.add("الطريقة القديمة " + i); }
+        if (keys.isEmpty()) { toast("أندرويد لا يرى أي كاميرا"); return; }
+        new AlertDialog.Builder(this)
+                .setTitle("اختر واحدة؛ رجوع يغلقها. أيّها أظهرت صورة؟")
+                .setItems(labels.toArray(new String[0]), (d, i) -> {
+                    String k = keys.get(i);
+                    if (k.startsWith("c2:")) showCamera2(k.substring(3)); else showLegacy(Integer.parseInt(k.substring(4)));
+                })
+                .show();
+    }
+
+    private void showCamera2(final String id) {
+        final TextureView tv = new TextureView(this);
+        final Dialog d = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        d.setContentView(tv);
+        final CameraDevice[] dev = new CameraDevice[1];
+        tv.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            public void onSurfaceTextureAvailable(final SurfaceTexture st, int w, int h) {
+                try {
+                    CameraManager cm = (CameraManager) getSystemService(CAMERA_SERVICE);
+                    cm.openCamera(id, new CameraDevice.StateCallback() {
+                        public void onOpened(CameraDevice c) {
+                            dev[0] = c;
+                            try {
+                                st.setDefaultBufferSize(1280, 720);
+                                final Surface s = new Surface(st);
+                                final CaptureRequest.Builder rb = c.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                                rb.addTarget(s);
+                                c.createCaptureSession(Collections.singletonList(s), new CameraCaptureSession.StateCallback() {
+                                    public void onConfigured(CameraCaptureSession ss) {
+                                        try { ss.setRepeatingRequest(rb.build(), null, null); note("camera2 " + id + " preview started"); }
+                                        catch (Exception e) { note("camera2 " + id + " repeat " + e.getClass().getSimpleName()); }
+                                    }
+                                    public void onConfigureFailed(CameraCaptureSession ss) { note("camera2 " + id + " configure failed"); }
+                                }, null);
+                            } catch (Exception e) { note("camera2 " + id + " session " + e.getClass().getSimpleName()); }
+                        }
+                        public void onDisconnected(CameraDevice c) { c.close(); }
+                        public void onError(CameraDevice c, int e) { note("camera2 " + id + " error " + e); c.close(); }
+                    }, null);
+                } catch (Exception e) { note("camera2 " + id + " open " + e.getClass().getSimpleName() + " " + e.getMessage()); }
+            }
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture st) { if (dev[0] != null) dev[0].close(); return true; }
+            public void onSurfaceTextureSizeChanged(SurfaceTexture st, int w, int h) { }
+            public void onSurfaceTextureUpdated(SurfaceTexture st) { }
+        });
+        d.setOnDismissListener(x -> { if (dev[0] != null) dev[0].close(); });
+        d.show();
+    }
+
+    @SuppressWarnings("deprecation")
+    private void showLegacy(final int idx) {
+        final TextureView tv = new TextureView(this);
+        final Dialog d = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        d.setContentView(tv);
+        final android.hardware.Camera[] cam = new android.hardware.Camera[1];
+        tv.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            public void onSurfaceTextureAvailable(SurfaceTexture st, int w, int h) {
+                try { cam[0] = android.hardware.Camera.open(idx); cam[0].setPreviewTexture(st); cam[0].startPreview(); note("legacy " + idx + " preview started"); }
+                catch (Exception e) { note("legacy " + idx + " " + e.getClass().getSimpleName() + " " + e.getMessage()); }
+            }
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture st) { release(); return true; }
+            public void onSurfaceTextureSizeChanged(SurfaceTexture st, int w, int h) { }
+            public void onSurfaceTextureUpdated(SurfaceTexture st) { }
+            private void release() { if (cam[0] != null) { try { cam[0].stopPreview(); cam[0].release(); } catch (Exception ignored) { } cam[0] = null; } }
+        });
+        d.setOnDismissListener(x -> { if (cam[0] != null) { try { cam[0].release(); } catch (Exception ignored) { } cam[0] = null; } });
+        d.show();
+    }
+
+    // ---------------------------------------------------------------- v2: what the navigation and audio apps publish
+    /** Needs «الوصول إلى الإشعارات» once. Then lists the notifications of the maps and audio apps, and the media sessions. */
+    private void testNotifications() {
+        String on = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
+        if (on == null || !on.contains(getPackageName())) {
+            toast("فعّل «فحص سيارتك» في الصفحة التالية، ثم ارجع واضغط الزر مرة أخرى");
+            try { startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")); }
+            catch (Exception e) { toast("لم تُفتح صفحة الإذن: " + e.getClass().getSimpleName()); }
+            return;
+        }
+        StringBuilder s = new StringBuilder("\n[notifications] ").append(new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date())).append("\n");
+        NotiListener l = NotiListener.live;
+        if (l == null) s.append("listener not connected yet; try again in a few seconds\n");
+        else {
+            try {
+                for (StatusBarNotification n : l.getActiveNotifications()) {
+                    String p = n.getPackageName();
+                    if (!p.matches("(?i).*(maps|waze|igo|nng|radio|music|youtube|seen|zlink|tw\\.).*")) continue;
+                    Bundle x = n.getNotification().extras;
+                    s.append("== ").append(p).append(n.isOngoing() ? " (ongoing)" : "").append("\n");
+                    for (String k : new String[]{Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_SUB_TEXT,
+                            Notification.EXTRA_BIG_TEXT, Notification.EXTRA_INFO_TEXT, Notification.EXTRA_TEMPLATE}) {
+                        Object v = x.get(k);
+                        if (v != null) s.append("  ").append(k.replace("android.", "")).append(": ").append(v).append("\n");
+                    }
+                    s.append("  has_custom_view=").append(n.getNotification().contentView != null || n.getNotification().bigContentView != null).append("\n");
+                }
+            } catch (Exception e) { s.append("notifications error ").append(e.getClass().getSimpleName()).append("\n"); }
+        }
+        s.append("[media sessions]\n");
+        try {
+            MediaSessionManager msm = (MediaSessionManager) getSystemService(MEDIA_SESSION_SERVICE);
+            for (MediaController c : msm.getActiveSessions(new ComponentName(this, NotiListener.class))) {
+                MediaMetadata md = c.getMetadata();
+                s.append("== ").append(c.getPackageName())
+                        .append(" state=").append(c.getPlaybackState() == null ? "?" : c.getPlaybackState().getState())
+                        .append(" title=").append(md == null ? "" : md.getString(MediaMetadata.METADATA_KEY_TITLE))
+                        .append(" artist=").append(md == null ? "" : md.getString(MediaMetadata.METADATA_KEY_ARTIST))
+                        .append(" actions=").append(c.getPlaybackState() == null ? "?" : c.getPlaybackState().getActions()).append("\n");
+            }
+        } catch (Exception e) { s.append("media error ").append(e.getClass().getSimpleName()).append("\n"); }
+        report += s;
+        out.setText(report);
+        new AlertDialog.Builder(this).setTitle("ما تنشره التطبيقات الآن").setMessage(s.toString()).setPositiveButton("حسنًا", null).show();
+    }
+
+    private void note(final String t) {
+        runOnUiThread(() -> { report += "\n[test] " + t + "\n"; out.setText(report); });
     }
 
     private void toast(String t) { Toast.makeText(this, t, Toast.LENGTH_LONG).show(); }
