@@ -16,7 +16,7 @@ import android.widget.TextView;
 final class Drive extends LinearLayout {
     private final float H;
     private Ui.Theme th;
-    private final LinearLayout top, alertBox, quoteBox;
+    private final LinearLayout top, alertBox, quoteBox, speedCard;
     private final TextView speed, unit, trip, heading, qibla, alert, remind, qTitle, qText, qSrc;
     private boolean mosqueHot, moving;
     private final Compass compass;
@@ -34,19 +34,18 @@ final class Drive extends LinearLayout {
         top = new LinearLayout(c);
         top.setOrientation(HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setPadding(px(4), px(2.4f), px(4), px(2.4f));
+        top.setPadding(px(4), px(1.6f), px(4), 0);
         LinearLayout sp = new LinearLayout(c);
         sp.setOrientation(VERTICAL);
         sp.setGravity(Gravity.CENTER);
-        speed = Ui.text(c, px(22), Ui.display(c), 0);
+        speed = Ui.text(c, px(17), Ui.display(c), 0);
         speed.setGravity(Gravity.CENTER);
         unit = Ui.text(c, px(3.6f), Ui.regular(c), 0);
         unit.setText("كم/س");
-        trip = Ui.text(c, px(2.6f), Ui.regular(c), 0);
+        trip = Ui.text(c, px(3), Ui.medium(c), 0);
         trip.setGravity(Gravity.CENTER);
         sp.addView(speed);
         sp.addView(unit);
-        sp.addView(trip, lp(px(1.4f)));
         top.addView(sp, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
         LinearLayout cp = new LinearLayout(c);
         cp.setOrientation(VERTICAL);
@@ -54,14 +53,21 @@ final class Drive extends LinearLayout {
         compass = new Compass(c);
         heading = Ui.text(c, px(3.8f), Ui.medium(c), 0);
         heading.setGravity(Gravity.CENTER);
-        cp.addView(compass, new LayoutParams(px(26), px(26)));
+        cp.addView(compass, new LayoutParams(px(22), px(22)));
         qibla = Ui.text(c, px(2.6f), Ui.regular(c), 0);
         qibla.setGravity(Gravity.CENTER);
         cp.addView(heading, lp(px(1.2f)));
         cp.addView(qibla, lp(px(0.6f)));
         top.addView(cp, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        // the card: speed and compass side by side, the trip across the bottom (it had no room under the speed)
+        speedCard = new LinearLayout(c);
+        speedCard.setOrientation(VERTICAL);
+        speedCard.setPadding(0, 0, 0, px(1.6f));
+        speedCard.addView(top, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+        speedCard.addView(trip, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        speedCard.setOnClickListener(v -> openNav.run());
         top.setOnClickListener(v -> openNav.run());
-        addView(top, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1.25f));
+        addView(speedCard, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1.25f));
 
         // ---- Radarbot
         alertBox = new LinearLayout(c);
@@ -118,7 +124,7 @@ final class Drive extends LinearLayout {
     void setDay(boolean d) {
         th = new Ui.Theme(d);
         setBackgroundColor(th.bg);
-        top.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
+        speedCard.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
         speed.setTextColor(th.fg); unit.setTextColor(th.muted); heading.setTextColor(th.sand);
         compass.colors(th);
         alertBox.setBackground(Ui.box(0xffe9a24b, 0, px(1.6f))); alert.setTextColor(0xff1b1408);
