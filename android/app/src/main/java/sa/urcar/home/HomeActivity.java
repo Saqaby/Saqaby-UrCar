@@ -64,7 +64,8 @@ public class HomeActivity extends Activity {
         // the panel on the driver's side; LTR so that «left» means the screen's left
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         Panel panel = new Panel(this, PanelService.live, h);
-        Drive drive = new Drive(this, h, () -> { if (PanelService.live != null) PanelService.live.openNav(); });
+        PanelService s = PanelService.live;
+        Drive drive = new Drive(this, h, s::openNav, () -> s.goPlace("home", "البيت"), () -> s.goPlace("work", "العمل"), s::mosque);
         LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(w * 2 / 5, ViewGroup.LayoutParams.MATCH_PARENT);
         LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
         if (Prefs.side(this).equals("right")) { row.addView(drive, dl); row.addView(panel, pl); }

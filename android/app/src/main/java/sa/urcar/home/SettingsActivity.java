@@ -95,6 +95,34 @@ public class SettingsActivity extends Activity {
         }));
         list.addView(fix);
 
+        head("الوجهات السريعة (تحت السرعة في الشاشة الرئيسية)");
+        LinearLayout dest = grid();
+        for (String[] d : new String[][]{{"home", "البيت"}, {"work", "العمل"}}) {
+            boolean saved = Prefs.of(this).getFloat(d[0] + "_lat", 999) < 90;
+            dest.addView(chip("احفظ موقعي الآن كـ" + d[1] + (saved ? " (محفوظ)" : ""), saved, () -> {
+                Prefs.of(this).edit().putFloat(d[0] + "_lat", Prefs.of(this).getFloat("lat", 999)).putFloat(d[0] + "_lon", Prefs.of(this).getFloat("lon", 999)).apply();
+                Toast.makeText(this, "حُفظ " + d[1] + " على موقع السيارة الآن", Toast.LENGTH_SHORT).show();
+                build();
+            }));
+        }
+        list.addView(dest);
+        list.addView(note("قف عند البيت أو العمل واضغط الزر، فيُحفظ موقع السيارة من GPS."));
+
+        head("الأذان في السيارة");
+        LinearLayout ad = grid();
+        String am = Prefs.of(this).getString("adhan", "full");
+        ad.addView(chip("كاملًا", am.equals("full"), () -> { Prefs.put(this, "adhan", "full"); build(); }));
+        ad.addView(chip("التكبير الأول فقط", am.equals("takbir"), () -> { Prefs.put(this, "adhan", "takbir"); build(); }));
+        ad.addView(chip("بلا صوت (الشريط فقط)", am.equals("silent"), () -> { Prefs.put(this, "adhan", "silent"); build(); }));
+        list.addView(ad);
+        LinearLayout vol = grid();
+        float av = Prefs.of(this).getFloat("adhan_vol", 1f);
+        for (Object[] v : new Object[][]{{"منخفض", .35f}, {"متوسط", .65f}, {"عالٍ", 1f}}) {
+            float f = (Float) v[1];
+            vol.addView(chip("الصوت " + v[0], Math.abs(av - f) < .01, () -> { Prefs.of(this).edit().putFloat("adhan_vol", f).apply(); build(); }));
+        }
+        list.addView(vol, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+
         head("الجهاز");
         LinearLayout dev = grid();
         dev.addView(chip("إعدادات أندرويد", false, () -> startActivity(new Intent(Settings.ACTION_SETTINGS))));

@@ -160,7 +160,7 @@ public class PanelService extends Service implements Panel.Actions {
         int cur = day.current(now);
         if (cur < 0) return;
         String key = cur + "@" + day.at(cur);
-        if (now - day.at(cur) < 60_000L && !key.equals(playedFor)) { playedFor = key; sound.playAdhan(); }
+        if (now - day.at(cur) < 60_000L && !key.equals(playedFor)) { playedFor = key; sound.playAdhan(Prefs.of(this).getString("adhan", "full"), Prefs.of(this).getFloat("adhan_vol", 1f)); }
     }
 
     /** The temperature every 30 minutes or after 10 km, the FM table daily, the update check every 6 hours. */
@@ -222,6 +222,31 @@ public class PanelService extends Service implements Panel.Actions {
     }
     @Override public void settings() { launch(new Intent(this, SettingsActivity.class)); }
     @Override public void apps() { launch(new Intent(this, AppsActivity.class)); }
+    /** «البيت» / «العمل»: the place saved in the settings, in the chosen navigation app. */
+    void goPlace(String key, String label) {
+        float la = Prefs.of(this).getFloat(key + "_lat", 999), lo = Prefs.of(this).getFloat(key + "_lon", 999);
+        if (la > 90) { Toast.makeText(this, "احفظ موقع " + label + " من الإعدادات أولًا", Toast.LENGTH_LONG).show(); return; }
+        String nav = Prefs.nav(this);
+        Intent i;
+        if (nav.equals("com.waze")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://waze.com/ul?ll=" + la + "," + lo + "&navigate=yes"));
+        else if (nav.equals("com.google.android.apps.maps")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("google.navigation:q=" + la + "," + lo));
+        else i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + la + "," + lo + "?q=" + la + "," + lo));
+        if (!nav.isEmpty()) i.setPackage(nav);
+        try { startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+        catch (Exception e) { launch(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + la + "," + lo + "?q=" + la + "," + lo))); }
+    }
+    /** «أقرب مسجد»: a search for mosques around the car in the navigation app (Google Maps if it is there). */
+    void mosque() {
+        String q = android.net.Uri.encode("مسجد"), nav = Prefs.nav(this);
+        Intent i;
+        if (nav.equals("com.waze")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://waze.com/ul?q=" + q)).setPackage("com.waze");
+        else {
+            i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + day.lat + "," + day.lon + "?q=" + q));
+            if (Prefs.installed(this, "com.google.android.apps.maps")) i.setPackage("com.google.android.apps.maps");
+        }
+        try { startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+        catch (Exception e) { launch(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + day.lat + "," + day.lon + "?q=" + q))); }
+    }
     /** The speed card opens the chosen navigation app. */
     void openNav() {
         String nav = Prefs.nav(this);

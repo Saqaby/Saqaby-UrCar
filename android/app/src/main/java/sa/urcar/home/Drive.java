@@ -19,8 +19,10 @@ final class Drive extends LinearLayout {
     private final LinearLayout top, alertBox, quoteBox;
     private final TextView speed, unit, heading, alert, qTitle, qText, qSrc;
     private final Compass compass;
+    private final LinearLayout dests;
+    private final TextView[] destViews = new TextView[3];
 
-    Drive(Context c, int height, Runnable openNav) {
+    Drive(Context c, int height, Runnable openNav, Runnable home, Runnable work, Runnable mosque) {
         super(c);
         H = height / 100f;
         setOrientation(VERTICAL);
@@ -64,6 +66,24 @@ final class Drive extends LinearLayout {
         alertBox.setVisibility(GONE);
         addView(alertBox, new LayoutParams(LayoutParams.MATCH_PARENT, px(8)) {{ topMargin = px(1.6f); }});
 
+        // ---- quick destinations: home, work, the nearest mosque
+        dests = new LinearLayout(c);
+        dests.setOrientation(HORIZONTAL);
+        String[] names = {"البيت", "العمل", "أقرب مسجد"};
+        Runnable[] go = {home, work, mosque};
+        for (int i = 0; i < 3; i++) {
+            TextView t = Ui.text(c, px(3.4f), Ui.medium(c), 0);
+            t.setText(names[i]);
+            t.setGravity(Gravity.CENTER);
+            final Runnable r = go[i];
+            t.setOnClickListener(v -> r.run());
+            LayoutParams l = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+            if (i > 0) l.setMarginStart(px(1.4f));
+            dests.addView(t, l);
+            destViews[i] = t;
+        }
+        addView(dests, new LayoutParams(LayoutParams.MATCH_PARENT, px(9)) {{ topMargin = px(1.6f); }});
+
         // ---- the quote of the hour
         quoteBox = new LinearLayout(c);
         quoteBox.setOrientation(VERTICAL);
@@ -94,6 +114,7 @@ final class Drive extends LinearLayout {
         alertBox.setBackground(Ui.box(0xffe9a24b, 0, px(1.6f))); alert.setTextColor(0xff1b1408);
         quoteBox.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
         qTitle.setTextColor(th.sand); qText.setTextColor(th.fg); qSrc.setTextColor(th.muted);
+        for (TextView t : destViews) { t.setBackground(Ui.box(th.panel, th.line, px(2))); t.setTextColor(th.fg); }
     }
 
     private static final String[] DIRS = {"شمال", "شمال شرق", "شرق", "جنوب شرق", "جنوب", "جنوب غرب", "غرب", "شمال غرب"};

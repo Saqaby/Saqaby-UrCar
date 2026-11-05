@@ -38,6 +38,24 @@ final class Sound {
         try { Net.download(ADHAN_URL, f); } catch (Exception ignored) { }
     }
 
+    /** mode: full, takbir (the first 15 seconds, faded out) or silent (the bar only); volume 0..1 of the alarm volume */
+    void playAdhan(String mode, float volume) {
+        if (mode.equals("silent")) return;
+        playAdhan();
+        if (adhan != null) adhan.setVolume(volume, volume);
+        if (mode.equals("takbir")) fadeAfter(15_000, volume);
+    }
+    private final android.os.Handler hd = new android.os.Handler(android.os.Looper.getMainLooper());
+    private void fadeAfter(long ms, float from) {
+        final MediaPlayer mp = adhan;
+        for (int i = 1; i <= 10; i++) {
+            final float v = from * (10 - i) / 10f;
+            hd.postDelayed(() -> { if (adhan == mp && mp != null) { if (v > 0) mp.setVolume(v, v); } }, ms + i * 200L);
+        }
+        hd.postDelayed(() -> { if (adhan == mp && completion != null) completion.run(); }, ms + 2200);
+    }
+    private Runnable completion;
+
     void playAdhan() {
         boolean wasRadio = radioOn;
         if (wasRadio) stopRadio();
@@ -50,7 +68,8 @@ final class Sound {
             adhan = new MediaPlayer();
             adhan.setAudioAttributes(aa);
             adhan.setDataSource(f.length() > 50_000 ? f.getPath() : ADHAN_URL);
-            adhan.setOnCompletionListener(mp -> { stopAdhan(); if (wasRadio) startRadio(); });
+            completion = () -> { stopAdhan(); if (wasRadio) startRadio(); };
+            adhan.setOnCompletionListener(mp -> completion.run());
             adhan.setOnErrorListener((mp, w, e) -> { stopAdhan(); return true; });
             adhan.setOnPreparedListener(MediaPlayer::start);
             adhan.prepareAsync();
