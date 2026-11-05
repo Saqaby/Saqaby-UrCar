@@ -104,5 +104,34 @@ final class Sound {
         changed.run();
     }
 
-    void release() { stopAdhan(); stopRadio(); }
+    /** The owner's own recordings of the riding dhikr and the travel du'a (chosen in the settings, kept in the app). */
+    static File duaFile(Context c, String which) { return new File(c.getFilesDir(), "dua_" + which + ".mp3"); }
+
+    private MediaPlayer dua;
+    private AudioFocusRequest duaFocus;
+    /** Plays it once over what is playing (the music pauses for it and comes back), unless the adhan is on. */
+    void playDua(String which, float volume) {
+        File f = duaFile(c, which);
+        if (!f.exists() || adhan != null) return;
+        stopDua();
+        AudioAttributes aa = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build();
+        duaFocus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK).setAudioAttributes(aa).build();
+        am.requestAudioFocus(duaFocus);
+        try {
+            dua = new MediaPlayer();
+            dua.setAudioAttributes(aa);
+            dua.setDataSource(f.getPath());
+            dua.setVolume(volume, volume);
+            dua.setOnCompletionListener(mp -> stopDua());
+            dua.setOnErrorListener((mp, w, e) -> { stopDua(); return true; });
+            dua.prepare();
+            dua.start();
+        } catch (Exception e) { stopDua(); }
+    }
+    void stopDua() {
+        if (dua != null) { try { dua.release(); } catch (Exception ignored) { } dua = null; }
+        if (duaFocus != null) { am.abandonAudioFocusRequest(duaFocus); duaFocus = null; }
+    }
+
+    void release() { stopAdhan(); stopRadio(); stopDua(); }
 }

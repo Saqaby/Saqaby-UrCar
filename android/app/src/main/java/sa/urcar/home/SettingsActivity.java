@@ -31,6 +31,24 @@ public class SettingsActivity extends Activity {
     }
     @Override protected void onResume() { super.onResume(); build(); }
 
+    private String pending = "";
+    /** The chosen recording is copied into the app, so it plays without the file or the flash drive. */
+    @Override protected void onActivityResult(int code, int result, Intent data) {
+        super.onActivityResult(code, result, data);
+        if (code != 7 || result != RESULT_OK || data == null || data.getData() == null || pending.isEmpty()) return;
+        java.io.File to = Sound.duaFile(this, pending);
+        try (java.io.InputStream in = getContentResolver().openInputStream(data.getData());
+             java.io.OutputStream out = new java.io.FileOutputStream(to)) {
+            byte[] buf = new byte[65536];
+            for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
+            Toast.makeText(this, "حُفظ الصوت", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            to.delete();
+            Toast.makeText(this, "لم يُحفظ: " + e.getClass().getSimpleName(), Toast.LENGTH_LONG).show();
+        }
+        build();
+    }
+
     private void build() {
         list.removeAllViews();
         LinearLayout top = new LinearLayout(this);
@@ -122,6 +140,27 @@ public class SettingsActivity extends Activity {
             vol.addView(chip("الصوت " + v[0], Math.abs(av - f) < .01, () -> { Prefs.of(this).edit().putFloat("adhan_vol", f).apply(); build(); }));
         }
         list.addView(vol, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+
+        head("صوت ذكر الركوب ودعاء السفر (يُشغَّل عند بدء الرحلة)");
+        LinearLayout du = grid();
+        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}}) {
+            boolean have = Sound.duaFile(this, d[0]).exists();
+            du.addView(chip("اختر ملف " + d[1] + (have ? " (محفوظ)" : ""), have, () -> {
+                pending = d[0];
+                Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("audio/*");
+                try { startActivityForResult(i, 7); } catch (Exception e) { Toast.makeText(this, "لا يوجد مدير ملفات لاختيار الصوت", Toast.LENGTH_LONG).show(); }
+            }));
+        }
+        list.addView(du);
+        LinearLayout du2 = grid();
+        boolean on = Prefs.of(this).getBoolean("dua_sound", true);
+        du2.addView(chip("الصوت يعمل", on, () -> { Prefs.of(this).edit().putBoolean("dua_sound", true).apply(); build(); }));
+        du2.addView(chip("بلا صوت (النص فقط)", !on, () -> { Prefs.of(this).edit().putBoolean("dua_sound", false).apply(); build(); }));
+        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}})
+            if (Sound.duaFile(this, d[0]).exists())
+                du2.addView(chip("جرّب " + d[1], false, () -> { if (PanelService.live != null) PanelService.live.testDua(d[0]); }));
+        list.addView(du2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+        list.addView(note("انقل الملفين إلى الشاشة (فلاش أو تنزيل) ثم اختر كلًّا منهما. يُحفظان داخل التطبيق، ولا يُرفعان إلى أي مكان. الصوت بمستوى صوت الأذان."));
 
         head("الجهاز");
         LinearLayout dev = grid();

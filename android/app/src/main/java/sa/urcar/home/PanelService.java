@@ -250,6 +250,9 @@ public class PanelService extends Service implements Panel.Actions {
             if (tripStart == 0 || now - lastMoveAt > 3600_000L) {
                 tripStart = now; tripKm = 0; prevLat = 999;
                 duaUntil = now + 60_000;
+                final boolean far = travelDuaFor(l);
+                if (Prefs.of(this).getBoolean("dua_sound", true))
+                    h.postDelayed(() -> sound.playDua(far ? "travel" : "riding", Prefs.of(this).getFloat("adhan_vol", 1f)), 1500);
                 float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
                 travelDua = hl < 90 && Day.km(hl, ho, l.getLatitude(), l.getLongitude()) > 80;   // far from home: the travel du'a
             }
@@ -257,6 +260,14 @@ public class PanelService extends Service implements Panel.Actions {
         }
         if (kmh >= 3 && prevLat < 90) tripKm += Day.km(prevLat, prevLon, l.getLatitude(), l.getLongitude());
         prevLat = l.getLatitude(); prevLon = l.getLongitude();
+    }
+
+    /** «جرّب» in the settings. */
+    void testDua(String which) { sound.playDua(which, Prefs.of(this).getFloat("adhan_vol", 1f)); }
+
+    private boolean travelDuaFor(Location l) {
+        float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
+        return hl < 90 && Day.km(hl, ho, l.getLatitude(), l.getLongitude()) > 80;
     }
 
     void startLocation() {
