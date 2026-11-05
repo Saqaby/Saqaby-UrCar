@@ -13,6 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.InputStream;
 
 /**
@@ -41,7 +42,12 @@ final class Khatma {
             byte[] buf = new byte[8192];
             for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n);
             JSONObject j = new JSONObject(b.toString("UTF-8"));
-            reciters = j.getJSONArray("reciters");
+            // the owner's two, first: found in mp3quran.net's own list (find-reciters.yml), Hafs murattal, all 114 surahs
+            reciters = new JSONArray()
+                    .put(new JSONObject().put("id", "asim-luhaidan").put("name", "عاصم اللحيدان").put("server", "https://cdn.mp3quran.net/audio/asim-luhaidan/r1/"))
+                    .put(new JSONObject().put("id", "abdullah-mousa").put("name", "عبدالله الموسى").put("server", "https://cdn.mp3quran.net/audio/abdullah-mousa/r1/"));
+            JSONArray rest = j.getJSONArray("reciters");
+            for (int i = 0; i < rest.length(); i++) reciters.put(rest.getJSONObject(i));
             surahs = j.getJSONArray("surahs");
             total = 0;
             for (int i = 0; i < surahs.length(); i++) total += surahs.getJSONObject(i).getInt("ayahs");
@@ -98,11 +104,33 @@ final class Khatma {
             } else if (fc == AudioManager.AUDIOFOCUS_LOSS) { stop(); p().edit().putString("k_err", "أوقفها تطبيق آخر أخذ الصوت").apply(); }   // another app took the sound for good
         }).build();
         am.requestAudioFocus(focus);
-        final int s = surah(), pos = p().getInt("k_pos", 0);
+        this.aa = aa;
+        on = true;
+        changed.run();
+        final int s = surah();
+        File f = cacheFile(s);
+        if (f.length() > 0) play(f.getPath(), false, s);   // already on the screen
+        else play(url(s), true, s);                        // streamed; if the screen's player refuses it, downloaded
+        prefetch(s >= 114 ? 1 : s + 1);
+    }
+    private AudioAttributes aa;
+
+    private String url(int s) { return server() + String.format(java.util.Locale.US, "%03d.mp3", s); }
+    /** One reciter's surah kept on the screen: the current one and the next, so the next starts at once. */
+    private File cacheFile(int s) { return new File(c.getCacheDir(), "k_" + reciterId() + "_" + s + ".mp3"); }
+
+    private void play(String src, boolean stream, final int s) {
+        if (!on || surah() != s) return;
+        if (mp != null) { try { mp.release(); } catch (Exception ignored) { } mp = null; }
+        final int pos = p().getInt("k_pos", 0);
         try {
             mp = new MediaPlayer();
             mp.setAudioAttributes(aa);
-            mp.setDataSource(server() + String.format(java.util.Locale.US, "%03d.mp3", s));
+            if (stream) {
+                java.util.Map<String, String> hd = new java.util.HashMap<>();
+                hd.put("User-Agent", "Mozilla/5.0 (Linux; Android 10) UrCar");
+                mp.setDataSource(c, android.net.Uri.parse(src), hd);
+            } else mp.setDataSource(src);
             mp.setOnPreparedListener(m -> {
                 p().edit().putInt("k_dur", m.getDuration()).apply();
                 if (pos > 0 && pos < m.getDuration() - 3000) m.seekTo(pos);
@@ -110,16 +138,46 @@ final class Khatma {
             });
             mp.setOnCompletionListener(m -> next());
             mp.setOnErrorListener((m, w, e) -> {
-                stop();
-                p().edit().putString("k_err", "الخطأ " + w + "/" + e + " في " + surahName()).apply();
-                android.widget.Toast.makeText(c, "لم تعمل التلاوة (" + w + "/" + e + "). تأكد من الإنترنت ثم أعد المحاولة", android.widget.Toast.LENGTH_LONG).show();
+                if (stream) { downloadThenPlay(s); return true; }   // the owner's screen refused the stream (1/0)
+                fail("الخطأ " + w + "/" + e + " في " + surahName());
                 return true;
             });
             mp.prepareAsync();
-            on = true;
+            h.removeCallbacks(saver);
             h.postDelayed(saver, 10_000);
-        } catch (Exception e) { stop(); }
-        changed.run();
+        } catch (Exception e) {
+            if (stream) downloadThenPlay(s); else fail(e.getClass().getSimpleName());
+        }
+    }
+
+    /** The surah downloaded by the app itself (as the adhan), then played from the screen. */
+    private void downloadThenPlay(final int s) {
+        if (mp != null) { try { mp.release(); } catch (Exception ignored) { } mp = null; }
+        android.widget.Toast.makeText(c, "تُنزَّل سورة " + surahName() + "…", android.widget.Toast.LENGTH_SHORT).show();
+        final File f = cacheFile(s);
+        new Thread(() -> {
+            try {
+                synchronized (f.getPath().intern()) { if (f.length() == 0) Net.download(url(s), f); }
+                h.post(() -> play(f.getPath(), false, s));
+            } catch (Exception e) {
+                h.post(() -> fail("لم تُنزَّل سورة " + surahName() + ": " + e.getMessage()));
+            }
+        }).start();
+    }
+
+    /** The next surah, fetched while this one plays; older ones are deleted. */
+    private void prefetch(final int n) {
+        final File keep = cacheFile(n), cur = cacheFile(surah());
+        File[] all = c.getCacheDir().listFiles();
+        if (all != null) for (File x : all) if (x.getName().startsWith("k_") && !x.equals(keep) && !x.equals(cur)) x.delete();
+        if (keep.length() > 0) return;
+        new Thread(() -> { try { synchronized (keep.getPath().intern()) { if (keep.length() == 0) Net.download(url(n), keep); } } catch (Exception ignored) { } }).start();
+    }
+
+    private void fail(String why) {
+        stop();
+        p().edit().putString("k_err", why).apply();
+        android.widget.Toast.makeText(c, "لم تعمل التلاوة: " + why + ". تأكد من الإنترنت ثم أعد المحاولة", android.widget.Toast.LENGTH_LONG).show();
     }
 
     /** The next surah; after An-Nas a khatma is complete and it begins again from Al-Fatiha. */

@@ -41,11 +41,15 @@ final class Net {
         } finally { h.disconnect(); }
     }
 
+    /** To a file next to it first, renamed when complete, so a cut connection never leaves half a file in its place. */
     static void download(String url, File to) throws Exception {
         HttpURLConnection h = (HttpURLConnection) new URL(url).openConnection();
         h.setConnectTimeout(15000);
         h.setReadTimeout(30000);
         h.setInstanceFollowRedirects(true);
+        h.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10) UrCar");
+        int code = h.getResponseCode();
+        if (code >= 400) { h.disconnect(); throw new Exception("HTTP " + code); }
         File part = new File(to.getPath() + ".part");
         try (InputStream in = h.getInputStream(); OutputStream out = new FileOutputStream(part)) {
             byte[] buf = new byte[16384];
@@ -95,7 +99,6 @@ final class Net {
             Prefs.put(c, "fm_table", s);
         } catch (Exception ignored) { }
     }
-    /** {city, MHz} of the nearest station within 80 km, the owner's own correction first; null when none. */
     /** The frequencies the owner saved where the table has none (or a wrong one): [{name, lat, lon, mhz}] */
     static JSONArray mine(Context c) {
         try { return new JSONArray(Prefs.of(c).getString("fm_mine", "[]")); } catch (Exception e) { return new JSONArray(); }
@@ -110,8 +113,9 @@ final class Net {
         try { out.put(new JSONObject().put("name", name).put("lat", lat).put("lon", lon).put("mhz", mhz)); } catch (Exception ignored) { }
         Prefs.put(c, "fm_mine", out.toString());
     }
+    /** {city, MHz, verified} for the car's place: the owner's own within 80 km first, else the table's nearest within 80 km; null when none. */
     static Object[] fmHere(Context c, double lat, double lon) {
-        JSONArray my = mine(c);   // the owner's own first, within 80 km
+        JSONArray my = mine(c);
         JSONObject near = null; double dm = 1e9;
         for (int i = 0; i < my.length(); i++) {
             JSONObject o = my.optJSONObject(i);
