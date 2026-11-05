@@ -17,8 +17,10 @@ jobs:
         env:
           KEY_B64: ${{ secrets.URCAR_KEYSTORE_B64 }}
         run: |
-          if [ -z "$KEY_B64" ]; then echo "::error::Add the secrets URCAR_KEYSTORE_B64 and URCAR_KEYSTORE_PASSWORD (Settings > Secrets and variables > Actions)"; exit 1; fi
+          # without the secrets the app is only compiled (a check), never published: an update must carry the same key
+          if [ -z "$KEY_B64" ]; then echo "::warning::No secret URCAR_KEYSTORE_B64: compiling only, nothing is published"; echo "SIGNED=0" >> "$GITHUB_ENV"; exit 0; fi
           echo "$KEY_B64" | base64 -d > "$RUNNER_TEMP/urcar.keystore"
+          echo "SIGNED=1" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '17'}
       - uses: gradle/actions/setup-gradle@v4
@@ -27,12 +29,16 @@ jobs:
         env:
           URCAR_KEYSTORE: ${{ runner.temp }}/urcar.keystore
           URCAR_KEYSTORE_PASSWORD: ${{ secrets.URCAR_KEYSTORE_PASSWORD }}
-        run: gradle -p android :app:assembleRelease -PversionCode=${{ github.run_number }} --no-daemon
-      - run: |
+        run: |
+          if [ "$SIGNED" = 1 ]; then gradle -p android :app:assembleRelease -PversionCode=${{ github.run_number }} --no-daemon
+          else gradle -p android :app:assembleDebug --no-daemon; fi
+      - if: env.SIGNED == '1'
+        run: |
           cp android/app/build/outputs/apk/release/app-release.apk urcar.apk
           echo '{"versionCode": ${{ github.run_number }}}' > version.json
           rm -f "$RUNNER_TEMP/urcar.keystore"
-      - uses: softprops/action-gh-release@v2
+      - if: env.SIGNED == '1'
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: app-latest
           name: سيارتك
