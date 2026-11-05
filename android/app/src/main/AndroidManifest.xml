@@ -6,17 +6,15 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 
     <application android:label="سيارتك" android:supportsRtl="true"
         android:icon="@android:drawable/ic_menu_compass"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
-        <!-- The home screen: starts the chosen navigation app full screen; the panel floats beside it -->
+        <!-- The home screen: the panel on the driver's side, speed, heading and the quote of the hour on the other -->
         <activity android:name=".HomeActivity" android:exported="true" android:launchMode="singleTask"
             android:stateNotNeeded="true" android:excludeFromRecents="true"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode">

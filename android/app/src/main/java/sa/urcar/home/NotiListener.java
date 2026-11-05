@@ -17,6 +17,25 @@ import java.util.List;
  * title, artist and controls; the phone over Bluetooth gives the state only).
  */
 public class NotiListener extends NotificationListenerService {
+    /** Radarbot's alert from its notification (title and text) and when it came; shown for 20 seconds. Not yet verified
+     *  on the owner's screen that Radarbot puts the alert there: if it does not, the line stays empty. */
+    static volatile String radar;
+    static volatile long radarAt;
+    static final String RADARBOT = "com.vialsoft.radarbot_free";
+
+    @Override public void onNotificationPosted(android.service.notification.StatusBarNotification sbn) {
+        if (!sbn.getPackageName().startsWith("com.vialsoft.radarbot")) return;
+        android.os.Bundle x = sbn.getNotification().extras;
+        CharSequence t = x.getCharSequence(android.app.Notification.EXTRA_TITLE), s = x.getCharSequence(android.app.Notification.EXTRA_TEXT);
+        String v = ((t == null ? "" : t) + (s == null || s.length() == 0 ? "" : "، " + s)).trim();
+        if (v.isEmpty() || v.toLowerCase().contains("radarbot")) return;   // its ongoing «running» notice is not an alert
+        radar = v;
+        radarAt = System.currentTimeMillis();
+    }
+    @Override public void onNotificationRemoved(android.service.notification.StatusBarNotification sbn) {
+        if (sbn.getPackageName().startsWith("com.vialsoft.radarbot")) radarAt = 0;
+    }
+
 
     static boolean allowed(Context c) {
         String on = Settings.Secure.getString(c.getContentResolver(), "enabled_notification_listeners");

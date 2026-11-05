@@ -38,9 +38,12 @@ public class PanelService extends Service implements Panel.Actions {
     static PanelService live;
 
     private final Handler h = new Handler(Looper.getMainLooper());
-    private WindowManager wm;
-    private Panel panel;
-    private boolean shown;
+    private Panel panel;     // the home screen's two halves, while it is open
+    private Drive drive;
+    private Quotes quotes;
+    private float kmh = -1, bearing = -1;
+    private long fixAt;
+    static volatile boolean prefsChanged;
     private final Day day = new Day();
     private Sound sound;
     private double[] wx;   // {°C, code}
@@ -55,7 +58,7 @@ public class PanelService extends Service implements Panel.Actions {
         super.onCreate();
         live = this;
         startForeground(1, notification());
-        wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        quotes = new Quotes(this);
         sound = new Sound(this);
         sound.changed = () -> h.post(this::drawRadio);
         day.lat = Prefs.of(this).getFloat("lat", (float) day.lat);
@@ -69,7 +72,6 @@ public class PanelService extends Service implements Panel.Actions {
 
     @Override public void onDestroy() {
         h.removeCallbacksAndMessages(null);
-        hide();
         sound.release();
         if (lm != null) try { lm.removeUpdates(gps); } catch (Exception ignored) { }
         if (live == this) live = null;
@@ -82,53 +84,17 @@ public class PanelService extends Service implements Panel.Actions {
         return new Notification.Builder(this, "panel").setContentTitle("سيارتك تعمل").setSmallIcon(android.R.drawable.ic_menu_compass).build();
     }
 
-    // ---------------------------------------------------------------- the floating panel
-    private void show() {
-        if (shown || !Settings.canDrawOverlays(this)) return;
-        DisplayMetrics m = new DisplayMetrics();
-        wm.getDefaultDisplay().getRealMetrics(m);
-        int w = Math.max(m.widthPixels, m.heightPixels) * 2 / 5;
-        if (panel == null) panel = new Panel(this, this, Math.min(m.widthPixels, m.heightPixels));
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(w, WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                PixelFormat.OPAQUE);
-        lp.gravity = (Prefs.side(this).equals("right") ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
-        try { wm.addView(panel, lp); shown = true; draw(System.currentTimeMillis()); } catch (Exception ignored) { }
-    }
-    private void hide() {
-        if (!shown) return;
-        try { wm.removeView(panel); } catch (Exception ignored) { }
-        shown = false;
-    }
-    /** After «الإعدادات»: the side may have changed, so the panel is placed again. */
-    void applyPrefs() { hide(); panel = null; lastFg = ""; }
-
-    /** Is the navigation app (or our home screen) in front? From the last screens that came to the front. */
-    private String foreground() {
-        AppOpsManager ops = (AppOpsManager) getSystemService(APP_OPS_SERVICE);
-        if (ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), getPackageName()) != AppOpsManager.MODE_ALLOWED)
-            return HomeActivity.resumed ? getPackageName() : "";   // without the permission we cannot tell: only on our home screen
-        long now = System.currentTimeMillis();
-        UsageEvents ev = ((UsageStatsManager) getSystemService(USAGE_STATS_SERVICE)).queryEvents(now - (lastFg.isEmpty() ? 3600_000 : 10_000), now);   // the first time: the last hour
-        UsageEvents.Event e = new UsageEvents.Event();
-        while (ev.hasNextEvent()) {
-            ev.getNextEvent(e);
-            if (e.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND) lastFg = e.getPackageName() + "/" + e.getClassName();
-        }
-        return lastFg;
-    }
+    // ---------------------------------------------------------------- the home screen's views
+    /** HomeActivity hands its two halves over while it is open; the service fills them every second. */
+    void attach(Panel p, Drive d) { panel = p; drive = d; if (p != null) draw(System.currentTimeMillis()); }
+    /** After «الإعدادات»: the home screen builds itself again (the driver's side may have changed). */
+    void applyPrefs() { prefsChanged = true; }
 
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             long now = System.currentTimeMillis();
-            String fg = foreground();
-            String nav = Prefs.nav(PanelService.this);
-            // over the navigation app, or our home screen while it shows the setup; hidden over anything else
-            boolean want = Settings.canDrawOverlays(PanelService.this) && ((!nav.isEmpty() && fg.startsWith(nav + "/")) || fg.equals(nav) || HomeActivity.resumed);
-            if (want) show(); else hide();
             adhan(now);
-            if (shown) draw(now);
+            if (panel != null && HomeActivity.resumed) draw(now);
             background(now);
             h.postDelayed(this, 1000);
         }
@@ -138,7 +104,7 @@ public class PanelService extends Service implements Panel.Actions {
     private void draw(long now) {
         day.ensure(now);
         boolean d = themeDay(now);
-        if (d != panel.isDay()) panel.setDay(d);
+        if (d != panel.isDay()) { panel.setDay(d); if (drive != null) drive.setDay(d); }
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(now);
         int hh = c.get(Calendar.HOUR_OF_DAY), h12 = hh % 12 == 0 ? 12 : hh % 12;
@@ -167,6 +133,12 @@ public class PanelService extends Service implements Panel.Actions {
         panel.showMusic(mc, mc == null ? "" : NotiListener.appName(this, mc.getPackageName()),
                 mc == null ? "" : NotiListener.title(mc), mc == null ? "" : NotiListener.artist(mc), mc != null && NotiListener.playing(mc));
         drawRadio();
+        if (drive != null) {
+            boolean fresh = now - fixAt < 6000;
+            drive.showSpeed(fresh ? Math.round(kmh) : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1);
+            drive.showAlert(now - NotiListener.radarAt < 20_000 ? NotiListener.radar : null);
+            drive.showQuote(quotes.at(now));
+        }
     }
     private String turnedFor = "";
 
@@ -208,6 +180,12 @@ public class PanelService extends Service implements Panel.Actions {
     private final LocationListener gps = new LocationListener() {
         @Override public void onLocationChanged(Location l) {
             day.lat = l.getLatitude(); day.lon = l.getLongitude();
+            if (LocationManager.GPS_PROVIDER.equals(l.getProvider()) || l.hasSpeed()) {
+                kmh = l.hasSpeed() ? l.getSpeed() * 3.6f : 0;
+                // GPS gives a heading only while moving; below 5 km/h it wanders, so the last one stays
+                bearing = l.hasBearing() && kmh >= 5 ? l.getBearing() : -1;
+                fixAt = System.currentTimeMillis();
+            }
             Prefs.of(PanelService.this).edit().putFloat("lat", (float) day.lat).putFloat("lon", (float) day.lon).apply();
         }
         @Override public void onStatusChanged(String p, int s, Bundle b) { }
@@ -220,7 +198,7 @@ public class PanelService extends Service implements Panel.Actions {
         try {
             for (String p : new String[]{LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER}) {
                 if (!lm.getAllProviders().contains(p)) continue;
-                lm.requestLocationUpdates(p, 60_000, 500, gps, Looper.getMainLooper());
+                lm.requestLocationUpdates(p, p.equals(LocationManager.GPS_PROVIDER) ? 1000 : 60_000, 0, gps, Looper.getMainLooper());
                 Location last = lm.getLastKnownLocation(p);
                 if (last != null) gps.onLocationChanged(last);
             }
@@ -240,6 +218,11 @@ public class PanelService extends Service implements Panel.Actions {
     @Override public void bluetooth() { launch(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)); }
     @Override public void settings() { launch(new Intent(this, SettingsActivity.class)); }
     @Override public void apps() { launch(new Intent(this, AppsActivity.class)); }
+    /** The speed card opens the chosen navigation app. */
+    void openNav() {
+        String nav = Prefs.nav(this);
+        if (nav.isEmpty()) Toast.makeText(this, "لا يوجد تطبيق ملاحة؛ اختره من الإعدادات", Toast.LENGTH_LONG).show(); else launchPkg(nav);
+    }
     @Override public void openMusic() {
         MediaController mc = NotiListener.session(this);
         if (mc != null && mc.getSessionActivity() != null) { try { mc.getSessionActivity().send(); return; } catch (Exception ignored) { } }

@@ -40,7 +40,7 @@ public class SettingsActivity extends Activity {
         top.addView(chip("رجوع", false, this::finish));
         list.addView(top);
 
-        head("تطبيق الملاحة بجانب اللوحة");
+        head("تطبيق الملاحة (يُفتح من بطاقة السرعة)");
         LinearLayout navRow = grid();
         String nav = Prefs.nav(this);
         for (String[] n : Prefs.NAV) {
