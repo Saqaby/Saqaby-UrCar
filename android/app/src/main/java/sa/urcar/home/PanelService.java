@@ -44,9 +44,11 @@ public class PanelService extends Service implements Panel.Actions {
     private float kmh = -1, bearing = -1, lastBearing = -1;
     private long fixAt;
     // the trip: starts when the car moves after an hour without moving (or when the screen starts)
-    private long tripStart, lastMoveAt, greetUntil, duaUntil;
+    private long tripStart, lastMoveAt, duaUntil, savedMoveAt;
     private double tripKm, prevLat = 999, prevLon;
-    private boolean greeted, travelDua;
+    private boolean travelDua;
+    /** A stop this long, the car on or off, makes the next move a new trip (the riding dhikr). */
+    static final long STOP_MS = 25 * 60_000L;
     private double dust = -1;
     private long dustAt;
     private String[] riding, travel;
@@ -165,28 +167,13 @@ public class PanelService extends Service implements Panel.Actions {
             drive.showTrip(tripStart > 0 && tripKm >= 0.5 ? "الرحلة " + Ui.ar(String.format(java.util.Locale.US, tripKm < 10 ? "%.1f" : "%.0f", tripKm))
                     + " كم، " + Ui.remaining((now - tripStart) / 1000) : "");
             drive.showRemind(day.remind(now));
-            // the quote card: the greeting when the car starts, the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
-            if (!greeted) { greeted = true; greetUntil = now + 10_000; }
-            if (now < greetUntil) drive.showQuote(greeting(now), false);
-            else if (now < duaUntil && (travelDua ? travel : riding) != null) drive.showQuote(travelDua ? travel : riding, moving);
+            // the quote card: the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
+            if (now < duaUntil && (travelDua ? travel : riding) != null) drive.showQuote(travelDua ? travel : riding, moving);
             else drive.showQuote(moving ? quotes.at(now, 60) : quotes.at(now), moving);
         }
     }
     private String turnedFor = "";
 
-    /** «صباح الخير» or «مساء الخير», the temperature, the next prayer and the days to Ramadan, for 10 seconds. */
-    private String[] greeting(long now) {
-        Calendar c = Calendar.getInstance();
-        c.setTimeInMillis(now);
-        String hi = c.get(Calendar.HOUR_OF_DAY) < 12 ? "صباح الخير" : "مساء الخير";
-        long[] n = day.next(now);
-        StringBuilder b = new StringBuilder();
-        if (wx != null) b.append("الحرارة ").append(Ui.ar(Math.round(wx[0]))).append("°، ");
-        b.append(day.name((int) n[0], now)).append(" ").append(Day.clockOf(n[1]));
-        int r = day.ramadanDays(now);
-        if (r > 0) b.append("، وباقٍ على رمضان ").append(Ui.ar(r)).append(r >= 3 && r <= 10 ? " أيام" : " يومًا");
-        return new String[]{hi, b.toString(), day.placeName()};
-    }
 
     private boolean themeDay(long now) {
         String t = Prefs.theme(this);
@@ -244,10 +231,12 @@ public class PanelService extends Service implements Panel.Actions {
         @Override public void onProviderEnabled(String p) { }
         @Override public void onProviderDisabled(String p) { }
     };
-    /** A trip starts when the car moves (10 km/h) after an hour without moving; its distance adds up from fix to fix. */
+    /** A trip starts when the car moves (10 km/h) after 25 minutes or more without moving, with the screen on or off (the
+     *  last move is kept on the screen, so a restart of the screen alone does not count as a stop). */
     private void trip(Location l, long now) {
         if (kmh >= 10) {
-            if (tripStart == 0 || now - lastMoveAt > 3600_000L) {
+            if (lastMoveAt == 0) lastMoveAt = Prefs.of(this).getLong("last_move", 0);
+            if (now - lastMoveAt >= STOP_MS) {
                 tripStart = now; tripKm = 0; prevLat = 999;
                 duaUntil = now + 60_000;
                 final boolean far = travelDuaFor(l);
@@ -257,6 +246,7 @@ public class PanelService extends Service implements Panel.Actions {
                 travelDua = hl < 90 && Day.km(hl, ho, l.getLatitude(), l.getLongitude()) > 80;   // far from home: the travel du'a
             }
             lastMoveAt = now;
+            if (now - savedMoveAt > 30_000) { savedMoveAt = now; Prefs.of(this).edit().putLong("last_move", now).apply(); }
         }
         if (kmh >= 3 && prevLat < 90) tripKm += Day.km(prevLat, prevLon, l.getLatitude(), l.getLongitude());
         prevLat = l.getLatitude(); prevLon = l.getLongitude();
