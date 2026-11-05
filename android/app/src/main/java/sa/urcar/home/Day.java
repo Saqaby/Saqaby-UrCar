@@ -124,6 +124,37 @@ final class Day {
         return -1;
     }
 
+    /** The bearing to the Kaaba from the car's place, degrees from north (great circle). */
+    float qibla() {
+        double r = Math.PI / 180, la = lat * r, lo = lon * r, kla = 21.4225 * r, klo = 39.8262 * r;
+        double y = Math.sin(klo - lo), x = Math.cos(la) * Math.tan(kla) - Math.sin(la) * Math.cos(klo - lo);
+        return (float) ((Math.atan2(y, x) / r + 360) % 360);
+    }
+
+    /**
+     * One reminder for the quote card, most important first, as UrTV's fasting card: tomorrow is Arafah, Ashura or
+     * Tasu'a, one of the white days (13-15), or a Monday or Thursday (not in Ramadan, never on the days of Eid or
+     * Tashreeq); else on Friday «سورة الكهف». null when there is none.
+     */
+    String remind(long now) {
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(now);
+        IslamicCalendar h = hijri(now), t = hijri(now + 86_400_000L);
+        int tm = t.get(IslamicCalendar.MONTH) + 1, td = t.get(IslamicCalendar.DAY_OF_MONTH);
+        boolean noFast = tm == 9 || (tm == 10 && td == 1) || (tm == 12 && td >= 10 && td <= 13) || h.get(IslamicCalendar.MONTH) == 8;
+        if (!noFast) {
+            if (tm == 12 && td == 9) return "غدًا يوم عرفة: يُستحب صيامه";
+            if (tm == 1 && td == 10) return "غدًا عاشوراء: يُستحب صيامه";
+            if (tm == 1 && td == 9) return "غدًا تاسوعاء: يُستحب صيامه مع عاشوراء";
+            if (td >= 13 && td <= 15) return "غدًا من الأيام البيض: يُستحب صيامه";
+            int wd = (c.get(Calendar.DAY_OF_WEEK) % 7) + 1;   // tomorrow
+            if (wd == Calendar.MONDAY) return "غدًا الاثنين: يُستحب صيامه";
+            if (wd == Calendar.THURSDAY) return "غدًا الخميس: يُستحب صيامه";
+        }
+        if (c.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY) return "اليوم الجمعة: سورة الكهف";
+        return null;
+    }
+
     // ---------------------------------------------------------------- the place
     static final Object[][] CITIES = {
             {"الرياض", 24.7136, 46.6753}, {"جدة", 21.4858, 39.1925}, {"مكة المكرمة", 21.4225, 39.8262}, {"المدينة المنورة", 24.4672, 39.6024},

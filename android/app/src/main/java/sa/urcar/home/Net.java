@@ -64,6 +64,15 @@ final class Net {
         } catch (Exception e) { return null; }
     }
 
+    /** The larger of PM10 and dust (µg/m³) now at that place, Open-Meteo's air quality (as UrTV); -1 when unknown. */
+    static double dust(double lat, double lon) {
+        try {
+            JSONObject c = new JSONObject(get(String.format(java.util.Locale.US,
+                    "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.3f&longitude=%.3f&current=pm10,dust", lat, lon))).getJSONObject("current");
+            return Math.max(c.optDouble("pm10", 0), c.optDouble("dust", 0));
+        } catch (Exception e) { return -1; }
+    }
+
     // ---------------------------------------------------------------- the FM table (assets/fm-quran.json; refreshed from the repo)
     static JSONArray fmStations(Context c) {
         String s = Prefs.of(c).getString("fm_table", "");

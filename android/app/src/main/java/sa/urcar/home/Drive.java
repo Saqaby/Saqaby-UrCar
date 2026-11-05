@@ -17,7 +17,8 @@ final class Drive extends LinearLayout {
     private final float H;
     private Ui.Theme th;
     private final LinearLayout top, alertBox, quoteBox;
-    private final TextView speed, unit, heading, alert, qTitle, qText, qSrc;
+    private final TextView speed, unit, trip, heading, qibla, alert, remind, qTitle, qText, qSrc;
+    private boolean mosqueHot, moving;
     private final Compass compass;
     private final LinearLayout dests;
     private final TextView[] destViews = new TextView[3];
@@ -41,8 +42,11 @@ final class Drive extends LinearLayout {
         speed.setGravity(Gravity.CENTER);
         unit = Ui.text(c, px(3.6f), Ui.regular(c), 0);
         unit.setText("كم/س");
+        trip = Ui.text(c, px(2.6f), Ui.regular(c), 0);
+        trip.setGravity(Gravity.CENTER);
         sp.addView(speed);
         sp.addView(unit);
+        sp.addView(trip, lp(px(1.4f)));
         top.addView(sp, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
         LinearLayout cp = new LinearLayout(c);
         cp.setOrientation(VERTICAL);
@@ -51,7 +55,10 @@ final class Drive extends LinearLayout {
         heading = Ui.text(c, px(3.8f), Ui.medium(c), 0);
         heading.setGravity(Gravity.CENTER);
         cp.addView(compass, new LayoutParams(px(26), px(26)));
+        qibla = Ui.text(c, px(2.6f), Ui.regular(c), 0);
+        qibla.setGravity(Gravity.CENTER);
         cp.addView(heading, lp(px(1.2f)));
+        cp.addView(qibla, lp(px(0.6f)));
         top.addView(cp, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
         top.setOnClickListener(v -> openNav.run());
         addView(top, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1.25f));
@@ -89,6 +96,9 @@ final class Drive extends LinearLayout {
         quoteBox.setOrientation(VERTICAL);
         quoteBox.setGravity(Gravity.CENTER_VERTICAL);
         quoteBox.setPadding(px(3), px(2), px(3), px(2));
+        remind = Ui.text(c, px(2.8f), Ui.medium(c), 0);
+        remind.setVisibility(GONE);
+        quoteBox.addView(remind, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{ bottomMargin = px(1.2f); }});
         qTitle = Ui.text(c, px(2.8f), Ui.regular(c), 0);
         qText = Ui.text(c, px(3.8f), Ui.medium(c), 0);
         qText.setSingleLine(false);
@@ -114,8 +124,38 @@ final class Drive extends LinearLayout {
         alertBox.setBackground(Ui.box(0xffe9a24b, 0, px(1.6f))); alert.setTextColor(0xff1b1408);
         quoteBox.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
         qTitle.setTextColor(th.sand); qText.setTextColor(th.fg); qSrc.setTextColor(th.muted);
-        for (TextView t : destViews) { t.setBackground(Ui.box(th.panel, th.line, px(2))); t.setTextColor(th.fg); }
+        trip.setTextColor(th.muted); qibla.setTextColor(th.muted);
+        remind.setBackground(Ui.box(th.panel2, th.sand, px(1.4f))); remind.setPadding(px(1.6f), px(.8f), px(1.6f), px(.8f)); remind.setTextColor(th.sand);
+        paintDests();
     }
+
+    /** The three destinations; «أقرب مسجد» stands out around each adhan (30 minutes before to 20 after). */
+    private void paintDests() {
+        for (int i = 0; i < 3; i++) {
+            boolean hot = i == 2 && mosqueHot;
+            destViews[i].setBackground(hot ? Ui.box(th.sand, 0, px(2)) : Ui.box(th.panel, th.line, px(2)));
+            destViews[i].setTextColor(hot ? th.sandInk : th.fg);
+        }
+    }
+    void setMosqueHot(boolean hot) { if (hot != mosqueHot) { mosqueHot = hot; paintDests(); } }
+
+    void showTrip(String s) { set(trip, s); trip.setVisibility(s.isEmpty() ? GONE : VISIBLE); }
+
+    /** qiblaDeg: from north, at the car's place. Said relative to the car when its heading is known. */
+    void showQibla(float qiblaDeg) {
+        compass.qibla = qiblaDeg;
+        if (compass.bearing < 0) { set(qibla, "القبلة " + Ui.ar(Math.round(qiblaDeg)) + "° من الشمال"); return; }
+        int rel = Math.round(((qiblaDeg - compass.bearing) % 360 + 360) % 360);
+        String s;
+        if (rel <= 15 || rel >= 345) s = "القبلة أمام السيارة";
+        else if (rel >= 165 && rel <= 195) s = "القبلة خلف السيارة";
+        else if (rel < 180) s = "القبلة يمين السيارة بـ" + Ui.ar(rel) + "°";
+        else s = "القبلة يسار السيارة بـ" + Ui.ar(360 - rel) + "°";
+        set(qibla, s);
+    }
+
+    /** One line over the quote: «اليوم الجمعة: سورة الكهف», «غدًا الاثنين: يُستحب صيامه» … */
+    void showRemind(String s) { remind.setVisibility(s == null ? GONE : VISIBLE); if (s != null) set(remind, s); }
 
     private static final String[] DIRS = {"شمال", "شمال شرق", "شرق", "جنوب شرق", "جنوب", "جنوب غرب", "غرب", "شمال غرب"};
 
@@ -132,13 +172,22 @@ final class Drive extends LinearLayout {
         alertBox.setVisibility(text == null ? GONE : VISIBLE);
         if (text != null) set(alert, text);
     }
-    void showQuote(String[] q) { set(qTitle, q[0]); set(qText, q[1]); set(qSrc, q[2]); }
+    /** Moving: one short text in a bigger letter, two lines at most; stopped: up to three lines. */
+    void showQuote(String[] q, boolean movingNow) {
+        if (movingNow != moving) {
+            moving = movingNow;
+            qText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px(moving ? 4.6f : 3.8f));
+            qText.setMaxLines(moving ? 2 : 3);
+        }
+        set(qTitle, q[0]); set(qText, q[1]); set(qSrc, q[2]);
+    }
 
     private static void set(TextView t, String s) { if (!s.contentEquals(t.getText())) t.setText(s); }
 
     /** A compass rose that turns: the car's arrow points up, north («ش») moves around it. */
     static final class Compass extends View {
-        float bearing = -1;
+        float bearing = -1, qibla = -1;
+        private final Paint kaaba = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG), mark = new Paint(Paint.ANTI_ALIAS_FLAG),
                 car = new Paint(Paint.ANTI_ALIAS_FLAG), label = new Paint(Paint.ANTI_ALIAS_FLAG);
         Compass(Context c) {
@@ -148,7 +197,7 @@ final class Drive extends LinearLayout {
             label.setTypeface(Ui.medium(c));
         }
         void colors(Ui.Theme th) {
-            ring.setColor(th.line); mark.setColor(th.muted); car.setColor(th.fg); label.setColor(th.sand);
+            ring.setColor(th.line); mark.setColor(th.muted); car.setColor(th.fg); label.setColor(th.sand); kaaba.setColor(th.sand);
             invalidate();
         }
         @Override protected void onDraw(Canvas cv) {
@@ -166,6 +215,16 @@ final class Drive extends LinearLayout {
             }
             label.setTextSize(r * .3f);
             cv.drawText("ش", cx, cy - r * .5f, label);
+            if (qibla >= 0) {   // the qibla: a gold mark on the rim, in the same turning frame as north
+                cv.save();
+                cv.rotate(qibla, cx, cy);
+                kaaba.setStyle(Paint.Style.FILL);
+                cv.drawRect(cx - r * .11f, cy - r * 1.0f, cx + r * .11f, cy - r * .78f, kaaba);
+                kaaba.setStyle(Paint.Style.STROKE);
+                kaaba.setStrokeWidth(r * .04f);
+                cv.drawLine(cx, cy - r * .74f, cx, cy - r * .5f, kaaba);
+                cv.restore();
+            }
             cv.restore();
             Path p = new Path();   // the car: an arrow pointing up
             p.moveTo(cx, cy - r * .42f);

@@ -41,8 +41,15 @@ public class PanelService extends Service implements Panel.Actions {
     private Panel panel;     // the home screen's two halves, while it is open
     private Drive drive;
     private Quotes quotes;
-    private float kmh = -1, bearing = -1;
+    private float kmh = -1, bearing = -1, lastBearing = -1;
     private long fixAt;
+    // the trip: starts when the car moves after an hour without moving (or when the screen starts)
+    private long tripStart, lastMoveAt, greetUntil, duaUntil;
+    private double tripKm, prevLat = 999, prevLon;
+    private boolean greeted, travelDua;
+    private double dust = -1;
+    private long dustAt;
+    private String[] riding, travel;
     static volatile boolean prefsChanged;
     private final Day day = new Day();
     private Sound sound;
@@ -59,6 +66,19 @@ public class PanelService extends Service implements Panel.Actions {
         live = this;
         startForeground(1, notification());
         quotes = new Quotes(this);
+        try {
+            java.io.InputStream in = getAssets().open("duas.json");
+            java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n);
+            in.close();
+            org.json.JSONObject j = new org.json.JSONObject(b.toString("UTF-8"));
+            for (String k : new String[]{"riding", "travel"}) {
+                org.json.JSONObject d = j.getJSONObject(k);
+                String[] v = {d.getString("title"), d.getString("text"), d.getString("src")};
+                if (k.equals("riding")) riding = v; else travel = v;
+            }
+        } catch (Exception ignored) { }
         sound = new Sound(this);
         sound.changed = () -> h.post(this::drawRadio);
         day.lat = Prefs.of(this).getFloat("lat", (float) day.lat);
@@ -134,13 +154,39 @@ public class PanelService extends Service implements Panel.Actions {
                 mc == null ? "" : NotiListener.title(mc), mc == null ? "" : NotiListener.artist(mc), mc != null && NotiListener.playing(mc));
         drawRadio();
         if (drive != null) {
-            boolean fresh = now - fixAt < 6000;
+            boolean fresh = now - fixAt < 6000, moving = fresh && kmh >= 10;
             drive.showSpeed(fresh ? Math.round(kmh) : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1);
-            drive.showAlert(now - NotiListener.radarAt < 20_000 ? NotiListener.radar : null);
-            drive.showQuote(quotes.at(now));
+            drive.showQibla(day.qibla());
+            // Radarbot first; else dust (PM10 or dust >= 150 µg/m³ in the last 3 hours, as UrTV)
+            String alert = now - NotiListener.radarAt < 20_000 ? NotiListener.radar : null;
+            if (alert == null && dust >= 150 && now - dustAt < 3 * 3600_000L) alert = dust >= 400 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
+            drive.showAlert(alert);
+            drive.setMosqueHot(day.bar(now) != null);
+            drive.showTrip(tripStart > 0 && tripKm >= 0.5 ? "الرحلة " + Ui.ar(String.format(java.util.Locale.US, tripKm < 10 ? "%.1f" : "%.0f", tripKm))
+                    + " كم، " + Ui.remaining((now - tripStart) / 1000) : "");
+            drive.showRemind(day.remind(now));
+            // the quote card: the greeting when the car starts, the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
+            if (!greeted) { greeted = true; greetUntil = now + 10_000; }
+            if (now < greetUntil) drive.showQuote(greeting(now), false);
+            else if (now < duaUntil && (travelDua ? travel : riding) != null) drive.showQuote(travelDua ? travel : riding, moving);
+            else drive.showQuote(moving ? quotes.at(now, 60) : quotes.at(now), moving);
         }
     }
     private String turnedFor = "";
+
+    /** «صباح الخير» or «مساء الخير», the temperature, the next prayer and the days to Ramadan, for 10 seconds. */
+    private String[] greeting(long now) {
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(now);
+        String hi = c.get(Calendar.HOUR_OF_DAY) < 12 ? "صباح الخير" : "مساء الخير";
+        long[] n = day.next(now);
+        StringBuilder b = new StringBuilder();
+        if (wx != null) b.append("الحرارة ").append(Ui.ar(Math.round(wx[0]))).append("°، ");
+        b.append(day.name((int) n[0], now)).append(" ").append(Day.clockOf(n[1]));
+        int r = day.ramadanDays(now);
+        if (r > 0) b.append("، وباقٍ على رمضان ").append(Ui.ar(r)).append(r >= 3 && r <= 10 ? " أيام" : " يومًا");
+        return new String[]{hi, b.toString(), day.placeName()};
+    }
 
     private boolean themeDay(long now) {
         String t = Prefs.theme(this);
@@ -170,7 +216,12 @@ public class PanelService extends Service implements Panel.Actions {
         if (now - wxAt > 30 * 60_000L || moved) {
             wxAt = now; wxLat = day.lat; wxLon = day.lon;
             final double la = day.lat, lo = day.lon;
-            new Thread(() -> { double[] r = Net.weather(la, lo); if (r != null) h.post(() -> { wx = r; wxAt = System.currentTimeMillis(); }); }).start();
+            new Thread(() -> {
+                double[] r = Net.weather(la, lo);
+                if (r != null) h.post(() -> { wx = r; wxAt = System.currentTimeMillis(); });
+                double d = Net.dust(la, lo);
+                if (d >= 0) h.post(() -> { dust = d; dustAt = System.currentTimeMillis(); });
+            }).start();
         }
         if (now - fmAt > 24 * 3600_000L) { fmAt = now; new Thread(() -> Net.refreshFm(this)).start(); }
         if (now - updAt > 6 * 3600_000L) { updAt = now; new Thread(() -> Updater.check(this, false)).start(); }
@@ -182,6 +233,7 @@ public class PanelService extends Service implements Panel.Actions {
             day.lat = l.getLatitude(); day.lon = l.getLongitude();
             if (LocationManager.GPS_PROVIDER.equals(l.getProvider()) || l.hasSpeed()) {
                 kmh = l.hasSpeed() ? l.getSpeed() * 3.6f : 0;
+                trip(l, System.currentTimeMillis());
                 // GPS gives a heading only while moving; below 5 km/h it wanders, so the last one stays
                 bearing = l.hasBearing() && kmh >= 5 ? l.getBearing() : -1;
                 fixAt = System.currentTimeMillis();
@@ -192,6 +244,21 @@ public class PanelService extends Service implements Panel.Actions {
         @Override public void onProviderEnabled(String p) { }
         @Override public void onProviderDisabled(String p) { }
     };
+    /** A trip starts when the car moves (10 km/h) after an hour without moving; its distance adds up from fix to fix. */
+    private void trip(Location l, long now) {
+        if (kmh >= 10) {
+            if (tripStart == 0 || now - lastMoveAt > 3600_000L) {
+                tripStart = now; tripKm = 0; prevLat = 999;
+                duaUntil = now + 60_000;
+                float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
+                travelDua = hl < 90 && Day.km(hl, ho, l.getLatitude(), l.getLongitude()) > 80;   // far from home: the travel du'a
+            }
+            lastMoveAt = now;
+        }
+        if (kmh >= 3 && prevLat < 90) tripKm += Day.km(prevLat, prevLon, l.getLatitude(), l.getLongitude());
+        prevLat = l.getLatitude(); prevLon = l.getLongitude();
+    }
+
     void startLocation() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return;
         lm = (LocationManager) getSystemService(LOCATION_SERVICE);

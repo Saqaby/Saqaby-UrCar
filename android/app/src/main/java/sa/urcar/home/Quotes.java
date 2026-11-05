@@ -32,7 +32,10 @@ final class Quotes {
     }
 
     /** {title, text, source} for that moment. */
-    String[] at(long now) {
+    String[] at(long now) { return at(now, 10_000); }
+
+    /** The same, but no longer than maxLen characters: the first that short from the hour's own on. */
+    String[] at(long now, int maxLen) {
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(now);
         int hour = (c.get(Calendar.YEAR) * 366 + c.get(Calendar.DAY_OF_YEAR)) * 24 + c.get(Calendar.HOUR_OF_DAY);
@@ -41,6 +44,7 @@ final class Quotes {
         if (list.length() == 0) list = verses.length() > 0 ? verses : hadith;
         if (list.length() == 0) return new String[]{"", "", ""};
         JSONObject q = list.optJSONObject(Math.floorMod(n, list.length()));
+        for (int k = 0; k < list.length() && q.optString("t").length() > maxLen; k++) q = list.optJSONObject(Math.floorMod(n + k, list.length()));
         String title = list == verses ? "آية" : list == hadith ? "حديث" : "من أقوال السلف";
         String text = q.optString("t");
         if (list == verses) text = "﴿" + text + "﴾";
