@@ -70,11 +70,7 @@
   .ptop .place svg{width:2.8cqh;height:2.8cqh}
   .ptop .place.gps svg{color:var(--go)}
   .prow{display:flex;gap:1.6cqh;align-items:stretch}
-  .nv-speed{flex:none;width:12cqh;height:12cqh;border-radius:50%;border:.7cqh solid var(--line);background:var(--panel2);display:grid;place-content:center;text-align:center;line-height:1}
-  .nv-speed b{font:700 5cqh var(--f-disp);font-variant-numeric:tabular-nums}
-  .nv-speed span{font-size:1.9cqh;color:var(--muted);margin-top:.4cqh}
-  .nv-speed.still b{color:var(--muted)}
-  .radio{flex:1;display:flex;align-items:center;gap:1.4cqh;border:1px solid var(--line);background:var(--panel);border-radius:2cqh;padding:0 2.4cqh;font-size:3.2cqh;cursor:pointer;text-align:right}
+  .radio{flex:1;display:flex;align-items:center;gap:1.4cqh;border:1px solid var(--line);background:var(--panel);border-radius:2cqh;padding:0 2.4cqh;min-height:9cqh;font-size:3.2cqh;cursor:pointer;text-align:right}
   .radio svg{flex:none;width:4.4cqh;height:4.4cqh;color:var(--sand)}
   .radio .mhz{font-variant-numeric:tabular-nums;font-weight:500;color:var(--muted)}
   .panel .m-art{width:8cqh;height:8cqh;font-size:3.6cqh}
@@ -230,7 +226,6 @@
           </div>
         </div>
       <div class="prow">
-        <div class="nv-speed" id="nv-speed" aria-label="السرعة الحالية"><b id="nv-spd">٠</b><span>كم/س</span></div>
         <button class="radio" id="radio" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8 17 3"/><circle cx="15.5" cy="14" r="2.5"/></svg><span><span id="r-t">إذاعة القرآن</span> <span class="mhz" id="r-f"></span></span></button>
       </div>
         <div class="keys" aria-label="الاختصارات">
@@ -557,16 +552,6 @@ document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeAll);
 document.querySelectorAll('.sheet').forEach(s => s.onclick = e => { if(e.target === s) closeAll(); });
 // ---------- the navigation card: on the device it reads the navigation app's ongoing notification
 // (title = the distance to the next step, text = the step, subText = time, distance and arrival). Example below from the owner's screen.
-// the speed: GPS speed (m/s) on the device; in the preview, GPS if the browser gives it, else an example drive
-let SPEED = null, SPEED_AT = 0;
-function drawSpeed(){
-  let v = SPEED !== null && Date.now() - SPEED_AT < 10000 ? SPEED : null;
-  if(v === null) v = 62 + Math.round(8 * Math.sin(Date.now() / 7000));   // the example drive
-  setText($('nv-spd'), ar(Math.max(0, Math.round(v))));
-  $('nv-speed').classList.toggle('still', v < 1);
-}
-setInterval(drawSpeed, 1000);
-drawSpeed();
 $('sys-set').onclick = () => toast('يفتح: إعدادات أندرويد');
 
 const EXAMPLE_APPS = ['يوتيوب','Spotify','أنغامي','واتساب','خرائط Google','Waze','الهاتف','الراديو FM','الكاميرا الخلفية','الملفات','المتجر','الإعدادات'];
@@ -650,7 +635,6 @@ loc.onchange = () => {
   if(!navigator.geolocation){ toast('لا يوجد GPS هنا'); loc.value = '0'; return; }
   navigator.geolocation.watchPosition(pos => {
     const p = {lat:pos.coords.latitude, lon:pos.coords.longitude};
-    if(pos.coords.speed !== null && !isNaN(pos.coords.speed)){ SPEED = pos.coords.speed * 3.6; SPEED_AT = Date.now(); }
     usePlace({...p, tz:DEVICE_TZ, name:nearName(p), gps:true});   // in the car the device clock already follows the place
   }, () => { toast('رُفض الوصول للموقع؛ استخدمتُ الرياض'); loc.value = '0'; loc.onchange(); }, {enableHighAccuracy:false, maximumAge:60000});
 };
