@@ -151,6 +151,12 @@
   .nv-dist{font:700 11cqh var(--f-disp);line-height:1;font-variant-numeric:tabular-nums}
   .nv-step{font-size:4.6cqh;font-weight:500;line-height:1.35;margin-top:1.4cqh}
   .nv-eta{font-size:3.6cqh;color:var(--muted);border-top:1px solid var(--line);padding-top:2.4cqh}
+  /* the car's speed from GPS, top left of the navigation card, with or without a route */
+  .nv-speed{position:absolute;top:2cqh;left:2cqh;width:17cqh;height:17cqh;border-radius:50%;border:.9cqh solid var(--line);background:var(--panel2);
+            display:grid;place-content:center;text-align:center;line-height:1}
+  .nv-speed b{font:700 7cqh var(--f-disp);font-variant-numeric:tabular-nums}
+  .nv-speed span{font-size:2.3cqh;color:var(--muted);margin-top:.6cqh}
+  .nv-speed.still b{color:var(--muted)}
   .nv-off{display:grid;gap:3cqh;justify-items:center;font-size:4cqh;color:var(--muted)}
   .nv-go{border:0;background:var(--sand);color:var(--sand-ink);border-radius:2.4cqh;padding:2.6cqh 4.4cqh;font-size:4.2cqh;font-weight:500;cursor:pointer}
   .toast{position:absolute;left:50%;bottom:6cqh;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:1.6cqh 3cqh;border-radius:99px;font-size:3cqh;z-index:6;white-space:nowrap}
@@ -191,6 +197,7 @@
 
     <div class="main">
       <section class="nav" aria-label="الملاحة">
+        <div class="nv-speed" id="nv-speed" aria-label="السرعة الحالية"><b id="nv-spd">٠</b><span>كم/س</span></div>
         <div class="nv" id="nv-on">
           <div class="nv-turn">
             <svg class="nv-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V5M6 11l6-6 6 6"/></svg>
@@ -573,10 +580,19 @@ function drawNav(){
   setText($('nv-eta'), ar(min) + ' د، ' + ar(Math.round(NAVKM + 13.5)) + ' كم، الوصول ٢:٢٣ م');
 }
 setInterval(() => { if(NAVON){ NAVKM = NAVKM > .2 ? NAVKM - .1 : 8.5; drawNav(); } }, 4000);
+// the speed: GPS speed (m/s) on the device; in the preview, GPS if the browser gives it, else an example drive
+let SPEED = null, SPEED_AT = 0;
+function drawSpeed(){
+  let v = SPEED !== null && Date.now() - SPEED_AT < 10000 ? SPEED : null;
+  if(v === null) v = NAVON ? 62 + Math.round(8 * Math.sin(Date.now() / 7000)) : 0;   // the example
+  setText($('nv-spd'), ar(Math.max(0, Math.round(v))));
+  $('nv-speed').classList.toggle('still', v < 1);
+}
+setInterval(drawSpeed, 1000);
 $('t-nav').onclick = () => { NAVON = !NAVON; $('t-nav').setAttribute('aria-pressed', NAVON); drawNav(); };
 $('nv-go').onclick = () => toast('يفتح ' + $('nav-name').textContent + ' بملء الشاشة');
 $('nav-full').onclick = () => toast('يفتح ' + $('nav-name').textContent + ' بملء الشاشة');
-drawNav();
+drawNav(); drawSpeed();
 $('sys-set').onclick = () => toast('يفتح: إعدادات أندرويد');
 
 const EXAMPLE_APPS = ['يوتيوب','Spotify','أنغامي','واتساب','خرائط Google','Waze','الهاتف','الراديو FM','الكاميرا الخلفية','الملفات','المتجر','الإعدادات'];
@@ -660,6 +676,7 @@ loc.onchange = () => {
   if(!navigator.geolocation){ toast('لا يوجد GPS هنا'); loc.value = '0'; return; }
   navigator.geolocation.watchPosition(pos => {
     const p = {lat:pos.coords.latitude, lon:pos.coords.longitude};
+    if(pos.coords.speed !== null && !isNaN(pos.coords.speed)){ SPEED = pos.coords.speed * 3.6; SPEED_AT = Date.now(); }
     usePlace({...p, tz:DEVICE_TZ, name:nearName(p), gps:true});   // in the car the device clock already follows the place
   }, () => { toast('رُفض الوصول للموقع؛ استخدمتُ الرياض'); loc.value = '0'; loc.onchange(); }, {enableHighAccuracy:false, maximumAge:60000});
 };
