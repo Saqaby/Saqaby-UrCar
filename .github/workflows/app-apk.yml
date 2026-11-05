@@ -1,5 +1,5 @@
 name: app-apk
-# Builds the UrCar home screen (android/app). From main only it publishes the release «app-latest»:
+# Builds the UrCar home screen (android/app) and publishes the release «app-latest» (the owner's choice: every push reaches the screen):
 #   urcar.apk     the app, signed with the key in the secret URCAR_KEYSTORE_B64 (never in the repository)
 #   version.json  {"versionCode": run number}; the app's updater compares it with its own
 on:
@@ -17,9 +17,6 @@ jobs:
         env:
           KEY_B64: ${{ secrets.URCAR_KEYSTORE_B64 }}
         run: |
-          # only main reaches the owner's screen (the app updates itself from app-latest): any other branch is compiled as a
-          # check and published nowhere, so a mistake on a working branch never lands in the car
-          if [ "$GITHUB_REF" != "refs/heads/main" ]; then echo "::notice::Branch ${GITHUB_REF#refs/heads/}: compiling only; app-latest is built from main"; echo "SIGNED=0" >> "$GITHUB_ENV"; exit 0; fi
           # without the secrets the app is only compiled (a check), never published: an update must carry the same key
           if [ -z "$KEY_B64" ]; then echo "::warning::No secret URCAR_KEYSTORE_B64: compiling only, nothing is published"; echo "SIGNED=0" >> "$GITHUB_ENV"; exit 0; fi
           # spaces or line breaks picked up while copying are dropped; anything else that is not base64 is an error
