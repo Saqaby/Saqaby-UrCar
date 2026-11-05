@@ -84,15 +84,40 @@
   .nav .demo{position:absolute;bottom:2.4cqh;right:2.4cqh;font-size:2.4cqh;color:var(--muted);background:var(--panel);padding:.6cqh 1.6cqh;border-radius:99px;opacity:.9}
 
   .side{grid-area:side;display:grid;grid-template-rows:auto 1fr;gap:2.4cqh;min-height:0}
-  .next{background:var(--panel);border:1px solid var(--line);border-radius:2.6cqh;padding:2.6cqh 3cqh;display:grid;gap:.4cqh}
-  .next .lbl{font-size:2.9cqh;color:var(--muted)}
+  /* the card beside the map: two pages, the next prayer and the music, by tab or by swipe */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:2.6cqh;padding:1.6cqh 3cqh 2.4cqh;display:grid;gap:1.2cqh;touch-action:pan-y;user-select:none}
+  .card.now{border-color:var(--sand);background:var(--panel2)}
+  .tabs{display:flex;gap:1cqh;margin-inline:-1.4cqh}
+  .tabs button{border:0;background:none;border-radius:99px;padding:1cqh 1.8cqh;font-size:2.9cqh;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:1cqh}
+  .tabs button[aria-selected="true"]{background:var(--panel2);color:var(--fg)}
+  .card.now .tabs #tab-p{color:var(--sand)}
+  .tabs .dot{width:1.2cqh;height:1.2cqh;border-radius:50%;background:var(--go)}
+  .pages{display:grid}
+  .pages>.page{grid-area:1/1;min-width:0}
+  .pages>.page[aria-hidden="true"]{visibility:hidden}
+  .next{display:grid;gap:.4cqh;align-content:start}
   .next .row{display:flex;align-items:baseline;justify-content:space-between;gap:2cqh}
   .next .nm{font-size:7.4cqh;font-weight:500;line-height:1.1}
   .next .tm{font-size:4.6cqh;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
   .next .cd{font-size:4.4cqh;color:var(--sand);font-weight:500}
   .next .ram{font-size:2.7cqh;color:var(--muted);border-top:1px solid var(--line);padding-top:1.4cqh;margin-top:1.2cqh}
   .next .ram b{color:var(--fg);font-weight:500}
-  .next.now{border-color:var(--sand);background:var(--panel2)}
+  .music{display:grid;gap:1.4cqh;align-content:start}
+  .m-top{display:flex;gap:2cqh;align-items:center;min-width:0}
+  .m-art{flex:none;width:10cqh;height:10cqh;border-radius:1.8cqh;display:grid;place-items:center;font:500 4.4cqh var(--f-body);font-style:normal;background:var(--sand);color:var(--sand-ink)}
+  .m-meta{min-width:0}
+  .m-app{font-size:2.5cqh;color:var(--muted)}
+  .m-title{font-size:3.8cqh;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-artist{font-size:2.8cqh;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-bar{display:flex;align-items:center;gap:1.4cqh;direction:ltr;font-size:2.4cqh;color:var(--muted);font-variant-numeric:tabular-nums}
+  .m-bar .trk{flex:1;height:.8cqh;border-radius:99px;background:var(--line);overflow:hidden}
+  .m-bar .trk b{display:block;height:100%;background:var(--sand);width:0}
+  .m-ctl{display:flex;justify-content:center;gap:3cqh;direction:ltr}
+  .m-ctl button{border:1px solid var(--line);background:var(--bg);border-radius:50%;width:8cqh;height:8cqh;display:grid;place-items:center;cursor:pointer}
+  .m-ctl button.play{width:9.5cqh;height:9.5cqh;background:var(--sand);border-color:var(--sand);color:var(--sand-ink)}
+  .m-ctl svg{width:3.6cqh;height:3.6cqh}
+  .m-empty{display:grid;gap:1.6cqh;justify-items:start;font-size:3cqh;color:var(--muted)}
+  .m-empty button{border:1px solid var(--line);background:var(--bg);border-radius:1.6cqh;padding:1.4cqh 2.4cqh;font-size:3cqh;cursor:pointer;color:var(--fg)}
 
   .keys{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2cqh;min-height:0}
   .key{border:1px solid var(--line);background:var(--panel);border-radius:2.4cqh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2cqh;
@@ -131,6 +156,8 @@
       <option value="1920x720">١٩٢٠×٧٢٠ (عريضة)</option>
     </select></label>
   <label>الموقع <select id="loc"></select></label>
+  <label>آخر تطبيق صوت
+    <select id="sess"><option value="soundcloud" selected>SoundCloud</option><option value="youtube">يوتيوب</option><option value="spotify">Spotify</option><option value="anghami">أنغامي</option><option value="">لا شيء</option></select></label>
   <span class="sp"></span>
   <button class="chip" id="t-adhan" aria-pressed="false">قبل الأذان بـ٨ دقائق</button>
   <button class="chip" id="t-ram" aria-pressed="false">يوم في رمضان</button>
@@ -167,11 +194,30 @@
       </section>
 
       <section class="side">
-        <div class="next" id="next">
-          <div class="lbl" id="n-lbl">الصلاة القادمة</div>
-          <div class="row"><span class="nm" id="n-nm">—</span><span class="tm" id="n-tm"></span></div>
-          <div class="cd" id="n-cd"></div>
-          <div class="ram" id="ram"></div>
+        <div class="card" id="card">
+          <div class="tabs" role="tablist">
+            <button role="tab" id="tab-p" aria-selected="true" aria-controls="next"><span id="n-lbl">الصلاة القادمة</span></button>
+            <button role="tab" id="tab-m" aria-selected="false" aria-controls="music"><span class="dot" id="m-dot" hidden></span><span id="tab-m-t">الموسيقى</span></button>
+          </div>
+          <div class="pages">
+            <div class="page next" id="next" role="tabpanel">
+              <div class="row"><span class="nm" id="n-nm">—</span><span class="tm" id="n-tm"></span></div>
+              <div class="cd" id="n-cd"></div>
+              <div class="ram" id="ram"></div>
+            </div>
+            <div class="page music" id="music" role="tabpanel" aria-hidden="true">
+              <div id="m-on">
+                <div class="m-top"><i class="m-art" id="m-art"></i><div class="m-meta"><div class="m-app" id="m-app"></div><div class="m-title" id="m-title"></div><div class="m-artist" id="m-artist"></div></div></div>
+                <div class="m-bar" style="margin-top:1.4cqh"><span id="m-pos">0:00</span><span class="trk"><b id="m-fill"></b></span><span id="m-dur"></span></div>
+                <div class="m-ctl" style="margin-top:1.4cqh">
+                  <button data-m="prev" aria-label="السابق"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+                  <button data-m="play" class="play" aria-label="تشغيل أو إيقاف"><svg viewBox="0 0 24 24" fill="currentColor" id="m-pp"></svg></button>
+                  <button data-m="next" aria-label="التالي"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+                </div>
+              </div>
+              <div class="m-empty" id="m-off" hidden><span>لا يعمل صوت الآن.</span><button id="m-open">افتح آخر تطبيق صوت</button></div>
+            </div>
+          </div>
         </div>
         <div class="keys" aria-label="الاختصارات">
           <button class="key" data-act="youtube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg><span>يوتيوب</span></button>
@@ -313,7 +359,7 @@ function ensurePrayers(){
 const $ = id => document.getElementById(id);
 function setText(el, v){ if(el.textContent !== v) el.textContent = v; }
 function setHTML(el, h){ if(el.__h !== h){ el.__h = h; el.innerHTML = h; } }
-let adhanPlayedFor = '';
+let adhanPlayedFor = '', autoFor = '';
 const FIVE = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
 
 function tick(){
@@ -328,7 +374,7 @@ function tick(){
   const nextK = FIVE.find(k => T[k] > mins) || 'Fajr';
   const nextAt = T[nextK] > mins ? T[nextK] : T.Fajr + 1440;
   const cur = FIVE.find(k => { const g = k === 'Dhuhr' && isFriday() ? 0 : IQAMA[k]; return mins >= T[k] && mins < T[k] + g; });
-  const next = $('next');
+  const next = $('card');
   if(cur){
     next.classList.add('now');
     setText($('n-lbl'), 'حان الآن'); setText($('n-nm'), pname(cur)); setText($('n-tm'), fmt12(Math.floor(T[cur]/60), T[cur]%60));
@@ -345,6 +391,9 @@ function tick(){
   if(left > 0 && left <= 10) bt = 'أذان ' + pname(nextK) + ' بعد ' + humanRemaining(Math.max(60, Math.round(left*60)));
   else if(cur) bt = 'حان الآن أذان ' + pname(cur);
   bar.hidden = !bt; if(bt) setText(bar, bt);
+  // ten minutes before an adhan the card turns back to the prayer, once; the driver can swipe to the music again
+  const near = bt ? p.d + (cur || nextK) : '';
+  if(near && autoFor !== near){ autoFor = near; showPage('p'); }
   if(cur && Math.floor(mins) === T[cur] && adhanPlayedFor !== p.d + cur){ adhanPlayedFor = p.d + cur; playAdhan(); }
 
   tickRamadan(now, mins);
@@ -426,6 +475,7 @@ function setRadio(on){
   setText($('r-t'), on ? 'إيقاف الإذاعة' : 'إذاعة القرآن');
   aud.pause(); aud.removeAttribute('src');
   if(!on) return;
+  if(MS && MS.playing){ MS.playing = false; drawMusic(); }   // one sound at a time
   const f = SRC === 'fm' ? fmHere() : null;
   if(f){ toast('في الجهاز: يُضبط راديو الشاشة على ' + fmt(f.mhz) + ' FM'); return; }
   aud.src = RADIO_URL; aud.play().catch(() => toast('البث لا يعمل في هذه المعاينة؛ يعمل في الجهاز'));
@@ -473,6 +523,56 @@ $('apps-grid').onclick = e => { const b = e.target.closest('button'); if(b){ clo
 const ACTS = {youtube:() => toast('يفتح: يوتيوب'), bt:() => toast('يفتح: إعدادات البلوتوث'), settings:() => open('set'), apps:() => open('apps')};
 document.querySelectorAll('.key[data-act]').forEach(b => b.onclick = ACTS[b.dataset.act]);
 
+// ---------- the music page: whatever audio app played last (SoundCloud, YouTube, Spotify, ...) ----------
+// On the device this is Android's media session of that app; the preview plays example sessions (the review bar picks one).
+const SESSIONS = {
+  soundcloud:{app:'SoundCloud', title:'سورة الكهف', artist:'مشاري العفاسي', dur:1260},
+  youtube:{app:'يوتيوب', title:'سورة يس', artist:'ياسر الدوسري', dur:840},
+  spotify:{app:'Spotify', title:'حلقة بودكاست (مثال)', artist:'اسم البرنامج', dur:3300},
+  anghami:{app:'أنغامي', title:'مقطع (مثال)', artist:'اسم الفنان', dur:240},
+};
+let MS = null;   // {..session, pos, playing}
+const PLAY_ICON = '<path d="M7 4v16l13-8z"/>', PAUSE_ICON = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+const mmss = t => ar(Math.floor(t/60) + ':' + pad(Math.floor(t%60)));
+function useSession(k){
+  MS = k && SESSIONS[k] ? {...SESSIONS[k], pos:0, playing:true} : null;
+  if(MS && radioOn) setRadio(false);   // one sound at a time
+  drawMusic();
+}
+function drawMusic(){
+  $('m-on').hidden = !MS; $('m-off').hidden = !!MS;
+  $('m-dot').hidden = !(MS && MS.playing);
+  setText($('tab-m-t'), MS ? MS.app : 'الموسيقى');
+  if(!MS) return;
+  setText($('m-art'), MS.app.replace(/^ال/, '')[0]);
+  setText($('m-app'), MS.app + '، بيانات مثال');
+  setText($('m-title'), MS.title); setText($('m-artist'), MS.artist);
+  setText($('m-pos'), mmss(MS.pos)); setText($('m-dur'), mmss(MS.dur));
+  $('m-fill').style.width = (100 * MS.pos / MS.dur) + '%';
+  setHTML($('m-pp'), MS.playing ? PAUSE_ICON : PLAY_ICON);
+}
+setInterval(() => { if(MS && MS.playing){ MS.pos = Math.min(MS.dur, MS.pos + 1); drawMusic(); } }, 1000);
+document.querySelector('.m-ctl').onclick = e => {
+  const b = e.target.closest('[data-m]'); if(!b || !MS) return;
+  if(b.dataset.m === 'play'){ MS.playing = !MS.playing; if(MS.playing && radioOn) setRadio(false); }
+  else { MS.pos = 0; toast(b.dataset.m === 'next' ? 'التالي في ' + MS.app : 'السابق في ' + MS.app); }
+  drawMusic();
+};
+$('m-open').onclick = () => toast('يفتح آخر تطبيق صوت');
+let PAGE = (() => { try{ return localStorage.getItem('urcar.page') || 'p'; }catch(e){ return 'p'; } })();
+function showPage(k){
+  PAGE = k; try{ localStorage.setItem('urcar.page', k); }catch(e){}
+  $('tab-p').setAttribute('aria-selected', k === 'p'); $('tab-m').setAttribute('aria-selected', k === 'm');
+  $('next').setAttribute('aria-hidden', k !== 'p'); $('music').setAttribute('aria-hidden', k !== 'm');
+}
+$('tab-p').onclick = () => showPage('p'); $('tab-m').onclick = () => showPage('m');
+(() => {   // a horizontal swipe on the card turns the page
+  const c = $('card'); let x0 = null, y0 = 0;
+  c.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; });
+  c.addEventListener('pointerup', e => { if(x0 === null) return; const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+    if(Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) showPage(PAGE === 'p' ? 'm' : 'p'); });
+})();
+
 // ---------- the review bar ----------
 const scr = $('scr'), fit = $('fit');
 function layout(){
@@ -510,6 +610,8 @@ $('t-ram').onclick = () => {   // the fifth day of the coming Ramadan, at 4:30 p
   press('t-ram'); T = null; tick();
 };
 
+$('sess').onchange = () => { useSession($('sess').value); showPage('m'); };
+useSession('soundcloud'); showPage(PAGE);
 makeFormatters(); drawSettings(); drawRadio(); drawFmRow(); layout(); tick(); setInterval(tick, 1000);
 if(navigator.onLine) refreshFm(false);
 document.fonts && document.fonts.ready.then(layout);
