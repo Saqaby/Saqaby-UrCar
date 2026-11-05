@@ -9,7 +9,15 @@
 - البناء: `python3 src/build.py` ← `dist/urcar.html` و`dist/artifact.html`.
 - شريط المعاينة أعلى الصفحة: مقاس الشاشة، الموقع (أو GPS)، ومحاكاة «قبل الأذان» و«يوم في رمضان». جهة السائق وتطبيق الملاحة في «الإعدادات».
 
-لم يُكتب كود أندرويد بعد. الخطوة التالية فحص الشاشة: `docs/PROBE-PROMPT.md` (القواعد في `AGENTS.md`).
+## التطبيق على الشاشة (android/app)
+
+- يُبنى في GitHub Actions (`app-apk.yml`) وينشر الإصدار `app-latest`:
+  https://github.com/Saqaby/Saqaby-UrCar/releases/download/app-latest/urcar.apk
+- يحتاج سرّين في المستودع (Settings ← Secrets and variables ← Actions): `URCAR_KEYSTORE_B64` و`URCAR_KEYSTORE_PASSWORD`.
+  مفتاح التوقيع لا يدخل المستودع أبدًا.
+- يفتح تطبيق الملاحة المختار بملء الشاشة، ولوحتنا نافذة عائمة على جهة السائق (ثبت على شاشة المالك: `device/DEVICE.md`).
+- يحدّث نفسه من الإصدار نفسه كل ٦ ساعات أو من «تحديث الآن».
+- تطبيق الفحص في `android/probe` (`probe-apk.yml`).
 
 ## المأخوذ من Saqaby/UrTV
 

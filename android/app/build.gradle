@@ -1,0 +1,25 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'sa.urcar.home'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'sa.urcar.home'
+        minSdk 26
+        // 29: the owner's screen runs Android 10; below 30 every installed app is visible without a <queries> block
+        targetSdk 29
+        // CI passes the run number, so each build is newer than the last and the app's updater sees it
+        versionCode((project.findProperty('versionCode') ?: '1') as int)
+        versionName "1.${project.findProperty('versionCode') ?: '0'}"
+    }
+    // The release key is never in the repository: app-apk.yml writes it from the secret URCAR_KEYSTORE_B64 and passes
+    // URCAR_KEYSTORE_PASSWORD. The same key signs every update, so the app on the screen accepts them.
+    def ks = System.getenv('URCAR_KEYSTORE') ?: ''
+    signingConfigs {
+        if (ks) urcar { storeFile file(ks); storePassword System.getenv('URCAR_KEYSTORE_PASSWORD'); keyAlias 'urcar'; keyPassword System.getenv('URCAR_KEYSTORE_PASSWORD') }
+    }
+    buildTypes {
+        release { minifyEnabled false; if (ks) signingConfig signingConfigs.urcar }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
