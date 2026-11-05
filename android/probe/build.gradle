@@ -1,0 +1,16 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'sa.urcar.probe'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'sa.urcar.probe'
+        minSdk 21
+        // 29 on purpose: below 30 the package manager lists every installed app without a <queries> block
+        targetSdk 29
+        versionCode 1
+        versionName '1.0'
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+    lint { abortOnError false; checkReleaseBuilds false }
+}

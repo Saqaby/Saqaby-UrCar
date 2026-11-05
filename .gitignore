@@ -1,1 +1,3 @@
 device/raw/
+android/**/build/
+android/.gradle/
