@@ -1,0 +1,30 @@
+# One-off: how big Saudi Arabia's OSM speed limits would be inside the app.
+name: check-limits-size
+on:
+  push:
+    paths: [".github/workflows/check-limits-size.yml"]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          q='[out:json][timeout:600];area["ISO3166-1"="SA"][admin_level=2]->.a;way[highway][maxspeed](area.a);out tags geom;'
+          curl -s -A "UrCar-check" --max-time 700 --data-urlencode "data=$q" https://overpass-api.de/api/interpreter -o w.json
+          ls -l w.json
+          python3 - <<'PY'
+          import json, gzip, struct, collections
+          d = json.load(open("w.json"))["elements"]
+          pts = sum(len(e.get("geometry", [])) for e in d)
+          v = collections.Counter(e["tags"].get("maxspeed") for e in d)
+          print("ways", len(d), "points", pts, "values", v.most_common(12))
+          # compact: per way the limit and its points as 1e-5 deg int deltas
+          b = bytearray()
+          for e in d:
+              g = e.get("geometry", [])
+              b += struct.pack("<BH", min(255, int(''.join(c for c in e["tags"]["maxspeed"] if c.isdigit()) or 0)), len(g))
+              px = py = 0
+              for p in g:
+                  x, y = round(p["lon"] * 1e5), round(p["lat"] * 1e5)
+                  b += struct.pack("<ii", x - px, y - py); px, py = x, y
+          print("compact bytes", len(b), "gzipped", len(gzip.compress(bytes(b), 9)))
+          PY
