@@ -147,7 +147,7 @@ public class SettingsActivity extends Activity {
         lr.addView(chip("يظهر", limOn, () -> { Prefs.of(this).edit().putBoolean("limit_on", true).apply(); build(); }));
         lr.addView(chip("لا يظهر", !limOn, () -> { Prefs.of(this).edit().putBoolean("limit_on", false).apply(); build(); }));
         list.addView(lr);
-        list.addView(note("لوحة بجانب السرعة، وتحمرّ السرعة إذا تجاوزتها. من خرائط OpenStreetMap، وليست كل الطرق فيها حدودها، وقد لا تطابق اللوحات: المرجع لوحات الطريق."));
+        list.addView(note("لوحة بجانب السرعة، وتحمرّ السرعة إذا تجاوزتها. من خرائط OpenStreetMap للطرق الرئيسية في الخليج، محفوظة في التطبيق وتعمل بلا إنترنت، وتُحدَّث شهريًا. ليست كل الطرق فيها حدودها، وقد لا تطابق اللوحات: المرجع لوحات الطريق."));
 
         head("صوت الأذكار: الركوب والسفر عند بدء الرحلة، ودخول المنزل عند الوصول إليه");
         LinearLayout du = grid();

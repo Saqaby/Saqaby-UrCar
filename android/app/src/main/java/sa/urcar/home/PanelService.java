@@ -43,9 +43,9 @@ public class PanelService extends Service implements Panel.Actions {
     private Quotes quotes;
     private float kmh = -1, bearing = -1, lastBearing = -1;
     private long fixAt;
-    // the road's speed limit (OpenStreetMap), asked every 200 m or a minute while moving
-    private int limit, limitBusy;
-    private long limitAt, limitAskedAt;
+    // the road's speed limit (OpenStreetMap, in the app)
+    private int limit;
+    private long limitAt;
     private double limitLat = 999, limitLon;
     // the trip: starts when the car moves after an hour without moving (or when the screen starts)
     private long tripStart, lastMoveAt, duaUntil, savedMoveAt;
@@ -457,23 +457,19 @@ public class PanelService extends Service implements Panel.Actions {
         boolean fresh = now - fixAt < 6000;
         return new float[]{fresh ? kmh : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1, day.qibla(), limitNow()};
     }
-    /** The speed limit to show: the last answer, while it is a minute and a half old and the car within 400 m of where it was asked; else 0. */
+    /** The speed limit to show: the last one found, for 8 seconds and 150 m (a moment off the road's line keeps it); else 0. */
     int limitNow() {
         long now = System.currentTimeMillis();
-        if (!Prefs.of(this).getBoolean("limit_on", true) || limit <= 0 || now - limitAt > 90_000 || limitLat > 90) return 0;
-        return Day.km(limitLat, limitLon, day.lat, day.lon) < 0.4 ? limit : 0;
+        if (!Prefs.of(this).getBoolean("limit_on", true) || limit <= 0 || now - limitAt > 8_000 || limitLat > 90) return 0;
+        return Day.km(limitLat, limitLon, day.lat, day.lon) < 0.15 ? limit : 0;
     }
+    /** Once a second while moving: the road's limit from the app's own map (LimitMap), no server asked. */
+    private LimitMap limits;
     private void askLimit(long now) {
-        if (!Prefs.of(this).getBoolean("limit_on", true) || limitBusy > 0 || now - fixAt > 6000 || kmh < 15) return;
-        boolean far = limitLat > 90 || Day.km(limitLat, limitLon, day.lat, day.lon) > 0.2;
-        if (!(far || now - limitAt > 60_000) || now - limitAskedAt < 10_000) return;   // at most every 10 seconds
-        limitAskedAt = now;
-        limitBusy = 1;
-        final double la = day.lat, lo = day.lon;
-        new Thread(() -> {
-            int v = Net.maxspeed(la, lo);
-            h.post(() -> { limitBusy = 0; if (v >= 0) { limit = v; limitAt = System.currentTimeMillis(); limitLat = la; limitLon = lo; } });
-        }).start();
+        if (!Prefs.of(this).getBoolean("limit_on", true) || now - fixAt > 6000 || kmh < 15) return;
+        if (limits == null) limits = new LimitMap(this);
+        int v = limits.at(day.lat, day.lon, bearing);
+        if (v > 0) { limit = v; limitAt = now; limitLat = day.lat; limitLon = day.lon; }
     }
     static String join(String a, String b) { return a.isEmpty() ? b : b.isEmpty() ? a : a + "  ·  " + b; }
 
