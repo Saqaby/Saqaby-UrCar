@@ -307,7 +307,7 @@ final class Panel extends LinearLayout {
         set(tabM, mc == null ? "الموسيقى" : appName + (playing ? "  ●" : ""));
         musicOn.setVisibility(mc == null ? GONE : VISIBLE);
         mEmpty.setVisibility(mc == null ? VISIBLE : GONE);
-        if (mc == null) { set(mEmpty, NotiListener.allowed(getContext()) ? "لا يعمل صوت الآن. اضغط لفتح آخر تطبيق صوت." : "لعرض الموسيقى: فعّل «الوصول إلى الإشعارات» لسيارتك من الإعدادات."); return; }
+        if (mc == null) { set(mEmpty, NotiListener.allowed(getContext()) ? "لا يعمل صوت الآن. اضغط لفتح آخر تطبيق صوت." : "لعرض الموسيقى: اضغط هنا وفعّل «سيارتك» في «الوصول إلى الإشعارات»."); return; }
         set(mApp, appName); set(mTitle, title.isEmpty() ? appName : title); set(mArtist, artist);
         playIcon.set(playing ? Ui.Icon.PAUSE : Ui.Icon.PLAY, th.sandInk);
     }

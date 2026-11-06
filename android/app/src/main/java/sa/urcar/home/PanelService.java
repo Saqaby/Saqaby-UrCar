@@ -374,12 +374,23 @@ public class PanelService extends Service implements Panel.Actions {
         try { startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
         catch (Exception e) { launch(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + day.lat + "," + day.lon + "?q=" + q))); }
     }
+    /** For the full-screen gauge: {km/h or -1 without a recent fix, bearing or -1, qibla}. */
+    float[] driveNow() {
+        long now = System.currentTimeMillis();
+        boolean fresh = now - fixAt < 6000;
+        return new float[]{fresh ? kmh : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1, day.qibla()};
+    }
+    /** For the full-screen quote: the hour's quote, or one some hours later («التالي»). */
+    String[] quoteNow(int hoursAhead) { return quotes.at(System.currentTimeMillis() + hoursAhead * 3600_000L); }
+    boolean dayNow() { return panel != null ? panel.isDay() : themeDay(System.currentTimeMillis()); }
+
     /** The speed card opens the chosen navigation app. */
     void openNav() {
         String nav = Prefs.nav(this);
         if (nav.isEmpty()) Toast.makeText(this, "لا يوجد تطبيق ملاحة؛ اختره من الإعدادات", Toast.LENGTH_LONG).show(); else launchPkg(nav);
     }
     @Override public void openMusic() {
+        if (!NotiListener.allowed(this)) { launch(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")); return; }
         MediaController mc = NotiListener.session(this);
         if (mc != null && mc.getSessionActivity() != null) { try { mc.getSessionActivity().send(); return; } catch (Exception ignored) { } }
         if (mc != null) { launchPkg(mc.getPackageName()); return; }

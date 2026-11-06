@@ -37,7 +37,12 @@ public class NotiListener extends NotificationListenerService {
     }
 
 
+    /** Android's own answer first (API 27); the secure setting as a second opinion. */
     static boolean allowed(Context c) {
+        try {
+            android.app.NotificationManager nm = c.getSystemService(android.app.NotificationManager.class);
+            if (nm != null && nm.isNotificationListenerAccessGranted(new ComponentName(c, NotiListener.class))) return true;
+        } catch (Exception ignored) { }
         String on = Settings.Secure.getString(c.getContentResolver(), "enabled_notification_listeners");
         return on != null && on.contains(c.getPackageName());
     }

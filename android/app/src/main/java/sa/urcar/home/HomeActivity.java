@@ -40,6 +40,7 @@ public class HomeActivity extends Activity {
     }
     @Override protected void onPause() {
         resumed = false;
+        closeFull();
         if (PanelService.live != null) PanelService.live.attach(null, null);
         super.onPause();
     }
@@ -65,7 +66,7 @@ public class HomeActivity extends Activity {
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         Panel panel = new Panel(this, PanelService.live, h);
         PanelService s = PanelService.live;
-        Drive drive = new Drive(this, h, s::openNav, () -> s.goPlace("home", "البيت"), () -> s.goPlace("work", "العمل"), s::mosque);
+        Drive drive = new Drive(this, h, () -> showFull("gauge"), () -> showFull("quote"), () -> s.goPlace("home", "البيت"), () -> s.goPlace("work", "العمل"), s::mosque);
         LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(w * 2 / 5, ViewGroup.LayoutParams.MATCH_PARENT);
         LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
         if (Prefs.side(this).equals("right")) { row.addView(drive, dl); row.addView(panel, pl); }
@@ -128,5 +129,15 @@ public class HomeActivity extends Activity {
         root.post(this::build);
     }
 
-    @Override public void onBackPressed() { /* the home screen stays */ }
+    /** A card opened to the whole screen; «رجوع», a tap or the back key closes it. */
+    private Full full;
+    private void showFull(String kind) {
+        closeFull();
+        PanelService s = PanelService.live;
+        full = new Full(this, kind, s != null && s.dayNow(), this::closeFull, () -> { closeFull(); if (PanelService.live != null) PanelService.live.openNav(); });
+        root.addView(full, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+    private void closeFull() { if (full != null) { root.removeView(full); full = null; } }
+
+    @Override public void onBackPressed() { closeFull(); /* the home screen stays */ }
 }

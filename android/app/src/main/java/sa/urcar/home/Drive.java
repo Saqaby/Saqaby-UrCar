@@ -23,7 +23,8 @@ final class Drive extends LinearLayout {
     private final LinearLayout dests;
     private final TextView[] destViews = new TextView[3];
 
-    Drive(Context c, int height, Runnable openNav, Runnable home, Runnable work, Runnable mosque) {
+    /** openGauge / openQuote: the speed card and the quote card open to the whole screen (Full). */
+    Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque) {
         super(c);
         H = height / 100f;
         setOrientation(VERTICAL);
@@ -65,8 +66,8 @@ final class Drive extends LinearLayout {
         speedCard.setPadding(0, 0, 0, px(1.6f));
         speedCard.addView(top, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
         speedCard.addView(trip, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-        speedCard.setOnClickListener(v -> openNav.run());
-        top.setOnClickListener(v -> openNav.run());
+        speedCard.setOnClickListener(v -> openGauge.run());
+        top.setOnClickListener(v -> openGauge.run());
         addView(speedCard, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1.25f));
 
         // ---- Radarbot
@@ -115,6 +116,7 @@ final class Drive extends LinearLayout {
         quoteBox.addView(qTitle);
         quoteBox.addView(qText, lp(px(1.2f)));
         quoteBox.addView(qSrc, lp(px(1.2f)));
+        quoteBox.setOnClickListener(v -> openQuote.run());
         addView(quoteBox, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1) {{ topMargin = px(1.6f); }});
         setDay(false);
     }
