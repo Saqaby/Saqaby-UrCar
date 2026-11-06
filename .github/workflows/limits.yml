@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
   push:
     paths: ["src/limits_for_app.py", ".github/workflows/limits.yml"]
+concurrency: limits   # one at a time, each on top of the last
 permissions:
   contents: write
   actions: write
@@ -26,6 +27,7 @@ jobs:
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch -q origin "$GITHUB_REF_NAME" && git reset -q --soft "origin/$GITHUB_REF_NAME"   # on top of whatever came since
           git add android/app/src/main/assets/limits.bin
           if git commit -m "assets/limits.bin from OpenStreetMap (src/limits_for_app.py)"; then
             git push
