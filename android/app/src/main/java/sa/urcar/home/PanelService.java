@@ -175,8 +175,7 @@ public class PanelService extends Service implements Panel.Actions {
             if (alert == null && dust >= 150 && now - dustAt < 3 * 3600_000L) alert = dust >= 400 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
             drive.showAlert(alert);
             drive.setMosqueHot(day.bar(now) != null);
-            drive.showTrip(tripStart > 0 ? "الرحلة " + Ui.ar(String.format(java.util.Locale.US, tripKm < 10 ? "%.1f" : "%.0f", tripKm))
-                    + " كم، " + Ui.remaining((now - tripStart) / 1000) : "");
+            drive.showTrip(tripNow());
             drive.showRemind(day.remind(now));
             // the quote card: the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
             if (now < duaUntil && (travelDua ? travel : riding) != null) drive.showQuote(travelDua ? travel : riding, moving);
@@ -379,6 +378,12 @@ public class PanelService extends Service implements Panel.Actions {
         long now = System.currentTimeMillis();
         boolean fresh = now - fixAt < 6000;
         return new float[]{fresh ? kmh : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1, day.qibla()};
+    }
+    /** The trip line: «الرحلة ١٢٫٤ كم، ٣٥ دقيقة», or empty before the first trip. */
+    String tripNow() {
+        if (tripStart == 0) return "";
+        return "الرحلة " + Ui.ar(String.format(java.util.Locale.US, tripKm < 10 ? "%.1f" : "%.0f", tripKm))
+                + " كم، " + Ui.remaining((System.currentTimeMillis() - tripStart) / 1000);
     }
     /** For the full-screen quote: the hour's quote, or one some hours later («التالي»). */
     String[] quoteNow(int hoursAhead) { return quotes.at(System.currentTimeMillis() + hoursAhead * 3600_000L); }

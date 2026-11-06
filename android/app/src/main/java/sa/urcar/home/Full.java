@@ -25,7 +25,7 @@ final class Full extends FrameLayout {
     private final Runnable close;
     private Gauge gauge;
     private Rose rose;
-    private TextView headingText, qiblaText, qTitle, qText, qSrc;
+    private TextView headingText, qiblaText, tripText, qTitle, qText, qSrc;
     private int quoteOffset;   // «التالي» in the quote view: hours ahead of the current one
 
     Full(Context c, String kind, boolean day, Runnable close, Runnable openNav) {
@@ -65,11 +65,13 @@ final class Full extends FrameLayout {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setLayoutDirection(LAYOUT_DIRECTION_LTR);
         row.setGravity(Gravity.CENTER);
+        // the speedometer big on one side; on the other the compass, and the trip under it
         gauge = new Gauge(c);
-        row.addView(gauge, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1.2f));
+        row.addView(gauge, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1.8f));
         LinearLayout right = new LinearLayout(c);
         right.setOrientation(LinearLayout.VERTICAL);
         right.setGravity(Gravity.CENTER);
+        right.setPadding(0, 90, 0, 0);   // under «رجوع» and «افتح الملاحة»
         rose = new Rose(c);
         right.addView(rose, new LinearLayout.LayoutParams(-1, 0, 1));
         headingText = Ui.text(c, 34, Ui.medium(c), th.sand);
@@ -77,9 +79,15 @@ final class Full extends FrameLayout {
         qiblaText = Ui.text(c, 22, Ui.regular(c), th.muted);
         qiblaText.setGravity(Gravity.CENTER);
         right.addView(headingText, new LinearLayout.LayoutParams(-1, -2));
-        right.addView(qiblaText, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 6; bottomMargin = 24; }});
+        right.addView(qiblaText, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 6; }});
+        tripText = Ui.text(c, 28, Ui.medium(c), th.fg);
+        tripText.setGravity(Gravity.CENTER);
+        tripText.setSingleLine(false);
+        tripText.setPadding(20, 14, 20, 14);
+        tripText.setBackground(Ui.box(th.panel, th.line, 16));
+        right.addView(tripText, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 18; bottomMargin = 20; }});
         row.addView(right, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
-        row.setPadding(20, 80, 20, 10);
+        row.setPadding(10, 10, 24, 10);
         addView(row, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
 
@@ -115,6 +123,8 @@ final class Full extends FrameLayout {
                 gauge.invalidate();
                 if (d[1] >= 0) { rose.bearing = d[1]; set(headingText, DIRS[Math.round(d[1] / 45f) % 8]); }
                 else if (rose.bearing < 0) set(headingText, "الاتجاه أثناء السير");
+                String t = s.tripNow();
+                set(tripText, t.isEmpty() ? "الرحلة تبدأ مع السير" : t);
                 rose.qibla = d[2];
                 rose.invalidate();
                 if (rose.bearing < 0) set(qiblaText, "القبلة " + Ui.ar(Math.round(d[2])) + "° من الشمال");
@@ -155,7 +165,8 @@ final class Full extends FrameLayout {
         @Override protected void onDraw(Canvas cv) {
             shown += (target - shown) * .25f;   // eased toward the new speed
             if (Math.abs(target - shown) > .3f) postInvalidateDelayed(40);
-            float w = getWidth(), hgt = getHeight(), cx = w / 2, cy = hgt * .55f, r = Math.min(w, hgt) * .44f;
+            // the dial reaches from cy - r (its top) to cy + .65r (the unit under the number): as big as the view allows
+            float w = getWidth(), hgt = getHeight(), cx = w / 2, r = Math.min(w * .47f, hgt * .96f / 1.65f), cy = (hgt - 1.65f * r) / 2 + r;
             RectF box = new RectF(cx - r, cy - r, cx + r, cy + r);
             ring.setStrokeWidth(r * .07f);
             cv.drawArc(box, 150, 240, false, ring);
