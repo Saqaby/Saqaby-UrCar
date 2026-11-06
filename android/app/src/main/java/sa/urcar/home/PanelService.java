@@ -502,28 +502,23 @@ public class PanelService extends Service implements Panel.Actions {
     }
 
     /**
-     * «مرحبًا بك في الخبر»: the city from OpenStreetMap every 2 km while moving (at most once a minute, as Nominatim's
-     * rules ask); a new name heard twice in a row is the new city, and is welcomed unless it was welcomed in the last
-     * half hour (the edges of Dammam, Khobar and Dhahran touch).
+     * «مرحبًا بك في الخبر»: the city from the app's own list (Cities: GeoNames, offline, no server shared by all the
+     * app's users) every 30 seconds while moving; a new name found twice in a row is the new city, and is welcomed
+     * unless it was welcomed in the last half hour (the edges of Dammam, Khobar and Dhahran touch).
      */
     private String cityPending = "";
     private long cityAskedAt;
-    private double cityLat = 999, cityLon;
-    private boolean cityBusy;
+    private Cities cities;
     private void askCity(long now) {
-        if (cityBusy || now - fixAt > 6000 || kmh < 10 || now - cityAskedAt < 60_000) return;
-        if (cityLat < 90 && Day.km(cityLat, cityLon, day.lat, day.lon) < 2) return;
-        cityAskedAt = now; cityBusy = true; cityLat = day.lat; cityLon = day.lon;
-        final double la = day.lat, lo = day.lon;
-        new Thread(() -> {
-            String c = Net.city(la, lo);
-            h.post(() -> { cityBusy = false; if (c != null) heardCity(c); });
-        }).start();
+        if (now - fixAt > 6000 || kmh < 10 || now - cityAskedAt < 30_000) return;
+        cityAskedAt = now;
+        if (cities == null) cities = new Cities(this);
+        heardCity(cities.at(day.lat, day.lon));
     }
     private void heardCity(String c) {
         String cur = Prefs.of(this).getString("city", "");
         if (c.isEmpty() || c.equals(cur)) { cityPending = ""; return; }
-        if (!c.equals(cityPending)) { cityPending = c; cityLat = 999; return; }   // asked again in a minute, wherever the car is
+        if (!c.equals(cityPending)) { cityPending = c; return; }
         cityPending = "";
         Prefs.put(this, "city", c);
         long last = Prefs.of(this).getLong("welcomed_" + c, 0), now = System.currentTimeMillis();

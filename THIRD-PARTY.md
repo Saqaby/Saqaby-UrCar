@@ -15,7 +15,8 @@
 | التلاوات | تُبَث من cdn.mp3quran.net ولا تُحفظ في المستودع | mp3quran.net وأصحابها | بشروط mp3quran.net؛ لم نقرأها بعد (الموقع محجوب في بيئة العمل) |
 | إذاعة القرآن الكريم السعودية | تُبَث من stream.radiojar.com | هيئة الإذاعة والتلفزيون | بث مباشر؛ لا نعيد نشره |
 | الأذان (عبدالملك الملا) | يُنزَّل من archive.org | مجموعة «Azaan of World Mosques» | Public Domain Mark 1.0 |
-| أسماء المدن وحدود السرعة | تُطلب من nominatim.openstreetmap.org و overpass-api.de | OpenStreetMap | ODbL: يُذكر «© OpenStreetMap contributors» (مذكور في إعدادات التطبيق) |
+| حدود السرعة | تُطلب من overpass-api.de | OpenStreetMap | ODbL: يُذكر «© OpenStreetMap contributors» (مذكور في إعدادات التطبيق) |
+| أسماء المدن (assets/cities.json) | GeoNames عبر src/cities_for_app.py | GeoNames.org | CC BY 4.0: يُذكر المصدر (مذكور في إعدادات التطبيق) |
 | بيانات الطقس والغبار | تُطلب من open-meteo.com | Open-Meteo | CC BY 4.0: يُذكر «بيانات الطقس من Open-Meteo.com» (مذكور في إعدادات التطبيق) |
 | ترددات FM | `assets/shared/fm-quran.json` | مصادر عامة مذكورة في الملف | معلومات عامة |
 | تسجيلا ذكر الركوب ودعاء السفر | `android/app/src/main/assets/dua/` | صنعهما صاحب المشروع بأداة ذكاء اصطناعي | قدّمهما خاليين من حقوق الغير؛ تشملهما `LICENSE` |

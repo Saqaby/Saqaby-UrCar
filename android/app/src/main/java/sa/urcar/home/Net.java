@@ -89,25 +89,6 @@ final class Net {
             return best;
         } catch (Exception e) { return -1; }
     }
-    /** The city or town at a place, in Arabic, from OpenStreetMap's Nominatim (zoom 10); "" when none, null when the request failed. */
-    static String city(double lat, double lon) {
-        try {
-            HttpURLConnection h = (HttpURLConnection) new URL(String.format(java.util.Locale.US,
-                    "https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=ar&lat=%.5f&lon=%.5f", lat, lon)).openConnection();
-            h.setConnectTimeout(8000);
-            h.setReadTimeout(10000);
-            h.setRequestProperty("User-Agent", "UrCar (car head unit; github.com/Saqaby/Saqaby-UrCar)");
-            if (h.getResponseCode() != 200) { h.disconnect(); return null; }
-            ByteArrayOutputStream b = new ByteArrayOutputStream();
-            try (InputStream in = h.getInputStream()) { byte[] buf = new byte[8192]; for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n); }
-            finally { h.disconnect(); }
-            JSONObject a = new JSONObject(b.toString("UTF-8")).optJSONObject("address");
-            if (a == null) return "";
-            for (String k : new String[]{"city", "town", "village"}) if (!a.optString(k).isEmpty()) return a.optString(k);
-            return "";
-        } catch (Exception e) { return null; }
-    }
-
     /** «120», «120 km/h», «60 mph»; anything else (a country code, «none», «walk») is no number. */
     static int kmh(String v) {
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("^\\s*(\\d{2,3})\\s*(mph|km/h|kmh|kph)?\\s*$").matcher(v);
