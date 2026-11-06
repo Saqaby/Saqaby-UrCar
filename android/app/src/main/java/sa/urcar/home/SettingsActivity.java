@@ -185,7 +185,7 @@ public class SettingsActivity extends Activity {
         list.addView(kr2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
         String kerr = Prefs.of(this).getString("k_err", "");
         if (!kerr.isEmpty()) list.addView(note("آخر ما أوقف الختمة: " + kerr));
-        list.addView(note("تبدأ مع الرحلة إن لم يكن صوت آخر يعمل، وتتوقف بعد ٣ دقائق من الوقوف، وتكمل حين تتحرك. التلاوات من mp3quran.net وتحتاج إنترنت."));
+        list.addView(note("تبدأ مع الرحلة إن لم يكن صوت آخر يعمل، وتتوقف بعد ٣ دقائق من الوقوف، وتكمل حين تتحرك. تقف مع المكالمة وتكمل بعدها، وتتوقف إن شغّلت مقطعًا أو موسيقى الجوال فتكملها بزرها، وترجع ٣ ثوانٍ في الحالين. التلاوات من mp3quran.net وتحتاج إنترنت."));
 
         head("دفتر الطريق");
         list.addView(note(tripLog()));

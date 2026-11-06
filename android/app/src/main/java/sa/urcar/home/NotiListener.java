@@ -64,6 +64,18 @@ public class NotiListener extends NotificationListenerService {
         } catch (Exception e) { return null; }
     }
 
+    /** The other apps whose media session plays now. */
+    static java.util.Set<String> playingPackages(Context c) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (!allowed(c)) return out;
+        try {
+            MediaSessionManager m = (MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : m.getActiveSessions(new ComponentName(c, NotiListener.class)))
+                if (!mc.getPackageName().equals(c.getPackageName()) && playing(mc)) out.add(mc.getPackageName());
+        } catch (Exception ignored) { }
+        return out;
+    }
+
     static String title(MediaController mc) {
         MediaMetadata md = mc.getMetadata();
         String t = md == null ? null : md.getString(MediaMetadata.METADATA_KEY_TITLE);

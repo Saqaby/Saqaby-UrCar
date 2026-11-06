@@ -124,6 +124,7 @@ public class PanelService extends Service implements Panel.Actions {
             long now = System.currentTimeMillis();
             adhan(now);
             restAndStop(now);
+            guardKhatma();
             if (panel != null && HomeActivity.resumed) draw(now);
             background(now);
             h.postDelayed(this, 1000);
@@ -188,6 +189,45 @@ public class PanelService extends Service implements Panel.Actions {
     private boolean themeDay(long now) {
         String t = Prefs.theme(this);
         return t.equals("light") || (t.equals("auto") && !day.night(now));
+    }
+
+    /**
+     * The owner heard the khatma go silent under a Bluetooth call or the phone's music and go on unheard, without
+     * Android telling it (the screen's Bluetooth app takes no audio focus). So every second, while it plays:
+     * a call (the audio mode, or a call's sound playing) pauses it, and it goes on 2 seconds after the call;
+     * another app's media session that begins to play (YouTube, «الجوال (بلوتوث)», …) stops it, to be started again
+     * by its button. A session already playing when the khatma started does not count, until it stops and plays again.
+     */
+    private final java.util.Set<String> playingBefore = new java.util.HashSet<>();
+    private int callGone;
+    private boolean khatmaWasOn;
+    private void guardKhatma() {
+        if (!khatma.on) { khatmaWasOn = false; return; }
+        java.util.Set<String> now = NotiListener.playingPackages(this);
+        if (!khatmaWasOn) { khatmaWasOn = true; playingBefore.clear(); playingBefore.addAll(now); callGone = 0; }
+        playingBefore.retainAll(now);   // one that stopped playing counts again when it plays again
+        if (inCall()) {
+            callGone = 0;
+            if (khatma.held() == null) { khatma.hold("call"); Prefs.put(this, "k_err", "مكالمة، وتكمل بعدها"); }
+            return;
+        }
+        if ("call".equals(khatma.held())) { if (++callGone >= 2) khatma.resume(); return; }
+        if (khatma.held() != null) return;
+        for (String pkg : now) if (!playingBefore.contains(pkg)) { khatma.interrupted(NotiListener.appName(this, pkg) + " بدأ يعمل"); return; }
+    }
+    private boolean inCall() {
+        android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+        int m = am.getMode();
+        if (m == android.media.AudioManager.MODE_IN_CALL || m == android.media.AudioManager.MODE_IN_COMMUNICATION || m == android.media.AudioManager.MODE_RINGTONE) return true;
+        try {   // a call's sound playing (isActive is hidden: if Android refuses it, this signal is skipped)
+            java.lang.reflect.Method act = android.media.AudioPlaybackConfiguration.class.getMethod("isActive");
+            for (android.media.AudioPlaybackConfiguration pc : am.getActivePlaybackConfigurations()) {
+                int u = pc.getAudioAttributes().getUsage();
+                if ((u == android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION || u == android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                        && (Boolean) act.invoke(pc)) return true;
+            }
+        } catch (Throwable ignored) { }
+        return false;
     }
 
     /** Every two hours of a trip, a minute's reminder to rest; the khatma pauses after 3 minutes still and goes on when moving. */
