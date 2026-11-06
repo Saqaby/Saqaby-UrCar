@@ -35,7 +35,8 @@ final class Updater {
             Net.download(BASE + "urcar.apk", apk);
             install(c, apk);
         } catch (Exception e) {
-            if (manual) toast(c, "لم أصل إلى التحديث: " + e.getClass().getSimpleName());
+            if (manual) toast(c, e instanceof java.net.UnknownHostException ? "لا إنترنت في الشاشة الآن: وصّلها بشبكة الجوال ثم أعد المحاولة"
+                    : "لم أصل إلى التحديث: " + e.getClass().getSimpleName());
         }
     }
 
