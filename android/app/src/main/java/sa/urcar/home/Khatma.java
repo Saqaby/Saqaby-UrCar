@@ -20,8 +20,7 @@ import java.io.InputStream;
  * «ختمة السيارة»: a recitation that goes on from trip to trip. It plays surah after surah from where it stopped (the
  * surah and the second are kept on the screen) and counts the completed khatmas. assets/khatma.json: UrTV's
  * mp3quran.net reciters (server + 001.mp3 … 114.mp3) and the surahs with their ayah counts (sum 6236).
- * The adhan or a call pauses it and it goes on by itself after; another sound (YouTube, the phone's music) stops it.
- * Either way it goes back 3 seconds, so nothing is missed.
+ * The adhan, a call or another sound pauses it and it goes on by itself after, 3 seconds back so nothing is missed.
  */
 final class Khatma {
     private final Context c;
@@ -100,10 +99,11 @@ final class Khatma {
         stop();
         AudioAttributes aa = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build();
         focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(aa).setOnAudioFocusChangeListener(fc -> {
+            SoundLog.add(c, "تركيز صوت الختمة: " + (fc == AudioManager.AUDIOFOCUS_GAIN ? "عاد" : fc == AudioManager.AUDIOFOCUS_LOSS ? "أُخذ" : "أُخذ مؤقتًا"));
             if (mp == null) return;
             if (fc == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT || fc == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) hold("focus");   // the adhan, a call
             else if (fc == AudioManager.AUDIOFOCUS_GAIN) { if ("focus".equals(held)) resume(); }
-            else if (fc == AudioManager.AUDIOFOCUS_LOSS) interrupted("تطبيق آخر أخذ الصوت");   // another app took the sound for good
+            else if (fc == AudioManager.AUDIOFOCUS_LOSS) hold("other");   // another app took the sound: back when it is quiet (PanelService)
         }).build();
         am.requestAudioFocus(focus);
         this.aa = aa;
@@ -201,7 +201,7 @@ final class Khatma {
     String held() { return held; }
     boolean playing() { try { return mp != null && mp.isPlaying(); } catch (Exception e) { return false; } }
 
-    /** A call (or the adhan): paused at once, a little back, and it goes on by itself with resume(). */
+    /** A call, another sound or the adhan: paused at once, a little back, and it goes on by itself with resume(). */
     void hold(String why) {
         if (!on || held != null) return;
         held = why;
@@ -213,20 +213,11 @@ final class Khatma {
         if (held == null) return;
         held = null;
         try {
+            if (focus != null) am.requestAudioFocus(focus);   // lost to another app: asked back
             if (mp != null) { mp.seekTo(Math.max(0, p().getInt("k_pos", 0))); mp.start(); }
             else if (on) start();
         } catch (Exception e) { start(); }
         changed.run();
-    }
-    /** Another sound began (YouTube, the phone's music over Bluetooth …): stopped, a little back; it starts again by its button. */
-    void interrupted(String why) {
-        if (!on) return;
-        saveBack();
-        h.removeCallbacks(saver);
-        if (mp != null) { try { mp.release(); } catch (Exception ignored) { } mp = null; }   // released without save(): the rewound place stays
-        p().edit().putString("k_err", why).apply();
-        stop();
-        android.widget.Toast.makeText(c, "توقفت الختمة: " + why + ". اضغط «ختمة السيارة» لتكمل", android.widget.Toast.LENGTH_LONG).show();
     }
     private void saveBack() {
         try { if (mp != null && mp.getCurrentPosition() > 0) p().edit().putInt("k_pos", Math.max(0, mp.getCurrentPosition() - BACK_MS)).apply(); } catch (Exception ignored) { }

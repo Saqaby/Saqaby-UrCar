@@ -24,6 +24,10 @@ public class NotiListener extends NotificationListenerService {
     static final String RADARBOT = "com.vialsoft.radarbot_free";
 
     @Override public void onNotificationPosted(android.service.notification.StatusBarNotification sbn) {
+        if (!sbn.getPackageName().equals(getPackageName())) {   // the package and kind only, for «سجل الصوت»
+            String cat = sbn.getNotification().category;
+            SoundLog.add(this, "إشعار من " + sbn.getPackageName() + (cat == null ? "" : " (" + cat + ")") + (sbn.isOngoing() ? " مستمر" : ""));
+        }
         if (!sbn.getPackageName().startsWith("com.vialsoft.radarbot")) return;
         android.os.Bundle x = sbn.getNotification().extras;
         CharSequence t = x.getCharSequence(android.app.Notification.EXTRA_TITLE), s = x.getCharSequence(android.app.Notification.EXTRA_TEXT);
@@ -34,6 +38,7 @@ public class NotiListener extends NotificationListenerService {
     }
     @Override public void onNotificationRemoved(android.service.notification.StatusBarNotification sbn) {
         if (sbn.getPackageName().startsWith("com.vialsoft.radarbot")) radarAt = 0;
+        if (!sbn.getPackageName().equals(getPackageName())) SoundLog.add(this, "أُزيل إشعار " + sbn.getPackageName());
     }
 
 

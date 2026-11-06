@@ -194,26 +194,41 @@ public class PanelService extends Service implements Panel.Actions {
     /**
      * The owner heard the khatma go silent under a Bluetooth call or the phone's music and go on unheard, without
      * Android telling it (the screen's Bluetooth app takes no audio focus). So every second, while it plays:
-     * a call (the audio mode, or a call's sound playing) pauses it, and it goes on 2 seconds after the call;
-     * another app's media session that begins to play (YouTube, «الجوال (بلوتوث)», …) stops it, to be started again
-     * by its button. A session already playing when the khatma started does not count, until it stops and plays again.
+     * a call (the audio mode, or a call's sound playing) or another app's media session that begins to play (YouTube,
+     * «الجوال (بلوتوث)», a notification's sound …) pauses it, and it goes on by itself after 2 seconds of quiet (v26
+     * stopped it for good on another sound: the owner wanted it back). A session already playing when the khatma
+     * started does not count, until it stops and plays again; its button makes it go on over whatever plays.
      */
     private final java.util.Set<String> playingBefore = new java.util.HashSet<>();
-    private int callGone;
     private boolean khatmaWasOn;
     private void guardKhatma() {
-        if (!khatma.on) { khatmaWasOn = false; return; }
+        SoundLog.watch(this);
+        if (!khatma.on) { khatmaWasOn = false; heldWhy = ""; return; }
         java.util.Set<String> now = NotiListener.playingPackages(this);
-        if (!khatmaWasOn) { khatmaWasOn = true; playingBefore.clear(); playingBefore.addAll(now); callGone = 0; }
+        if (!khatmaWasOn) { khatmaWasOn = true; playingBefore.clear(); playingBefore.addAll(now); quiet = 0; }
         playingBefore.retainAll(now);   // one that stopped playing counts again when it plays again
-        if (inCall()) {
-            callGone = 0;
-            if (khatma.held() == null) { khatma.hold("call"); Prefs.put(this, "k_err", "مكالمة، وتكمل بعدها"); }
+        String why = inCall() ? "مكالمة" : null;
+        if (why == null) for (String pkg : now) if (!playingBefore.contains(pkg)) { why = NotiListener.appName(this, pkg) + " يعمل"; break; }
+        if (why != null) {
+            quiet = 0;
+            if (khatma.held() == null) { khatma.hold("other"); Prefs.put(this, "k_err", why); SoundLog.add(this, "الختمة تقف: " + why); }
+            if (!why.equals(heldWhy)) { heldWhy = why; drawRadio(); }
             return;
         }
-        if ("call".equals(khatma.held())) { if (++callGone >= 2) khatma.resume(); return; }
-        if (khatma.held() != null) return;
-        for (String pkg : now) if (!playingBefore.contains(pkg)) { khatma.interrupted(NotiListener.appName(this, pkg) + " بدأ يعمل"); return; }
+        if (khatma.held() != null && !"focus".equals(khatma.held()) && ++quiet >= 2) {   // 2 seconds of quiet: it goes on
+            SoundLog.add(this, "الختمة تكمل");
+            heldWhy = "";
+            khatma.resume();
+        }
+    }
+    private int quiet;
+    private String heldWhy = "";
+    /** The khatma's button while it waits: it goes on now, and what is playing now is let be. */
+    private void khatmaGoOn() {
+        playingBefore.addAll(NotiListener.playingPackages(this));
+        heldWhy = "";
+        SoundLog.add(this, "الختمة تكمل بالزر");
+        khatma.resume();
     }
     private boolean inCall() {
         android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
@@ -250,7 +265,9 @@ public class PanelService extends Service implements Panel.Actions {
 
     private void drawRadio() {
         if (panel == null) return;
-        panel.showKhatma(khatma.on ? "إيقاف الختمة" : "ختمة السيارة", Ui.ar(khatma.percent()) + "٪، " + khatma.surahName()
+        if (khatma.on && khatma.held() != null)   // waiting for a call or another sound to end
+            panel.showKhatma("الختمة تنتظر", (heldWhy.isEmpty() ? "صوت آخر" : heldWhy) + "، اضغط لتكمل", true);
+        else panel.showKhatma(khatma.on ? "إيقاف الختمة" : "ختمة السيارة", Ui.ar(khatma.percent()) + "٪، " + khatma.surahName()
                 + (khatma.done() > 0 ? "، الختمة " + Ui.ar(khatma.done() + 1) : ""), khatma.on);
         Object[] fm = Prefs.radioSource(this).equals("fm") ? Net.fmHere(this, day.lat, day.lon) : null;
         panel.showRadio(sound.radioOn ? "إيقاف الإذاعة" : "إذاعة القرآن",
@@ -443,6 +460,7 @@ public class PanelService extends Service implements Panel.Actions {
         launchPkg(last);
     }
     @Override public void khatma() {
+        if (khatma.on && khatma.held() != null) { khatmaGoOn(); return; }
         if (khatma.on) { khatma.stop(); khatmaPausedByStop = false; return; }
         sound.stopRadio();
         khatmaMoved = false;
