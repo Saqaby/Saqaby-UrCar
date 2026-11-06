@@ -1,5 +1,18 @@
 {
- "note": "No text here is typed from memory. riding: Az-Zukhruf 43:13-14, the words «وتقولوا …», Tanzil simple text as served by fawazahmed0/quran-api and semarketir/quranjson (both agree). travel: the Prophet's words in Sunan Abi Dawud 2598 as UrTV's assets/shared/hadith.json has it (Al-Albani: Hasan Sahih).",
- "riding": {"title": "ذكر الركوب", "text": "﴿سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَٰذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ ۝ وَإِنَّا إِلَىٰ رَبِّنَا لَمُنْقَلِبُونَ﴾", "src": "سورة الزخرف، الآيتان ١٣–١٤"},
- "travel": {"title": "دعاء السفر", "text": "اللَّهُمَّ أَنْتَ الصَّاحِبُ فِي السَّفَرِ وَالْخَلِيفَةُ فِي الأَهْلِ، اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ وَعْثَاءِ السَّفَرِ وَكَآبَةِ الْمُنْقَلَبِ وَسُوءِ الْمَنْظَرِ فِي الأَهْلِ وَالْمَالِ، اللَّهُمَّ اطْوِ لَنَا الأَرْضَ وَهَوِّنْ عَلَيْنَا السَّفَرَ", "src": "سنن أبي داود ٢٥٩٨، حسن صحيح عند الألباني"}
+ "note": "No text here is typed from memory. riding: Az-Zukhruf 43:13-14, the words «وتقولوا …», Tanzil simple text as served by fawazahmed0/quran-api and semarketir/quranjson (both agree). travel: the Prophet's words in Sunan Abi Dawud 2598 as UrTV's assets/shared/hadith.json has it (Al-Albani: Hasan Sahih). home: Sunan Abi Dawud 5096 as the Muhyiddin Abd al-Hamid edition has it (turath.io book 1726, page 6960), the words the owner's recording says (Whisper large-v3, check-home-speed.yml); its grading is disputed: Ibn Baz (Tuhfat al-Akhyar) hasan, Al-Albani and Ibn Hajar (Nata'ij al-Afkar) weak, and the card says so.",
+ "riding": {
+  "title": "ذكر الركوب",
+  "text": "﴿سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَٰذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ ۝ وَإِنَّا إِلَىٰ رَبِّنَا لَمُنْقَلِبُونَ﴾",
+  "src": "سورة الزخرف، الآيتان ١٣–١٤"
+ },
+ "travel": {
+  "title": "دعاء السفر",
+  "text": "اللَّهُمَّ أَنْتَ الصَّاحِبُ فِي السَّفَرِ وَالْخَلِيفَةُ فِي الأَهْلِ، اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ وَعْثَاءِ السَّفَرِ وَكَآبَةِ الْمُنْقَلَبِ وَسُوءِ الْمَنْظَرِ فِي الأَهْلِ وَالْمَالِ، اللَّهُمَّ اطْوِ لَنَا الأَرْضَ وَهَوِّنْ عَلَيْنَا السَّفَرَ",
+  "src": "سنن أبي داود ٢٥٩٨، حسن صحيح عند الألباني"
+ },
+ "home": {
+  "title": "دعاء دخول المنزل",
+  "text": "اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ الْمَوْلَجِ وَخَيْرَ الْمَخْرَجِ، بِسْمِ اللَّهِ وَلَجْنَا، وَبِسْمِ اللَّهِ خَرَجْنَا، وَعَلَى اللَّهِ رَبِّنَا تَوَكَّلْنَا",
+  "src": "سنن أبي داود ٥٠٩٦؛ حسّن إسناده ابن باز، وضعّفه الألباني"
+ }
 }
