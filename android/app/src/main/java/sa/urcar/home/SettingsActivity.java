@@ -149,9 +149,9 @@ public class SettingsActivity extends Activity {
         list.addView(lr);
         list.addView(note("لوحة بجانب السرعة، وتحمرّ السرعة إذا تجاوزتها. من خرائط OpenStreetMap، وليست كل الطرق فيها حدودها، وقد لا تطابق اللوحات: المرجع لوحات الطريق."));
 
-        head("صوت ذكر الركوب ودعاء السفر (يُشغَّل عند بدء الرحلة)");
+        head("صوت الأذكار: الركوب والسفر عند بدء الرحلة، ودخول المنزل عند الوصول إليه");
         LinearLayout du = grid();
-        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}}) {
+        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}, {"home", "دعاء دخول المنزل"}}) {
             boolean have = Sound.duaFile(this, d[0]).exists();
             du.addView(chip(have ? d[1] + ": صوتك (استبدله)" : d[1] + ": الصوت الأساسي (استبدله بصوتك)", have, () -> {
                 pending = d[0];
@@ -164,11 +164,11 @@ public class SettingsActivity extends Activity {
         boolean on = Prefs.of(this).getBoolean("dua_sound", true);
         du2.addView(chip("الصوت يعمل", on, () -> { Prefs.of(this).edit().putBoolean("dua_sound", true).apply(); build(); }));
         du2.addView(chip("بلا صوت (النص فقط)", !on, () -> { Prefs.of(this).edit().putBoolean("dua_sound", false).apply(); build(); }));
-        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}})
+        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}, {"home", "دعاء دخول المنزل"}})
             du2.addView(chip("جرّب " + d[1], false, () -> { if (PanelService.live != null) PanelService.live.testDua(d[0]); }));
         list.addView(du2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
         LinearLayout du3 = grid();
-        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}})
+        for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}, {"home", "دعاء دخول المنزل"}})
             if (Sound.duaFile(this, d[0]).exists())
                 du3.addView(chip("أرجع " + d[1] + " إلى الصوت الأساسي", false, () -> { Sound.duaFile(this, d[0]).delete(); build(); }));
         if (du3.getChildCount() > 0) list.addView(du3, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});

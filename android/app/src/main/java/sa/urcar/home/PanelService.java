@@ -50,12 +50,12 @@ public class PanelService extends Service implements Panel.Actions {
     // the trip: starts when the car moves after an hour without moving (or when the screen starts)
     private long tripStart, lastMoveAt, duaUntil, savedMoveAt;
     private double tripKm, prevLat = 999, prevLon;
-    private boolean travelDua;
+    private String duaKind = "riding";   // what the quote card shows for its minute: riding, travel or home
     /** A stop this long, the car on or off, makes the next move a new trip (the riding dhikr). */
     static final long STOP_MS = 25 * 60_000L;
     private double dust = -1;
     private long dustAt;
-    private String[] riding, travel;
+    private final java.util.Map<String, String[]> duas = new java.util.HashMap<>();
     static volatile boolean prefsChanged;
     private final Day day = new Day();
     private Sound sound;
@@ -83,10 +83,9 @@ public class PanelService extends Service implements Panel.Actions {
             for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n);
             in.close();
             org.json.JSONObject j = new org.json.JSONObject(b.toString("UTF-8"));
-            for (String k : new String[]{"riding", "travel"}) {
-                org.json.JSONObject d = j.getJSONObject(k);
-                String[] v = {d.getString("title"), d.getString("text"), d.getString("src")};
-                if (k.equals("riding")) riding = v; else travel = v;
+            for (String k : new String[]{"riding", "travel", "home"}) {
+                org.json.JSONObject d = j.optJSONObject(k);
+                if (d != null) duas.put(k, new String[]{d.getString("title"), d.getString("text"), d.getString("src")});
             }
         } catch (Exception ignored) { }
         sound = new Sound(this);
@@ -185,7 +184,7 @@ public class PanelService extends Service implements Panel.Actions {
             drive.showTrip(tripNow());
             drive.showRemind(day.remind(now));
             // the quote card: the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
-            if (now < duaUntil && (travelDua ? travel : riding) != null) drive.showQuote(travelDua ? travel : riding, moving);
+            if (now < duaUntil && duas.get(duaKind) != null) drive.showQuote(duas.get(duaKind), moving);
             else drive.showQuote(moving ? quotes.at(now, 60) : quotes.at(now), moving);
         }
     }
@@ -343,14 +342,15 @@ public class PanelService extends Service implements Panel.Actions {
                     }, 20_000);
                 }
                 duaUntil = now + 60_000;
-                travelDua = travelDuaFor(l);   // far from home: the travel du'a
-                final boolean far = travelDua;
+                duaKind = travelDuaFor(l) ? "travel" : "riding";   // far from home: the travel du'a
+                final String kind = duaKind;
                 if (Prefs.of(this).getBoolean("dua_sound", true))
-                    h.postDelayed(() -> sound.playDua(far ? "travel" : "riding", Prefs.of(this).getFloat("adhan_vol", 1f)), 1500);
+                    h.postDelayed(() -> sound.playDua(kind, Prefs.of(this).getFloat("adhan_vol", 1f)), 1500);
             }
             lastMoveAt = now;
         }
         if (kmh >= 3 && prevLat < 90) tripKm += Day.km(prevLat, prevLon, l.getLatitude(), l.getLongitude());
+        arrivedHome(l, now);
         prevLat = l.getLatitude(); prevLon = l.getLongitude();
         // kept on the screen every 30 seconds, so a restart of the screen goes on with the same trip
         if (tripStart > 0 && now - savedMoveAt > 30_000) {
@@ -371,6 +371,20 @@ public class PanelService extends Service implements Panel.Actions {
     }
 
     /** «جرّب» in the settings. */
+    /**
+     * Home again: a trip of 2 km or more that comes within 150 m of the saved home plays the du'a for entering the
+     * home and shows it for a minute, once a trip (kept on the screen, so a restart at home does not play it again).
+     */
+    private void arrivedHome(Location l, long now) {
+        float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
+        if (hl > 90 || tripStart == 0 || tripKm < 2 || duas.get("home") == null) return;
+        if (Prefs.of(this).getLong("home_done", 0) == tripStart) return;
+        if (Day.km(hl, ho, l.getLatitude(), l.getLongitude()) > 0.15) return;
+        Prefs.of(this).edit().putLong("home_done", tripStart).apply();
+        duaKind = "home";
+        duaUntil = now + 60_000;
+        if (Prefs.of(this).getBoolean("dua_sound", true)) sound.playDua("home", Prefs.of(this).getFloat("adhan_vol", 1f));
+    }
     void testDua(String which) { sound.playDua(which, Prefs.of(this).getFloat("adhan_vol", 1f)); }
 
     private boolean travelDuaFor(Location l) {
