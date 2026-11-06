@@ -136,7 +136,8 @@ final class Full extends FrameLayout {
                 gauge.invalidate();
                 if (d[1] >= 0) { rose.bearing = d[1]; set(headingText, DIRS[Math.round(d[1] / 45f) % 8]); }
                 else if (rose.bearing < 0) set(headingText, "الاتجاه أثناء السير");
-                String t = s.tripNow();
+                String t = PanelService.join(s.tripNow(), s.homeNow());
+                rose.home = s.homeBearing();
                 set(tripText, t.isEmpty() ? "الرحلة تبدأ مع السير" : t);
                 rose.qibla = d[2];
                 rose.invalidate();
@@ -266,7 +267,7 @@ final class Full extends FrameLayout {
     // ---------------------------------------------------------------- the compass
     /** The rose turns with the car (its arrow up), the eight points in Arabic, the qibla as a gold Kaaba mark. */
     final class Rose extends View {
-        float bearing = -1, qibla = -1, shown;
+        float bearing = -1, qibla = -1, home = -1, shown;
         private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG), mark = new Paint(Paint.ANTI_ALIAS_FLAG), label = new Paint(Paint.ANTI_ALIAS_FLAG),
                 car = new Paint(Paint.ANTI_ALIAS_FLAG), kaaba = new Paint(Paint.ANTI_ALIAS_FLAG);
         Rose(Context c) {
@@ -303,6 +304,7 @@ final class Full extends FrameLayout {
                 cv.drawText(pts[i], cx, cy - r * .62f, label);
                 cv.restore();
             }
+            if (home >= 0) { cv.save(); cv.rotate(home, cx, cy); Drive.house(cv, cx, cy - r * 1.0f, r * .09f, 0xff4fbf7a); cv.restore(); }
             if (qibla >= 0) {
                 cv.save();
                 cv.rotate(qibla, cx, cy);

@@ -211,7 +211,7 @@ public class SettingsActivity extends Activity {
         try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { v = "?"; }
         list.addView(note("الإصدار " + v + ". التحديثات من github.com/Saqaby/Saqaby-UrCar"));
         list.addView(note("© ٢٠٢٦ سلمان الصقعبي (Salman Alsaqabi)، linkedin.com/in/سلمان-الصقعبي-78a098159. جميع الحقوق محفوظة. الاستخدام الشخصي مجاني؛ ولا يُنسخ التطبيق أو يُعدَّل أو يُعاد نشره بلا إذن.\n"
-                + "بيانات الطقس من Open-Meteo.com (CC BY 4.0). حدود السرعة © OpenStreetMap contributors (ODbL). الخط IBM Plex Sans Arabic (OFL). التلاوات من mp3quran.net. التفاصيل في LICENSE وTHIRD-PARTY.md في المستودع."));
+                + "بيانات الطقس من Open-Meteo.com (CC BY 4.0). أسماء المدن وحدود السرعة © OpenStreetMap contributors (ODbL). الخط IBM Plex Sans Arabic (OFL). التلاوات من mp3quran.net. التفاصيل في LICENSE وTHIRD-PARTY.md في المستودع."));
     }
 
     /** «هذا الشهر: ٤٢ رحلة، ١٢٣٠ كم، ٣١ ساعة» and the month before, from the trips kept on the screen. */

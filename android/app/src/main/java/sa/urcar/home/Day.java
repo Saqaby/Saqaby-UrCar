@@ -124,6 +124,25 @@ final class Day {
         return -1;
     }
 
+    /** The great-circle bearing from one place to another, degrees from north. */
+    static float bearing(double la1, double lo1, double la2, double lo2) {
+        double r = Math.PI / 180, dLo = (lo2 - lo1) * r;
+        double y = Math.sin(dLo) * Math.cos(la2 * r), x = Math.cos(la1 * r) * Math.sin(la2 * r) - Math.sin(la1 * r) * Math.cos(la2 * r) * Math.cos(dLo);
+        return (float) ((Math.atan2(y, x) / r + 360) % 360);
+    }
+    /** The sun's {altitude, azimuth from north} in degrees at a place and time (the low-precision almanac formulas, ~1°). */
+    static double[] sun(double lat, double lon, long ms) {
+        double r = Math.PI / 180, d = ms / 86_400_000.0 + 2440587.5 - 2451545.0;
+        double g = (357.529 + 0.98560028 * d) * r, q = 280.459 + 0.98564736 * d;
+        double L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * r, e = (23.439 - 0.00000036 * d) * r;
+        double ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), dec = Math.asin(Math.sin(e) * Math.sin(L));
+        double gmst = (18.697374558 + 24.06570982441908 * d) % 24;
+        double H = (gmst * 15 + lon) * r - ra, la = lat * r;
+        double alt = Math.asin(Math.sin(la) * Math.sin(dec) + Math.cos(la) * Math.cos(dec) * Math.cos(H));
+        double az = (Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(la) - Math.tan(dec) * Math.cos(la)) / r + 180) % 360;
+        return new double[]{alt / r, az};
+    }
+
     /** The bearing to the Kaaba from the car's place, degrees from north (great circle). */
     float qibla() {
         double r = Math.PI / 180, la = lat * r, lo = lon * r, kla = 21.4225 * r, klo = 39.8262 * r;

@@ -130,6 +130,8 @@ public class PanelService extends Service implements Panel.Actions {
             restAndStop(now);
             guardKhatma();
             askLimit(now);
+            glare(now);
+            askCity(now);
             if (panel != null && HomeActivity.resumed) draw(now);
             background(now);
             h.postDelayed(this, 1000);
@@ -175,13 +177,15 @@ public class PanelService extends Service implements Panel.Actions {
             drive.showQibla(day.qibla());
             // Radarbot first; else dust (PM10 or dust >= 150 µg/m³ in the last 3 hours, as UrTV)
             String alert = now - NotiListener.radarAt < 20_000 ? NotiListener.radar : null;
+            if (alert == null && now < glareUntil) alert = "🕶 الشمس أمامك مباشرة";
             boolean rest = false;
             if (alert == null && now < restUntil) { alert = "قدت " + Ui.hours((int) ((now - tripStart) / 3600_000L)) + "، قف للراحة. اضغط لأقرب محطة"; rest = true; }
             drive.setAlertAction(rest ? this::station : null);
             if (alert == null && dust >= 150 && now - dustAt < 3 * 3600_000L) alert = dust >= 400 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
             drive.showAlert(alert);
             drive.setMosqueHot(day.bar(now) != null);
-            drive.showTrip(tripNow());
+            drive.showTrip(join(tripNow(), homeNow()));
+            drive.showHome(homeBearing());
             drive.showRemind(day.remind(now));
             // the quote card: the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
             if (now < duaUntil && duas.get(duaKind) != null) drive.showQuote(duas.get(duaKind), moving);
@@ -471,6 +475,63 @@ public class PanelService extends Service implements Panel.Actions {
             h.post(() -> { limitBusy = 0; if (v >= 0) { limit = v; limitAt = System.currentTimeMillis(); limitLat = la; limitLon = lo; } });
         }).start();
     }
+    static String join(String a, String b) { return a.isEmpty() ? b : b.isEmpty() ? a : a + "  ·  " + b; }
+
+    /** «البيت ٣٤ كم» in a straight line, when the home is saved and the car more than 300 m from it. */
+    String homeNow() {
+        float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
+        if (hl > 90 || day.lat == 0) return "";
+        double k = Day.km(day.lat, day.lon, hl, ho);
+        if (k < 0.3) return "";
+        return "البيت " + Ui.ar(String.format(java.util.Locale.US, k < 10 ? "%.1f" : "%.0f", k)) + " كم";
+    }
+    /** The bearing to the home from north, or -1 (not saved, or at home). */
+    float homeBearing() {
+        float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
+        if (hl > 90 || day.lat == 0 || Day.km(day.lat, day.lon, hl, ho) < 0.3) return -1;
+        return Day.bearing(day.lat, day.lon, hl, ho);
+    }
+
+    /** The sun low (under 15°) and within 25° of the way the car goes: a line for 20 seconds, then not for 20 minutes. */
+    private long glareUntil, glareAt;
+    private void glare(long now) {
+        if (now - fixAt > 6000 || kmh < 20 || bearing < 0 || now - glareAt < 20 * 60_000L) return;
+        double[] sn = Day.sun(day.lat, day.lon, now);
+        double diff = Math.abs(((sn[1] - bearing) % 360 + 540) % 360 - 180);
+        if (sn[0] > 0 && sn[0] < 15 && diff < 25) { glareAt = now; glareUntil = now + 20_000; }
+    }
+
+    /**
+     * «مرحبًا بك في الخبر»: the city from OpenStreetMap every 2 km while moving (at most once a minute, as Nominatim's
+     * rules ask); a new name heard twice in a row is the new city, and is welcomed unless it was welcomed in the last
+     * half hour (the edges of Dammam, Khobar and Dhahran touch).
+     */
+    private String cityPending = "";
+    private long cityAskedAt;
+    private double cityLat = 999, cityLon;
+    private boolean cityBusy;
+    private void askCity(long now) {
+        if (cityBusy || now - fixAt > 6000 || kmh < 10 || now - cityAskedAt < 60_000) return;
+        if (cityLat < 90 && Day.km(cityLat, cityLon, day.lat, day.lon) < 2) return;
+        cityAskedAt = now; cityBusy = true; cityLat = day.lat; cityLon = day.lon;
+        final double la = day.lat, lo = day.lon;
+        new Thread(() -> {
+            String c = Net.city(la, lo);
+            h.post(() -> { cityBusy = false; if (c != null) heardCity(c); });
+        }).start();
+    }
+    private void heardCity(String c) {
+        String cur = Prefs.of(this).getString("city", "");
+        if (c.isEmpty() || c.equals(cur)) { cityPending = ""; return; }
+        if (!c.equals(cityPending)) { cityPending = c; cityLat = 999; return; }   // asked again in a minute, wherever the car is
+        cityPending = "";
+        Prefs.put(this, "city", c);
+        long last = Prefs.of(this).getLong("welcomed_" + c, 0), now = System.currentTimeMillis();
+        if (cur.isEmpty() || now - last < 30 * 60_000L) return;   // the first city ever is not «new»
+        Prefs.of(this).edit().putLong("welcomed_" + c, now).apply();
+        if (HomeActivity.live != null) HomeActivity.live.welcome(c);
+    }
+
     /** The trip line: «الرحلة ١٢٫٤ كم، ٣٥ دقيقة», or empty before the first trip. */
     String tripNow() {
         if (tripStart == 0) return "";

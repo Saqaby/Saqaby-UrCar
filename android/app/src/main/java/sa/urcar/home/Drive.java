@@ -226,9 +226,20 @@ final class Drive extends LinearLayout {
         }
     }
 
+    /** A small house (roof and walls) centred at x, y: the home's mark on the compasses. */
+    static void house(Canvas cv, float x, float y, float s, int color) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(color);
+        Path h = new Path();
+        h.moveTo(x, y - s); h.lineTo(x + s, y - s * .1f); h.lineTo(x + s * .7f, y - s * .1f); h.lineTo(x + s * .7f, y + s);
+        h.lineTo(x - s * .7f, y + s); h.lineTo(x - s * .7f, y - s * .1f); h.lineTo(x - s, y - s * .1f); h.close();
+        cv.drawPath(h, p);
+    }
+    void showHome(float b) { if (Math.abs(compass.home - b) > .5f) { compass.home = b; compass.invalidate(); } }
+
     /** A compass rose that turns: the car's arrow points up, north («ش») moves around it. */
     static final class Compass extends View {
-        float bearing = -1, qibla = -1;
+        float bearing = -1, qibla = -1, home = -1;
         private final Paint kaaba = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG), mark = new Paint(Paint.ANTI_ALIAS_FLAG),
                 car = new Paint(Paint.ANTI_ALIAS_FLAG), label = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -257,6 +268,7 @@ final class Drive extends LinearLayout {
             }
             label.setTextSize(r * .3f);
             cv.drawText("ش", cx, cy - r * .5f, label);
+            if (home >= 0) { cv.save(); cv.rotate(home, cx, cy); house(cv, cx, cy - r * .9f, r * .15f, 0xff4fbf7a); cv.restore(); }   // the home, green
             if (qibla >= 0) {   // the qibla: a gold mark on the rim, in the same turning frame as north
                 cv.save();
                 cv.rotate(qibla, cx, cy);

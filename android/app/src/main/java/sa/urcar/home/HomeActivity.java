@@ -22,6 +22,7 @@ import android.widget.TextView;
  */
 public class HomeActivity extends Activity {
     static boolean resumed;
+    static HomeActivity live;   // while the home screen is in front: the welcome to a city shows on it
     private FrameLayout root;
     private String builtFor = "";
 
@@ -35,11 +36,13 @@ public class HomeActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         resumed = true;
+        live = this;
         PanelService.start(this);
         root.post(this::build);
     }
     @Override protected void onPause() {
         resumed = false;
+        live = null;
         closeFull();
         if (PanelService.live != null) PanelService.live.attach(null, null);
         super.onPause();
@@ -138,6 +141,29 @@ public class HomeActivity extends Activity {
         root.addView(full, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
     private void closeFull() { if (full != null) { root.removeView(full); full = null; } }
+
+    /** «مرحبًا بك في الخبر»: a card that grows in over the middle, stays four seconds and fades away. */
+    void welcome(String city) {
+        Ui.Theme th = new Ui.Theme(PanelService.live != null && PanelService.live.dayNow());
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(android.view.Gravity.CENTER);
+        card.setPadding(70, 34, 70, 40);
+        card.setBackground(Ui.box(th.panel, th.sand, 28));
+        card.setElevation(24);
+        TextView a = Ui.text(this, 30, Ui.regular(this), th.muted);
+        a.setText("مرحبًا بك في");
+        TextView b = Ui.text(this, 76, Ui.medium(this), th.sand);
+        b.setText(city);
+        card.addView(a);
+        card.addView(b);
+        root.addView(card, new FrameLayout.LayoutParams(-2, -2, android.view.Gravity.CENTER));
+        card.setAlpha(0f); card.setScaleX(.85f); card.setScaleY(.85f);
+        card.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(700)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(1.2f))
+                .withEndAction(() -> card.animate().alpha(0f).translationY(-40).setStartDelay(4000).setDuration(900)
+                        .withEndAction(() -> root.removeView(card)).start()).start();
+    }
 
     @Override public void onBackPressed() { closeFull(); /* the home screen stays */ }
 }
