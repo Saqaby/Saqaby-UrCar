@@ -1,0 +1,37 @@
+# One-off checks for v29 (run on a push of this file): what the home du'a recording says (Whisper, to show the
+# matching verified text), and whether OpenStreetMap has speed limits on the owner's roads (Overpass).
+name: check-home-speed
+on:
+  workflow_dispatch:
+  push:
+    paths: [".github/workflows/check-home-speed.yml"]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Transcribe the home du'a
+        run: |
+          pip install -q faster-whisper
+          python3 - <<'PY'
+          from faster_whisper import WhisperModel
+          m = WhisperModel("large-v3", device="cpu", compute_type="int8")
+          segs, info = m.transcribe("android/app/src/main/assets/dua/home.mp3", language="ar", beam_size=5)
+          for s in segs: print(f"[{s.start:.1f}-{s.end:.1f}] {s.text}")
+          PY
+      - name: Speed limits in OpenStreetMap
+        run: |
+          for area in "Dammam:26.30,49.95,26.50,50.20" "Riyadh:24.60,46.60,24.85,46.85" "Dammam-Riyadh road:25.20,48.00,25.60,49.00"; do
+            name=${area%%:*}; bb=${area#*:}
+            q="[out:json][timeout:60];(way[highway~\"^(motorway|trunk|primary|secondary)$\"]($bb););out tags;"
+            curl -s -A "UrCar-check" --data-urlencode "data=$q" https://overpass-api.de/api/interpreter -o r.json
+            python3 - "$name" <<'PY'
+          import json, sys, collections
+          d = json.load(open("r.json"))["elements"]
+          by = collections.Counter(); have = collections.Counter(); vals = collections.Counter()
+          for e in d:
+              t = e.get("tags", {}); k = t.get("highway"); by[k] += 1
+              if "maxspeed" in t: have[k] += 1; vals[t["maxspeed"]] += 1
+          print(sys.argv[1], {k: f"{have[k]}/{by[k]}" for k in by}, "values:", vals.most_common(8))
+          PY
+          done
