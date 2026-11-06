@@ -187,20 +187,6 @@ public class SettingsActivity extends Activity {
         if (!kerr.isEmpty()) list.addView(note("آخر ما أوقف الختمة: " + kerr));
         list.addView(note("تبدأ مع الرحلة إن لم يكن صوت آخر يعمل، وتتوقف بعد ٣ دقائق من الوقوف، وتكمل حين تتحرك. تقف مع المكالمة أو أي صوت آخر (مقطع، موسيقى الجوال، إشعار) وتكمل وحدها بعد انتهائه، راجعةً ٣ ثوانٍ. وإن بقيت تنتظر فزرها يكملها. التلاوات من mp3quran.net وتحتاج إنترنت."));
 
-        head("سجل الصوت");
-        list.addView(note("ما تخبر به الشاشة أثناء المكالمة وصوت الجوال، لمعرفة ما يوقف الختمة. جرّب مكالمة والختمة تعمل، ثم صوّر هذا السجل."));
-        TextView sl = Ui.text(this, 16, Ui.regular(this), th.fg);
-        sl.setSingleLine(false);
-        sl.setTextDirection(View.TEXT_DIRECTION_RTL);
-        sl.setText(SoundLog.last(this, 45));
-        sl.setPadding(16, 12, 16, 12);
-        sl.setBackground(Ui.box(th.panel, th.line, 12));
-        list.addView(sl, new LinearLayout.LayoutParams(-1, -2));
-        LinearLayout sr = grid();
-        sr.addView(chip("حدّث", false, this::build));
-        sr.addView(chip("امسح السجل", false, () -> { SoundLog.clear(this); build(); }));
-        list.addView(sr, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
-
         head("دفتر الطريق");
         list.addView(note(tripLog()));
 

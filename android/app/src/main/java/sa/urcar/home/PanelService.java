@@ -88,6 +88,7 @@ public class PanelService extends Service implements Panel.Actions {
         sound = new Sound(this);
         sound.changed = () -> h.post(this::drawRadio);
         khatma = new Khatma(this);
+        new java.io.File(getFilesDir(), "soundlog.txt").delete();   // the v27 test log, no longer kept
         khatma.changed = () -> h.post(this::drawRadio);
         day.lat = Prefs.of(this).getFloat("lat", (float) day.lat);
         day.lon = Prefs.of(this).getFloat("lon", (float) day.lon);
@@ -202,7 +203,6 @@ public class PanelService extends Service implements Panel.Actions {
     private final java.util.Set<String> playingBefore = new java.util.HashSet<>();
     private boolean khatmaWasOn;
     private void guardKhatma() {
-        SoundLog.watch(this);
         if (!khatma.on) { khatmaWasOn = false; heldWhy = ""; return; }
         java.util.Set<String> now = NotiListener.playingPackages(this);
         if (!khatmaWasOn) { khatmaWasOn = true; playingBefore.clear(); playingBefore.addAll(now); quiet = 0; }
@@ -211,12 +211,11 @@ public class PanelService extends Service implements Panel.Actions {
         if (why == null) for (String pkg : now) if (!playingBefore.contains(pkg)) { why = NotiListener.appName(this, pkg) + " يعمل"; break; }
         if (why != null) {
             quiet = 0;
-            if (khatma.held() == null) { khatma.hold("other"); Prefs.put(this, "k_err", why); SoundLog.add(this, "الختمة تقف: " + why); }
+            if (khatma.held() == null) { khatma.hold("other"); Prefs.put(this, "k_err", why); }
             if (!why.equals(heldWhy)) { heldWhy = why; drawRadio(); }
             return;
         }
         if (khatma.held() != null && !"focus".equals(khatma.held()) && ++quiet >= 2) {   // 2 seconds of quiet: it goes on
-            SoundLog.add(this, "الختمة تكمل");
             heldWhy = "";
             khatma.resume();
         }
@@ -227,7 +226,6 @@ public class PanelService extends Service implements Panel.Actions {
     private void khatmaGoOn() {
         playingBefore.addAll(NotiListener.playingPackages(this));
         heldWhy = "";
-        SoundLog.add(this, "الختمة تكمل بالزر");
         khatma.resume();
     }
     private boolean inCall() {

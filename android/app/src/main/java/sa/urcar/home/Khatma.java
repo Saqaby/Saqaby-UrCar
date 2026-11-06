@@ -99,7 +99,6 @@ final class Khatma {
         stop();
         AudioAttributes aa = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build();
         focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(aa).setOnAudioFocusChangeListener(fc -> {
-            SoundLog.add(c, "تركيز صوت الختمة: " + (fc == AudioManager.AUDIOFOCUS_GAIN ? "عاد" : fc == AudioManager.AUDIOFOCUS_LOSS ? "أُخذ" : "أُخذ مؤقتًا"));
             if (mp == null) return;
             if (fc == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT || fc == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) hold("focus");   // the adhan, a call
             else if (fc == AudioManager.AUDIOFOCUS_GAIN) { if ("focus".equals(held)) resume(); }
