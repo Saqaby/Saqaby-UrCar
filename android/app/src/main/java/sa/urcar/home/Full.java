@@ -37,14 +37,26 @@ final class Full extends FrameLayout {
         setClickable(true);
         setOnClickListener(v -> close.run());
         if (kind.equals("gauge")) buildGauge(c, openNav); else buildQuote(c);
-        LinearLayout bar = new LinearLayout(c);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.addView(button(c, "رجوع", close));
-        if (kind.equals("gauge")) bar.addView(button(c, "افتح الملاحة", openNav));
-        else bar.addView(button(c, "التالي", () -> { quoteOffset++; tick.run(); }));
-        LayoutParams bl = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
-        bl.setMargins(24, 20, 24, 0);
-        addView(bar, bl);
+        if (kind.equals("gauge")) {
+            // two symbols at the top: the map in the middle (the navigation app), the bent arrow beside it (back)
+            int size = 86, gap = 20;
+            Icon map = new Icon(c, true, openNav), back = new Icon(c, false, close);
+            LayoutParams ml = new LayoutParams(size, size, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+            ml.topMargin = 16;
+            addView(map, ml);
+            LayoutParams kl = new LayoutParams(size, size, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+            kl.topMargin = 16;
+            back.setTranslationX(size + gap);   // on the map's right
+            addView(back, kl);
+        } else {
+            LinearLayout bar = new LinearLayout(c);
+            bar.setGravity(Gravity.CENTER_VERTICAL);
+            bar.addView(button(c, "رجوع", close));
+            bar.addView(button(c, "التالي", () -> { quoteOffset++; tick.run(); }));
+            LayoutParams bl = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
+            bl.setMargins(24, 20, 24, 0);
+            addView(bar, bl);
+        }
         h.post(tick);
     }
 
@@ -71,7 +83,7 @@ final class Full extends FrameLayout {
         LinearLayout right = new LinearLayout(c);
         right.setOrientation(LinearLayout.VERTICAL);
         right.setGravity(Gravity.CENTER);
-        right.setPadding(0, 90, 0, 0);   // under «رجوع» and «افتح الملاحة»
+        right.setPadding(0, 0, 0, 0);
         rose = new Rose(c);
         right.addView(rose, new LinearLayout.LayoutParams(-1, 0, 1));
         headingText = Ui.text(c, 34, Ui.medium(c), th.sand);
@@ -87,7 +99,7 @@ final class Full extends FrameLayout {
         tripText.setBackground(Ui.box(th.panel, th.line, 16));
         right.addView(tripText, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 18; bottomMargin = 20; }});
         row.addView(right, new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
-        row.setPadding(10, 10, 24, 10);
+        row.setPadding(10, 110, 24, 10);   // the two symbols sit above, in the middle
         addView(row, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
 
@@ -145,6 +157,44 @@ final class Full extends FrameLayout {
     private static void set(TextView t, String s) { if (!s.contentEquals(t.getText())) t.setText(s); }
 
     @Override protected void onDetachedFromWindow() { h.removeCallbacksAndMessages(null); super.onDetachedFromWindow(); }
+
+    // ---------------------------------------------------------------- the two symbols
+    /** A round button with a drawn symbol (no font has them all): a folded map, or a bent arrow back. */
+    final class Icon extends View {
+        private final boolean map;
+        private final Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG), line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Icon(Context c, boolean map, Runnable r) {
+            super(c);
+            this.map = map;
+            bg.setColor(th.panel);
+            line.setStyle(Paint.Style.STROKE); line.setStrokeCap(Paint.Cap.ROUND); line.setStrokeJoin(Paint.Join.ROUND);
+            line.setColor(map ? th.sand : th.fg);
+            setContentDescription(map ? "افتح الملاحة" : "رجوع");
+            setClickable(true);
+            setOnClickListener(v -> r.run());
+        }
+        @Override protected void onDraw(Canvas cv) {
+            float s = Math.min(getWidth(), getHeight());
+            bg.setStyle(Paint.Style.FILL); bg.setColor(th.panel);
+            cv.drawCircle(s / 2, s / 2, s / 2 - 2, bg);
+            bg.setStyle(Paint.Style.STROKE); bg.setStrokeWidth(2); bg.setColor(th.line);
+            cv.drawCircle(s / 2, s / 2, s / 2 - 2, bg);
+            line.setStrokeWidth(s * .055f);
+            Path p = new Path();
+            if (map) {   // three panels, folded
+                p.moveTo(s * .24f, s * .34f); p.lineTo(s * .41f, s * .27f); p.lineTo(s * .59f, s * .34f); p.lineTo(s * .76f, s * .27f);
+                p.lineTo(s * .76f, s * .66f); p.lineTo(s * .59f, s * .73f); p.lineTo(s * .41f, s * .66f); p.lineTo(s * .24f, s * .73f); p.close();
+                p.moveTo(s * .41f, s * .27f); p.lineTo(s * .41f, s * .66f);
+                p.moveTo(s * .59f, s * .34f); p.lineTo(s * .59f, s * .73f);
+            } else {     // bent back the Arabic way: the head points right, the bend on the left
+                p.moveTo(s * .66f, s * .70f); p.lineTo(s * .44f, s * .70f);
+                p.arcTo(new RectF(s * .26f, s * .38f, s * .58f, s * .70f), 90, 180);
+                p.lineTo(s * .74f, s * .38f);
+                p.moveTo(s * .63f, s * .28f); p.lineTo(s * .74f, s * .38f); p.lineTo(s * .63f, s * .48f);
+            }
+            cv.drawPath(p, line);
+        }
+    }
 
     // ---------------------------------------------------------------- the speedometer
     /** 0–220 km/h on a 240° arc: graduated ring, a gold sweep up to the speed, the needle, and the number in the middle. */
