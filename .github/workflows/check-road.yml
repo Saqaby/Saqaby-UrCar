@@ -1,0 +1,23 @@
+# One-off: how OpenStreetMap names the Dammam-Riyadh road (ref, name, maxspeed) along its length.
+name: check-road
+on:
+  push:
+    paths: [".github/workflows/check-road.yml"]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          q='[out:json][timeout:90];way[highway~"^(motorway|trunk)$"](24.75,46.95,26.35,49.95);out tags center;'
+          curl -s -A "UrCar-check" --data-urlencode "data=$q" https://overpass-api.de/api/interpreter -o r.json
+          python3 - <<'PY'
+          import json, collections
+          d = json.load(open("r.json"))["elements"]
+          c = collections.Counter()
+          lon = collections.defaultdict(list)
+          for e in d:
+              t = e.get("tags", {})
+              k = (t.get("ref"), t.get("name:en") or t.get("name"), t.get("highway"), t.get("maxspeed"))
+              c[k] += 1; lon[k].append(round(e["center"]["lon"], 1))
+          for k, n in c.most_common(40): print(n, k, min(lon[k]), max(lon[k]))
+          PY
