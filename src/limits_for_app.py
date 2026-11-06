@@ -7,7 +7,7 @@ tertiary and their links) that carry a numeric «maxspeed», exported as GeoJSON
 Format (big-endian, read by LimitMap.java):
   "UCL1", int built (yyyymmdd), int tiles,
   tiles x (int key, int offset, int count)      key = ty * 7200 + tx, tiles of 0.05° from (-90, -180), sorted
-  segments x (u8 limit km/h, u8 rank, i16 x1, y1, x2, y2)   1e-5° from the tile's corner
+  segments x (u8 limit km/h, u8 rank, i16 x1, y1, x2, y2), 10 bytes, 1e-5° from the tile's corner
 A segment is cut to 0.01° (about a kilometre) at most and is filed in every tile that it, widened by 0.0005°
 (about 50 m), touches, so one tile answers for any point inside it.
 """
@@ -51,6 +51,6 @@ index, data, off = bytearray(), bytearray(), 0
 for k in keys:
     index += struct.pack(">iii", k, off, len(tiles[k]))
     for s in tiles[k]: data += s
-    off += 12 * len(tiles[k])
+    off += 10 * len(tiles[k])   # 10 bytes a segment
 open("android/app/src/main/assets/limits.bin", "wb").write(head + index + data)
 print("ways", ways, "segments", segs, "tiles", len(keys), "bytes", len(head) + len(index) + len(data))
