@@ -20,6 +20,8 @@ final class Drive extends LinearLayout {
     private final TextView speed, unit, trip, heading, qibla, alert, remind, qTitle, qText, qSrc;
     private boolean mosqueHot, moving;
     private final Compass compass;
+    private final Sign sign;
+    private int lastLimit = -1;
     private final LinearLayout dests;
     private final TextView[] destViews = new TextView[3];
 
@@ -45,7 +47,15 @@ final class Drive extends LinearLayout {
         unit.setText("كم/س");
         trip = Ui.text(c, px(3), Ui.medium(c), 0);
         trip.setGravity(Gravity.CENTER);
-        sp.addView(speed);
+        LinearLayout srow = new LinearLayout(c);   // the speed, and the road's limit beside it
+        srow.setGravity(Gravity.CENTER_VERTICAL);
+        srow.addView(speed);
+        sign = new Sign(c);
+        LayoutParams sl = new LayoutParams(px(10), px(10));
+        sl.setMarginStart(px(1.6f));
+        srow.addView(sign, sl);
+        sign.setVisibility(GONE);
+        sp.addView(srow);
         sp.addView(unit);
         top.addView(sp, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
         LinearLayout cp = new LinearLayout(c);
@@ -168,8 +178,10 @@ final class Drive extends LinearLayout {
     private static final String[] DIRS = {"شمال", "شمال شرق", "شرق", "جنوب شرق", "جنوب", "جنوب غرب", "غرب", "شمال غرب"};
 
     /** kmh < 0: no GPS fix; bearing < 0: unknown (only while moving does GPS give one). */
-    void showSpeed(int kmh, float bearing) {
+    void showSpeed(int kmh, float bearing, int limit) {
         set(speed, kmh < 0 ? "—" : Ui.ar(kmh));
+        if (limit != lastLimit) { lastLimit = limit; sign.limit = limit; sign.setVisibility(limit > 0 ? VISIBLE : GONE); sign.invalidate(); }
+        speed.setTextColor(limit > 0 && kmh > limit ? 0xffe0533d : th.fg);   // over the limit: red
         if (bearing >= 0) {
             compass.bearing = bearing;
             compass.invalidate();
@@ -194,6 +206,25 @@ final class Drive extends LinearLayout {
     }
 
     private static void set(TextView t, String s) { if (!s.contentEquals(t.getText())) t.setText(s); }
+
+    /** A road sign: the limit in black on white, in a red ring. */
+    static final class Sign extends View {
+        int limit;
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Sign(Context c) { super(c); p.setTextAlign(Paint.Align.CENTER); p.setTypeface(Ui.display(c)); }
+        @Override protected void onDraw(Canvas cv) { draw(cv, p, getWidth() / 2f, getHeight() / 2f, Math.min(getWidth(), getHeight()) / 2f - 1, limit); }
+        static void draw(Canvas cv, Paint p, float cx, float cy, float r, int limit) {
+            p.setStyle(Paint.Style.FILL); p.setColor(0xffffffff);
+            cv.drawCircle(cx, cy, r, p);
+            p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(r * .2f); p.setColor(0xffd7261e);
+            cv.drawCircle(cx, cy, r * .9f, p);
+            p.setStyle(Paint.Style.FILL); p.setColor(0xff111111);
+            String t = Ui.ar(limit);
+            p.setTextSize(r * (t.length() > 2 ? .78f : .95f));
+            Paint.FontMetrics fm = p.getFontMetrics();
+            cv.drawText(t, cx, cy - (fm.ascent + fm.descent) / 2, p);
+        }
+    }
 
     /** A compass rose that turns: the car's arrow points up, north («ش») moves around it. */
     static final class Compass extends View {

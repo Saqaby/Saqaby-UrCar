@@ -10,13 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
       - name: Transcribe the home du'a
+        continue-on-error: true
         run: |
-          pip install -q faster-whisper
+          pip install -q faster-whisper numpy
+          ffmpeg -v error -i android/app/src/main/assets/dua/home.mp3 -ac 1 -ar 16000 -f f32le home.raw
           python3 - <<'PY'
+          import numpy as np
           from faster_whisper import WhisperModel
+          a = np.fromfile("home.raw", dtype=np.float32)
           m = WhisperModel("large-v3", device="cpu", compute_type="int8")
-          segs, info = m.transcribe("android/app/src/main/assets/dua/home.mp3", language="ar", beam_size=5)
+          segs, info = m.transcribe(a, language="ar", beam_size=5)
           for s in segs: print(f"[{s.start:.1f}-{s.end:.1f}] {s.text}")
           PY
       - name: Speed limits in OpenStreetMap

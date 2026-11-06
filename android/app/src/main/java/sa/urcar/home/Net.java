@@ -58,6 +58,45 @@ final class Net {
         if (!part.renameTo(to)) throw new Exception("rename");
     }
 
+    /**
+     * The speed limit (km/h) of the road the car is on, from OpenStreetMap through the Overpass API: the roads with a
+     * «maxspeed» within 25 m, the main one first (a slip road beside a highway gives the highway's). 0 when none has
+     * one, -1 when the request failed. «© OpenStreetMap contributors» (ODbL) is credited in the settings.
+     */
+    static int maxspeed(double lat, double lon) {
+        try {
+            String q = String.format(java.util.Locale.US, "[out:json][timeout:10];way(around:25,%.6f,%.6f)[highway][maxspeed];out tags;", lat, lon);
+            HttpURLConnection h = (HttpURLConnection) new URL("https://overpass-api.de/api/interpreter?data=" + java.net.URLEncoder.encode(q, "UTF-8")).openConnection();
+            h.setConnectTimeout(8000);
+            h.setReadTimeout(12000);
+            h.setRequestProperty("User-Agent", "UrCar (car head unit)");
+            if (h.getResponseCode() != 200) { h.disconnect(); return -1; }
+            ByteArrayOutputStream b = new ByteArrayOutputStream();
+            try (InputStream in = h.getInputStream()) { byte[] buf = new byte[8192]; for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n); }
+            finally { h.disconnect(); }
+            org.json.JSONArray els = new JSONObject(b.toString("UTF-8")).getJSONArray("elements");
+            String[] rank = {"motorway", "trunk", "primary", "secondary", "tertiary", "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link"};
+            int best = 0, bestRank = 99;
+            for (int i = 0; i < els.length(); i++) {
+                JSONObject t = els.getJSONObject(i).optJSONObject("tags");
+                if (t == null) continue;
+                int v = kmh(t.optString("maxspeed"));
+                if (v <= 0) continue;
+                int r = java.util.Arrays.asList(rank).indexOf(t.optString("highway"));
+                if (r < 0) r = 50;
+                if (r < bestRank) { bestRank = r; best = v; }
+            }
+            return best;
+        } catch (Exception e) { return -1; }
+    }
+    /** «120», «120 km/h», «60 mph»; anything else (a country code, «none», «walk») is no number. */
+    static int kmh(String v) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^\\s*(\\d{2,3})\\s*(mph|km/h|kmh|kph)?\\s*$").matcher(v);
+        if (!m.find()) return 0;
+        int n = Integer.parseInt(m.group(1));
+        return "mph".equals(m.group(2)) ? Math.round(n * 1.609f) : n;
+    }
+
     /** {temperature °C, Open-Meteo weather code}, or null */
     static double[] weather(double lat, double lon) {
         try {

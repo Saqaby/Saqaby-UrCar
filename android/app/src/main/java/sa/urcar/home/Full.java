@@ -132,6 +132,7 @@ final class Full extends FrameLayout {
                 float[] d = s.driveNow();   // {km/h or -1, bearing or -1, qibla}
                 gauge.target = Math.max(0, d[0]);
                 gauge.known = d[0] >= 0;
+                gauge.limit = Math.round(d[3]);
                 gauge.invalidate();
                 if (d[1] >= 0) { rose.bearing = d[1]; set(headingText, DIRS[Math.round(d[1] / 45f) % 8]); }
                 else if (rose.bearing < 0) set(headingText, "الاتجاه أثناء السير");
@@ -201,8 +202,10 @@ final class Full extends FrameLayout {
     final class Gauge extends View {
         float target, shown;
         boolean known;
+        int limit;   // the road's, 0 when unknown
         private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG), tick = new Paint(Paint.ANTI_ALIAS_FLAG), sweep = new Paint(Paint.ANTI_ALIAS_FLAG),
-                needle = new Paint(Paint.ANTI_ALIAS_FLAG), num = new Paint(Paint.ANTI_ALIAS_FLAG), small = new Paint(Paint.ANTI_ALIAS_FLAG);
+                needle = new Paint(Paint.ANTI_ALIAS_FLAG), num = new Paint(Paint.ANTI_ALIAS_FLAG), small = new Paint(Paint.ANTI_ALIAS_FLAG),
+                signPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         Gauge(Context c) {
             super(c);
             ring.setStyle(Paint.Style.STROKE); ring.setColor(th.line);
@@ -211,6 +214,7 @@ final class Full extends FrameLayout {
             needle.setColor(th.fg);
             num.setTextAlign(Paint.Align.CENTER); num.setTypeface(Ui.display(c)); num.setColor(th.fg);
             small.setTextAlign(Paint.Align.CENTER); small.setTypeface(Ui.regular(c)); small.setColor(th.muted);
+            signPaint.setTextAlign(Paint.Align.CENTER); signPaint.setTypeface(Ui.display(c));
         }
         @Override protected void onDraw(Canvas cv) {
             shown += (target - shown) * .25f;   // eased toward the new speed
@@ -235,6 +239,13 @@ final class Full extends FrameLayout {
                     cv.drawText(Ui.ar(v), cx + (float) (rl * Math.cos(a)), cy + (float) (rl * Math.sin(a)) + r * .03f, small);
                 }
             }
+            if (limit > 0) {   // the road's limit: a red mark on the dial, and its sign inside
+                double la = Math.toRadians(150 + 240 * Math.min(1, limit / 220f));
+                tick.setColor(0xffd7261e); tick.setStrokeWidth(r * .04f);
+                cv.drawLine(cx + (float) (r * .76f * Math.cos(la)), cy + (float) (r * .76f * Math.sin(la)), cx + (float) (r * 1.04f * Math.cos(la)), cy + (float) (r * 1.04f * Math.sin(la)), tick);
+                tick.setColor(th.muted);
+                Drive.Sign.draw(cv, signPaint, cx, cy - r * .42f, r * .15f, limit);
+            }
             double a = Math.toRadians(150 + 240 * Math.min(1, shown / 220f));
             Path p = new Path();
             float tipX = cx + (float) (r * .78f * Math.cos(a)), tipY = cy + (float) (r * .78f * Math.sin(a));
@@ -244,6 +255,7 @@ final class Full extends FrameLayout {
             cv.drawPath(p, needle);
             needle.setColor(th.panel2);
             cv.drawCircle(cx, cy, r * .2f, needle);
+            num.setColor(limit > 0 && target > limit ? 0xffe0533d : th.fg);
             num.setTextSize(r * .3f);
             cv.drawText(known ? Ui.ar(Math.round(target)) : "—", cx, cy + r * .45f, num);
             small.setTextSize(r * .08f);

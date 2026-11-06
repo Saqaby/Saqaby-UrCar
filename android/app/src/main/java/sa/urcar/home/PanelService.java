@@ -43,6 +43,10 @@ public class PanelService extends Service implements Panel.Actions {
     private Quotes quotes;
     private float kmh = -1, bearing = -1, lastBearing = -1;
     private long fixAt;
+    // the road's speed limit (OpenStreetMap), asked every 200 m or a minute while moving
+    private int limit, limitBusy;
+    private long limitAt, limitAskedAt;
+    private double limitLat = 999, limitLon;
     // the trip: starts when the car moves after an hour without moving (or when the screen starts)
     private long tripStart, lastMoveAt, duaUntil, savedMoveAt;
     private double tripKm, prevLat = 999, prevLon;
@@ -126,6 +130,7 @@ public class PanelService extends Service implements Panel.Actions {
             adhan(now);
             restAndStop(now);
             guardKhatma();
+            askLimit(now);
             if (panel != null && HomeActivity.resumed) draw(now);
             background(now);
             h.postDelayed(this, 1000);
@@ -167,7 +172,7 @@ public class PanelService extends Service implements Panel.Actions {
         drawRadio();
         if (drive != null) {
             boolean fresh = now - fixAt < 6000, moving = fresh && kmh >= 10;
-            drive.showSpeed(fresh ? Math.round(kmh) : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1);
+            drive.showSpeed(fresh ? Math.round(kmh) : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1, limitNow());
             drive.showQibla(day.qibla());
             // Radarbot first; else dust (PM10 or dust >= 150 µg/m³ in the last 3 hours, as UrTV)
             String alert = now - NotiListener.radarAt < 20_000 ? NotiListener.radar : null;
@@ -432,7 +437,25 @@ public class PanelService extends Service implements Panel.Actions {
     float[] driveNow() {
         long now = System.currentTimeMillis();
         boolean fresh = now - fixAt < 6000;
-        return new float[]{fresh ? kmh : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1, day.qibla()};
+        return new float[]{fresh ? kmh : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1, day.qibla(), limitNow()};
+    }
+    /** The speed limit to show: the last answer, while it is a minute and a half old and the car within 400 m of where it was asked; else 0. */
+    int limitNow() {
+        long now = System.currentTimeMillis();
+        if (!Prefs.of(this).getBoolean("limit_on", true) || limit <= 0 || now - limitAt > 90_000 || limitLat > 90) return 0;
+        return Day.km(limitLat, limitLon, day.lat, day.lon) < 0.4 ? limit : 0;
+    }
+    private void askLimit(long now) {
+        if (!Prefs.of(this).getBoolean("limit_on", true) || limitBusy > 0 || now - fixAt > 6000 || kmh < 15) return;
+        boolean far = limitLat > 90 || Day.km(limitLat, limitLon, day.lat, day.lon) > 0.2;
+        if (!(far || now - limitAt > 60_000) || now - limitAskedAt < 10_000) return;   // at most every 10 seconds
+        limitAskedAt = now;
+        limitBusy = 1;
+        final double la = day.lat, lo = day.lon;
+        new Thread(() -> {
+            int v = Net.maxspeed(la, lo);
+            h.post(() -> { limitBusy = 0; if (v >= 0) { limit = v; limitAt = System.currentTimeMillis(); limitLat = la; limitLon = lo; } });
+        }).start();
     }
     /** The trip line: «الرحلة ١٢٫٤ كم، ٣٥ دقيقة», or empty before the first trip. */
     String tripNow() {
