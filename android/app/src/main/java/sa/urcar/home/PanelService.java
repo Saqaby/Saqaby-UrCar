@@ -473,13 +473,13 @@ public class PanelService extends Service implements Panel.Actions {
     }
     static String join(String a, String b) { return a.isEmpty() ? b : b.isEmpty() ? a : a + "  ·  " + b; }
 
-    /** «البيت ٣٤ كم» in a straight line, when the home is saved and the car more than 300 m from it. */
+    /** «🏠 ٣٤ كم» (the house sign, not the word) in a straight line, when the home is saved and the car more than 300 m from it. */
     String homeNow() {
         float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
         if (hl > 90 || day.lat == 0) return "";
         double k = Day.km(day.lat, day.lon, hl, ho);
         if (k < 0.3) return "";
-        return "البيت " + Ui.ar(String.format(java.util.Locale.US, k < 10 ? "%.1f" : "%.0f", k)) + " كم";
+        return "🏠 " + Ui.ar(String.format(java.util.Locale.US, k < 10 ? "%.1f" : "%.0f", k)) + " كم";
     }
     /** The bearing to the home from north, or -1 (not saved, or at home). */
     float homeBearing() {
@@ -523,10 +523,10 @@ public class PanelService extends Service implements Panel.Actions {
         if (HomeActivity.live != null) HomeActivity.live.welcome(c);
     }
 
-    /** The trip line: «الرحلة ١٢٫٤ كم، ٣٥ دقيقة», or empty before the first trip. */
+    /** The trip line: «📄 ١٢٫٤ كم، ٣٥ دقيقة» (a report sheet, not the word), or empty before the first trip. */
     String tripNow() {
         if (tripStart == 0) return "";
-        return "الرحلة " + Ui.ar(String.format(java.util.Locale.US, tripKm < 10 ? "%.1f" : "%.0f", tripKm))
+        return "📄 " + Ui.ar(String.format(java.util.Locale.US, tripKm < 10 ? "%.1f" : "%.0f", tripKm))
                 + " كم، " + Ui.remaining((System.currentTimeMillis() - tripStart) / 1000);
     }
     /** For the full-screen quote: the hour's quote, or one some hours later («التالي»). */
