@@ -28,6 +28,7 @@ public class HomeActivity extends Activity {
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Crash.install(this);
         root = new FrameLayout(this);
         root.setBackgroundColor(new Ui.Theme(false).bg);
         setContentView(root);
@@ -53,7 +54,7 @@ public class HomeActivity extends Activity {
     private void build() {
         if (!resumed) return;
         if (PanelService.live == null) { root.postDelayed(this::build, 300); return; }
-        if (!located()) { builtFor = ""; setup(); return; }
+        if (!located() || !Prefs.of(this).getBoolean("setup_done", true)) { builtFor = ""; setup(); return; }
         String key = Prefs.side(this) + root.getWidth() + "x" + root.getHeight();
         if (key.equals(builtFor) && !PanelService.prefsChanged && root.getChildCount() > 0 && root.getChildAt(0) instanceof LinearLayout) {
             attach();
@@ -99,7 +100,7 @@ public class HomeActivity extends Activity {
         sv.addView(list);
         root.addView(sv);
         TextView t = Ui.text(this, 34, Ui.medium(this), th.fg);
-        t.setText("تجهيز سيارتك");
+        t.setText("أهلًا بك في سيارتك");
         list.addView(t);
         item(list, th, located(), "الموقع", "للمواقيت والسرعة والاتجاه والحرارة. مطلوب.",
                 () -> requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1));
@@ -107,6 +108,29 @@ public class HomeActivity extends Activity {
                 () -> startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")));
         item(list, th, getPackageManager().canRequestPackageInstalls(), "تثبيت التحديثات", "لتحدّث سيارتك نفسها من GitHub.",
                 () -> startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName()))));
+        // the first run: the home, the driver's side, the khatma's reciter; then «ابدأ»
+        boolean home = Prefs.of(this).getFloat("home_lat", 999) < 90, fix = Prefs.of(this).getFloat("lat", 999) < 90;
+        item(list, th, home, "موقع البيت", fix ? "لدعاء دخول المنزل وبوصلة البيت. إن كانت السيارة عند البيت الآن"
+                        : "لدعاء دخول المنزل وبوصلة البيت. ينتظر تحديد الموقع، أو احفظه لاحقًا من الإعدادات.",
+                () -> {
+                    if (Prefs.of(this).getFloat("lat", 999) > 90) return;
+                    Prefs.of(this).edit().putFloat("home_lat", Prefs.of(this).getFloat("lat", 999)).putFloat("home_lon", Prefs.of(this).getFloat("lon", 999)).apply();
+                    setup();
+                });
+        boolean right = Prefs.side(this).equals("right");
+        item(list, th, false, "جهة السائق: " + (right ? "اليمين" : "اليسار"), "اللوحة تكون في جهة السائق. للتبديل",
+                () -> { Prefs.put(this, "side", right ? "left" : "right"); setup(); });
+        item(list, th, false, "قارئ الختمة والأذان والملاحة", "تُختار من الإعدادات، ولها اختيارات جاهزة. لفتحها",
+                () -> startActivity(new Intent(this, SettingsActivity.class)));
+        TextView go = Ui.text(this, 30, Ui.medium(this), located() ? th.sandInk : th.muted);
+        go.setText(located() ? "ابدأ" : "ابدأ (بعد إذن الموقع)");
+        go.setGravity(android.view.Gravity.CENTER);
+        go.setPadding(24, 22, 24, 22);
+        go.setBackground(Ui.box(located() ? th.sand : th.panel, 0, 18));
+        go.setOnClickListener(v -> { if (!located()) return; Prefs.of(this).edit().putBoolean("setup_done", true).apply(); PanelService.prefsChanged = true; build(); });
+        LinearLayout.LayoutParams gl = new LinearLayout.LayoutParams(-1, -2);
+        gl.topMargin = 26;
+        list.addView(go, gl);
     }
 
     private void item(LinearLayout list, Ui.Theme th, boolean done, String title, String sub, Runnable fix) {

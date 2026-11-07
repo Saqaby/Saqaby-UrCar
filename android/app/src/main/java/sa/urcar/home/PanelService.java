@@ -74,6 +74,14 @@ public class PanelService extends Service implements Panel.Actions {
     @Override public void onCreate() {
         super.onCreate();
         live = this;
+        Crash.install(this);
+        // a screen that used the app before the channels and the first-run setup (version 41) keeps the test channel
+        // and skips the setup; a new one gets the stable channel and the setup
+        android.content.SharedPreferences pr = Prefs.of(this);
+        if (!pr.contains("channel")) {
+            boolean before = pr.contains("lat") || pr.contains("trip_start") || pr.contains("k_surah");
+            pr.edit().putString("channel", before ? "test" : "stable").putBoolean("setup_done", before).apply();
+        }
         startForeground(1, notification());
         quotes = new Quotes(this);
         try {
@@ -184,6 +192,7 @@ public class PanelService extends Service implements Panel.Actions {
             if (alert == null && dust >= 150 && now - dustAt < 3 * 3600_000L) alert = dust >= 400 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
             drive.showAlert(alert);
             drive.setMosqueHot(day.bar(now) != null);
+            drive.setMosqueAhead(mosqueAhead(now));
             drive.showTrip(join(tripNow(), homeNow()));
             drive.showHome(homeBearing());
             drive.showRemind(day.remind(now));
@@ -439,8 +448,36 @@ public class PanelService extends Service implements Panel.Actions {
         try { startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
         catch (Exception e) { launch(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + la + "," + lo + "?q=" + la + "," + lo))); }
     }
+    /**
+     * Around each adhan (the bar's time: 30 minutes before to 20 after) while moving, the nearest mosque ahead of the car
+     * from the app's own list (Mosques), every 5 seconds: «مسجد بعد ٣ كم» on the mosque button, which then leads to it.
+     * Kept 20 seconds when it falls out of view for a moment; otherwise the button searches around as before.
+     */
+    private Mosques mosques;
+    private double[] ahead;
+    private long aheadAt, aheadAskedAt;
+    private String mosqueAhead(long now) {
+        if (day.bar(now) == null || now - fixAt > 6000 || kmh < 10) { ahead = null; return null; }
+        if (now - aheadAskedAt >= 5000) {
+            aheadAskedAt = now;
+            if (mosques == null) mosques = new Mosques(this);
+            double[] a = mosques.ahead(day.lat, day.lon, bearing);
+            if (a != null) { ahead = a; aheadAt = now; }
+        }
+        if (ahead == null || now - aheadAt > 20_000) { ahead = null; return null; }
+        double k = Day.km(day.lat, day.lon, mosques.lat((int) ahead[0]), mosques.lon((int) ahead[0]));
+        return "مسجد بعد " + Ui.ar(String.format(java.util.Locale.US, k < 10 ? "%.1f" : "%.0f", k)) + " كم";
+    }
+
     /** «أقرب مسجد»: a search for mosques around the car in the navigation app (Google Maps if it is there). */
     void mosque() {
+        if (ahead != null && mosques != null) {   // the one ahead: straight to it
+            int i = (int) ahead[0];
+            float la = (float) mosques.lat(i), lo = (float) mosques.lon(i);
+            Prefs.of(this).edit().putFloat("ahead_lat", la).putFloat("ahead_lon", lo).apply();
+            goPlace("ahead", "المسجد");
+            return;
+        }
         String q = android.net.Uri.encode("مسجد"), nav = Prefs.nav(this);
         Intent i;
         if (nav.equals("com.waze")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://waze.com/ul?q=" + q)).setPackage("com.waze");

@@ -156,6 +156,8 @@ final class Drive extends LinearLayout {
         }
     }
     void setMosqueHot(boolean hot) { if (hot != mosqueHot) { mosqueHot = hot; paintDests(); } }
+    /** «مسجد بعد ٣ كم» on the mosque button while one is ahead around an adhan; null: «أقرب مسجد». */
+    void setMosqueAhead(String t) { set(destViews[2], t == null ? "أقرب مسجد" : t); }
 
     void showTrip(String s) { set(trip, s); trip.setVisibility(s.isEmpty() ? GONE : VISIBLE); }
 

@@ -207,6 +207,26 @@ public class SettingsActivity extends Activity {
         }));
         dev.addView(chip("تحديث الآن", false, () -> new Thread(() -> Updater.check(this, true)).start()));
         list.addView(dev);
+        boolean test = Prefs.of(this).getString("channel", "stable").equals("test");
+        LinearLayout ch = grid();
+        ch.addView(chip("التحديثات: المستقرة", !test, () -> { Prefs.put(this, "channel", "stable"); build(); }));
+        ch.addView(chip("التحديثات: التجريبية", test, () -> { Prefs.put(this, "channel", "test"); build(); }));
+        list.addView(ch, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+        list.addView(note(test ? "التجريبية: كل تعديل يصل فور بنائه، للتجربة قبل الجميع." : "المستقرة: لا يصل إلا ما جُرِّب واعتُمد."));
+        String crash = Crash.last(this);
+        if (!crash.isEmpty()) {
+            list.addView(note("آخر عطل أوقف التطبيق (صوّره وأرسله لصاحب التطبيق):"));
+            TextView cr = Ui.text(this, 15, Ui.regular(this), th.fg);
+            cr.setSingleLine(false);
+            cr.setTextDirection(View.TEXT_DIRECTION_LTR);
+            cr.setText(crash);
+            cr.setPadding(16, 12, 16, 12);
+            cr.setBackground(Ui.box(th.panel, th.line, 12));
+            list.addView(cr, new LinearLayout.LayoutParams(-1, -2));
+            LinearLayout cl = grid();
+            cl.addView(chip("امسح العطل", false, () -> { Crash.file(this).delete(); build(); }));
+            list.addView(cl, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 8; }});
+        }
         String v;
         try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { v = "?"; }
         list.addView(note("الإصدار " + v + ". التحديثات من github.com/Saqaby/Saqaby-UrCar"));

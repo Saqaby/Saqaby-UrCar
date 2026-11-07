@@ -36,6 +36,45 @@ final class Khatma {
     private static final int BACK_MS = 3000;
     boolean on;
     Runnable changed = () -> { };
+    private void notifyChanged() { session(); changed.run(); }
+
+    /**
+     * The steering wheel's buttons and the screen's own media widget: a media session for the khatma. Play goes on
+     * (from the second it stopped), pause stops it as its button does, next goes to the next surah, previous goes back
+     * 10 seconds. It stays active while the app runs, so «play» on the wheel can start it again.
+     */
+    private android.media.session.MediaSession ms;
+    private void session() {
+        try {
+            if (ms == null) {
+                ms = new android.media.session.MediaSession(c, "UrCarKhatma");
+                ms.setCallback(new android.media.session.MediaSession.Callback() {
+                    @Override public void onPlay() { if (on && held != null) resume(); else if (!on) start(); }
+                    @Override public void onPause() { if (on) stop(); }
+                    @Override public void onStop() { if (on) stop(); }
+                    @Override public void onSkipToNext() { if (on) next(); }
+                    @Override public void onSkipToPrevious() { back(10_000); }
+                });
+            }
+            ms.setMetadata(new android.media.MediaMetadata.Builder()
+                    .putString(android.media.MediaMetadata.METADATA_KEY_TITLE, "سورة " + surahName())
+                    .putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, reciterName())
+                    .putString(android.media.MediaMetadata.METADATA_KEY_ALBUM, "ختمة السيارة").build());
+            long pos = 0;
+            try { pos = mp != null ? mp.getCurrentPosition() : p().getInt("k_pos", 0); } catch (Exception ignored) { }
+            int st = on && held == null ? android.media.session.PlaybackState.STATE_PLAYING : android.media.session.PlaybackState.STATE_PAUSED;
+            ms.setPlaybackState(new android.media.session.PlaybackState.Builder()
+                    .setActions(android.media.session.PlaybackState.ACTION_PLAY | android.media.session.PlaybackState.ACTION_PAUSE
+                            | android.media.session.PlaybackState.ACTION_PLAY_PAUSE | android.media.session.PlaybackState.ACTION_STOP
+                            | android.media.session.PlaybackState.ACTION_SKIP_TO_NEXT | android.media.session.PlaybackState.ACTION_SKIP_TO_PREVIOUS)
+                    .setState(st, pos, st == android.media.session.PlaybackState.STATE_PLAYING ? 1f : 0f).build());
+            ms.setActive(true);
+        } catch (Exception ignored) { }
+    }
+    /** Back some seconds in the surah (the wheel's «previous»). */
+    void back(int millis) {
+        try { if (mp != null && on && held == null) mp.seekTo(Math.max(0, mp.getCurrentPosition() - millis)); } catch (Exception ignored) { }
+    }
 
     Khatma(Context c) {
         this.c = c.getApplicationContext();
@@ -93,7 +132,7 @@ final class Khatma {
         if (was) start();
     }
     /** From the first surah again (the count of completed khatmas stays). */
-    void restart() { boolean was = on; stop(); p().edit().putInt("k_surah", 1).putInt("k_pos", 0).putInt("k_dur", 0).apply(); if (was) start(); changed.run(); }
+    void restart() { boolean was = on; stop(); p().edit().putInt("k_surah", 1).putInt("k_pos", 0).putInt("k_dur", 0).apply(); if (was) start(); notifyChanged(); }
 
     void start() {
         stop();
@@ -107,7 +146,7 @@ final class Khatma {
         am.requestAudioFocus(focus);
         this.aa = aa;
         on = true;
-        changed.run();
+        notifyChanged();
         final int s = surah();
         File f = cacheFile(s);
         if (f.length() > 0) play(f.getPath(), false, s);   // already on the screen
@@ -206,7 +245,7 @@ final class Khatma {
         held = why;
         try { if (mp != null && mp.isPlaying()) mp.pause(); } catch (Exception ignored) { }
         saveBack();
-        changed.run();
+        notifyChanged();
     }
     void resume() {
         if (held == null) return;
@@ -216,7 +255,7 @@ final class Khatma {
             if (mp != null) { mp.seekTo(Math.max(0, p().getInt("k_pos", 0))); mp.start(); }
             else if (on) start();
         } catch (Exception e) { start(); }
-        changed.run();
+        notifyChanged();
     }
     private void saveBack() {
         try { if (mp != null && mp.getCurrentPosition() > 0) p().edit().putInt("k_pos", Math.max(0, mp.getCurrentPosition() - BACK_MS)).apply(); } catch (Exception ignored) { }
@@ -227,6 +266,6 @@ final class Khatma {
         if (mp != null) { if (held == null) save(); try { mp.release(); } catch (Exception ignored) { } mp = null; }
         if (focus != null) { am.abandonAudioFocusRequest(focus); focus = null; }
         held = null;
-        if (on) { on = false; changed.run(); }
+        if (on) { on = false; notifyChanged(); }
     }
 }

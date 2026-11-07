@@ -18,21 +18,26 @@ import java.io.OutputStream;
 
 /**
  * The app updates itself from this repository: app-apk.yml publishes the release «app-latest» with urcar.apk and
- * version.json ({"versionCode": n}). A newer one is downloaded and handed to Android's installer, which asks the
+ * version.json ({"versionCode": n}), and promote.yml copies a tried one to «app-stable» (see base()). A newer one is downloaded and handed to Android's installer, which asks the
  * owner once («تثبيت»). Every 6 hours while online, or «تحديث الآن» in the settings.
  */
 final class Updater {
     private Updater() {}
-    static final String BASE = "https://github.com/Saqaby/Saqaby-UrCar/releases/download/app-latest/";
+    static final String REPO = "https://github.com/Saqaby/Saqaby-UrCar/releases/download/";
+    /**
+     * Two channels: «test» follows every build (app-latest: the owner's screen, where a change is tried first),
+     * «stable» only what was promoted to app-stable (promote.yml) once it worked there. New screens are on «stable».
+     */
+    static String base(Context c) { return REPO + (Prefs.of(c).getString("channel", "stable").equals("test") ? "app-latest/" : "app-stable/"); }
 
     static void check(Context c, boolean manual) {
         try {
             int ours = c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionCode;
-            int theirs = new JSONObject(Net.get(BASE + "version.json")).getInt("versionCode");
+            int theirs = new JSONObject(Net.get(base(c) + "version.json")).getInt("versionCode");
             if (theirs <= ours) { if (manual) toast(c, "سيارتك محدّثة (الإصدار " + Ui.ar(ours) + ")"); return; }
             if (manual) toast(c, "يُنزَّل الإصدار " + Ui.ar(theirs) + "…");
             File apk = new File(c.getCacheDir(), "urcar.apk");
-            Net.download(BASE + "urcar.apk", apk);
+            Net.download(base(c) + "urcar.apk", apk);
             install(c, apk);
         } catch (Exception e) {
             if (manual) toast(c, e instanceof java.net.UnknownHostException ? "لا إنترنت في الشاشة الآن: وصّلها بشبكة الجوال ثم أعد المحاولة"
