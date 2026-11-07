@@ -1,0 +1,21 @@
+# Builds android/app/src/main/assets/cities.json from GeoNames (src/cities_for_app.py) and commits it.
+name: cities
+on:
+  workflow_dispatch:
+  push:
+    paths: ["src/cities_for_app.py", ".github/workflows/cities.yml"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 src/cities_for_app.py
+      - run: |
+          ls -l android/app/src/main/assets/cities.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/app/src/main/assets/cities.json
+          git commit -m "assets/cities.json from GeoNames (src/cities_for_app.py)" || echo "no change"
+          git push

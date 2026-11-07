@@ -1,1 +1,6 @@
 device/raw/
+android/**/build/
+android/.gradle/
+*.keystore
+!android/probe/probe.keystore
+*.jks

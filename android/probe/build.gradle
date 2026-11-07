@@ -1,0 +1,21 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'sa.urcar.probe'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'sa.urcar.probe'
+        minSdk 21
+        // 29 on purpose: below 30 the package manager lists every installed app without a <queries> block
+        targetSdk 29
+        versionCode 7
+        versionName "7.0"
+    }
+    // a fixed key for the probe only (not for the launcher): each new probe installs over the last one
+    signingConfigs { probe { storeFile file('probe.keystore'); storePassword 'urcarprobe'; keyAlias 'probe'; keyPassword 'urcarprobe' } }
+    buildTypes {
+        debug { signingConfig signingConfigs.probe }
+        release { minifyEnabled false; signingConfig signingConfigs.probe }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+    lint { abortOnError false; checkReleaseBuilds false }
+}

@@ -1,0 +1,20 @@
+# Promotes the build on the owner's screen (release «app-latest», the test channel) to «app-stable», which every
+# other screen follows: run it by hand once a version has worked in the car.
+name: promote
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          gh release download app-latest -R "$GITHUB_REPOSITORY" -p urcar.apk -p version.json
+          cat version.json
+          gh release view app-stable -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create app-stable -R "$GITHUB_REPOSITORY" --title "سيارتك: الإصدار المستقر" \
+              --notes "ما جُرِّب على شاشة صاحب التطبيق واعتُمد. الشاشات على القناة المستقرة تتحدث منه." --target "$GITHUB_SHA"
+          gh release upload app-stable -R "$GITHUB_REPOSITORY" urcar.apk version.json --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -1,0 +1,52 @@
+name: app-apk
+# Builds the UrCar home screen (android/app) and publishes the release «app-latest» (the owner's choice: every push reaches the screen):
+#   urcar.apk     the app, signed with the key in the secret URCAR_KEYSTORE_B64 (never in the repository)
+#   version.json  {"versionCode": run number}; the app's updater compares it with its own
+on:
+  push:
+    paths: ['android/app/**', 'android/*.gradle', '.github/workflows/app-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: The signing key
+        env:
+          KEY_B64: ${{ secrets.URCAR_KEYSTORE_B64 }}
+        run: |
+          # without the secrets the app is only compiled (a check), never published: an update must carry the same key
+          if [ -z "$KEY_B64" ]; then echo "::warning::No secret URCAR_KEYSTORE_B64: compiling only, nothing is published"; echo "SIGNED=0" >> "$GITHUB_ENV"; exit 0; fi
+          # spaces or line breaks picked up while copying are dropped; anything else that is not base64 is an error
+          if ! printf '%s' "$KEY_B64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/urcar.keystore" 2>/dev/null; then
+            echo "::error::URCAR_KEYSTORE_B64 is not the whole base64 text (got $(printf '%s' "$KEY_B64" | tr -d ' \r\n\t' | wc -c) characters, expected 3400). Paste the file's content again."; exit 1; fi
+          echo "key file sha256: $(sha256sum "$RUNNER_TEMP/urcar.keystore" | cut -c1-12)"
+          echo "SIGNED=1" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.7'}
+      - name: Build
+        env:
+          URCAR_KEYSTORE: ${{ runner.temp }}/urcar.keystore
+          URCAR_KEYSTORE_PASSWORD: ${{ secrets.URCAR_KEYSTORE_PASSWORD }}
+        run: |
+          if [ "$SIGNED" = 1 ]; then gradle -p android :app:assembleRelease -PversionCode=${{ github.run_number }} --no-daemon
+          else gradle -p android :app:assembleDebug --no-daemon; fi
+      - if: env.SIGNED == '1'
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk urcar.apk
+          echo '{"versionCode": ${{ github.run_number }}}' > version.json
+          rm -f "$RUNNER_TEMP/urcar.keystore"
+      - if: env.SIGNED == '1'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-latest
+          name: سيارتك
+          body: "واجهة سيارتك. نزّل urcar.apk على الشاشة وركّبه؛ بعدها يحدّث نفسه."
+          files: |
+            urcar.apk
+            version.json
+          prerelease: true
