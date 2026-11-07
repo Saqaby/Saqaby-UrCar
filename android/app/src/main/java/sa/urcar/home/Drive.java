@@ -119,7 +119,7 @@ final class Drive extends LinearLayout {
         qTitle = Ui.text(c, px(2.8f), Ui.regular(c), 0);
         qText = Ui.text(c, px(3.8f), Ui.medium(c), 0);
         qText.setSingleLine(false);
-        qText.setMaxLines(3);
+        qText.setMaxLines(4);
         qText.setEllipsize(android.text.TextUtils.TruncateAt.END);
         qText.setLineSpacing(0, 1.35f);
         qSrc = Ui.text(c, px(2.5f), Ui.regular(c), 0);
@@ -199,8 +199,8 @@ final class Drive extends LinearLayout {
     void showQuote(String[] q, boolean movingNow) {
         if (movingNow != moving) {
             moving = movingNow;
-            qText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px(moving ? 4.6f : 3.8f));
-            qText.setMaxLines(moving ? 2 : 3);
+            qText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px(3.8f));   // the same text moving or not: the hour's
+            qText.setMaxLines(4);
         }
         set(qTitle, q[0]); set(qText, q[1]); set(qSrc, q[2]);
     }

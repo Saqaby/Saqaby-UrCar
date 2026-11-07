@@ -104,10 +104,11 @@ final class Full extends FrameLayout {
     }
 
     private void buildQuote(Context c) {
+        addView(new Ornament(c), new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));   // a framed panel, as a painted plate
         LinearLayout col = new LinearLayout(c);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setGravity(Gravity.CENTER);
-        col.setPadding(90, 90, 90, 50);
+        col.setPadding(150, 110, 150, 90);
         qTitle = Ui.text(c, 30, Ui.medium(c), th.sand);
         qTitle.setGravity(Gravity.CENTER);
         qText = Ui.text(c, 46, Ui.medium(c), th.fg);
@@ -117,8 +118,10 @@ final class Full extends FrameLayout {
         qSrc = Ui.text(c, 24, Ui.regular(c), th.muted);
         qSrc.setGravity(Gravity.CENTER);
         col.addView(qTitle);
-        col.addView(qText, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 28; }});
-        col.addView(qSrc, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 28; }});
+        col.addView(new Divider(c), new LinearLayout.LayoutParams(-1, 44) {{ topMargin = 10; }});
+        col.addView(qText, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 18; }});
+        col.addView(new Divider(c), new LinearLayout.LayoutParams(-1, 44) {{ topMargin = 18; }});
+        col.addView(qSrc, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 10; }});
         addView(col, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
 
@@ -159,6 +162,87 @@ final class Full extends FrameLayout {
     private static void set(TextView t, String s) { if (!s.contentEquals(t.getText())) t.setText(s); }
 
     @Override protected void onDetachedFromWindow() { h.removeCallbacksAndMessages(null); super.onDetachedFromWindow(); }
+
+    // ---------------------------------------------------------------- the quote's ornament
+    /** An eight-pointed star (the khatam: two squares, one turned 45°), as a path of 16 points. */
+    static Path star(float cx, float cy, float r) {
+        Path p = new Path();
+        for (int i = 0; i < 16; i++) {
+            double a = Math.PI / 8 * i - Math.PI / 2;
+            float rr = i % 2 == 0 ? r : r * .72f;
+            float x = cx + (float) (rr * Math.cos(a)), y = cy + (float) (rr * Math.sin(a));
+            if (i == 0) p.moveTo(x, y); else p.lineTo(x, y);
+        }
+        p.close();
+        return p;
+    }
+
+    /**
+     * Behind the quote: a faint field of eight-pointed stars, a clear panel for the text, a double gold frame with a
+     * rosette at each corner and a small star in the middle of each side but the top (where the buttons are).
+     */
+    final class Ornament extends View {
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Ornament(Context c) { super(c); }
+        @Override protected void onDraw(Canvas cv) {
+            float w = getWidth(), hgt = getHeight(), s = 120;
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(1.6f);
+            p.setColor(th.sand);
+            p.setAlpha(46);
+            for (float y = 0, row = 0; y < hgt + s; y += s * .5f, row++)   // staggered rows of stars and their links
+                for (float x = (row % 2) * s / 2; x < w + s; x += s) {
+                    cv.drawPath(star(x, y, s * .3f), p);
+                    cv.drawLine(x + s * .3f, y, x + s * .7f, y, p);
+                }
+            float in = 34, in2 = 46;
+            p.setStyle(Paint.Style.FILL);   // the clear panel
+            p.setColor(th.bg);
+            p.setAlpha(214);   // the stars show faintly through
+            cv.drawRoundRect(new RectF(in2 + 30, in2 + 30, w - in2 - 30, hgt - in2 - 30), 26, 26, p);
+            p.setStyle(Paint.Style.STROKE);
+            p.setColor(th.sand);
+            p.setAlpha(255);
+            p.setStrokeWidth(3.2f);
+            cv.drawRoundRect(new RectF(in, in, w - in, hgt - in), 18, 18, p);
+            p.setStrokeWidth(1.4f);
+            p.setAlpha(170);
+            cv.drawRoundRect(new RectF(in2, in2, w - in2, hgt - in2), 12, 12, p);
+            float[][] corners = {{in, in}, {w - in, in}, {in, hgt - in}, {w - in, hgt - in}};
+            for (float[] k : corners) rosette(cv, k[0], k[1], 26);
+            for (float[] k : new float[][]{{w / 2, hgt - in}, {in, hgt / 2}, {w - in, hgt / 2}}) rosette(cv, k[0], k[1], 15);
+        }
+        private void rosette(Canvas cv, float x, float y, float r) {
+            p.setStyle(Paint.Style.FILL); p.setColor(th.bg); p.setAlpha(255);
+            cv.drawCircle(x, y, r * 1.1f, p);
+            p.setColor(th.sand);
+            cv.drawPath(star(x, y, r), p);
+            p.setColor(th.bg);
+            cv.drawCircle(x, y, r * .34f, p);
+            p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(1.4f); p.setColor(th.sand);
+            cv.drawCircle(x, y, r * .2f, p);
+        }
+    }
+
+    /** A line that thins out to both sides, a star in the middle and a dot each side of it. */
+    final class Divider extends View {
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Divider(Context c) { super(c); }
+        @Override protected void onDraw(Canvas cv) {
+            float w = getWidth(), cy = getHeight() / 2f, cx = w / 2, r = getHeight() * .32f;
+            p.setStrokeWidth(2);
+            p.setShader(new LinearGradient(cx - w * .3f, 0, cx - r * 2.2f, 0, 0x00000000 | (th.sand & 0xffffff), th.sand, Shader.TileMode.CLAMP));
+            cv.drawLine(cx - w * .3f, cy, cx - r * 2.2f, cy, p);
+            p.setShader(new LinearGradient(cx + r * 2.2f, 0, cx + w * .3f, 0, th.sand, 0x00000000 | (th.sand & 0xffffff), Shader.TileMode.CLAMP));
+            cv.drawLine(cx + r * 2.2f, cy, cx + w * .3f, cy, p);
+            p.setShader(null);
+            p.setColor(th.sand);
+            p.setStyle(Paint.Style.FILL);
+            cv.drawPath(star(cx, cy, r), p);
+            cv.drawCircle(cx - r * 1.6f, cy, 3.5f, p);
+            cv.drawCircle(cx + r * 1.6f, cy, 3.5f, p);
+        }
+    }
 
     // ---------------------------------------------------------------- the two symbols
     /** A round button with a drawn symbol (no font has them all): a folded map, or a bent arrow back. */

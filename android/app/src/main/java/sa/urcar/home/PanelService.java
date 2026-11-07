@@ -189,7 +189,7 @@ public class PanelService extends Service implements Panel.Actions {
             drive.showRemind(day.remind(now));
             // the quote card: the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
             if (now < duaUntil && duas.get(duaKind) != null) drive.showQuote(duas.get(duaKind), moving);
-            else drive.showQuote(moving ? quotes.at(now, 60) : quotes.at(now), moving);
+            else drive.showQuote(quotes.at(now), moving);   // one text the whole hour: v7 took a short one while moving, so each stop changed it
         }
     }
     private String turnedFor = "";
