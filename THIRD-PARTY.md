@@ -16,6 +16,7 @@
 | إذاعة القرآن الكريم السعودية | تُبَث من stream.radiojar.com | هيئة الإذاعة والتلفزيون | بث مباشر؛ لا نعيد نشره |
 | الأذان (عبدالملك الملا) | يُنزَّل من archive.org | مجموعة «Azaan of World Mosques» | Public Domain Mark 1.0 |
 | حدود السرعة (assets/limits.bin) | من مستخرج Geofabrik لخرائط OpenStreetMap عبر src/limits_for_app.py، يُبنى شهريًا | OpenStreetMap | ODbL: يُذكر «© OpenStreetMap contributors» (مذكور في إعدادات التطبيق)، والملف قاعدة بيانات مشتقة متاحة بالترخيص نفسه في هذا المستودع |
+| المساجد (assets/mosques.bin) | من المستخرج نفسه عبر src/mosques_for_app.py، يُبنى شهريًا | OpenStreetMap | ODbL كحدود السرعة: قاعدة بيانات مشتقة متاحة بالترخيص نفسه في هذا المستودع |
 | أسماء المدن (assets/cities.json) | GeoNames عبر src/cities_for_app.py | GeoNames.org | CC BY 4.0: يُذكر المصدر (مذكور في إعدادات التطبيق) |
 | بيانات الطقس والغبار | تُطلب من open-meteo.com | Open-Meteo | CC BY 4.0: يُذكر «بيانات الطقس من Open-Meteo.com» (مذكور في إعدادات التطبيق) |
 | ترددات FM | `assets/shared/fm-quran.json` | مصادر عامة مذكورة في الملف | معلومات عامة |
