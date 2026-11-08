@@ -13,7 +13,7 @@ jobs:
           python3 - <<'PY'
           import json, re
           strip = lambda s: re.sub('[ً-ْـ]', '', s)
-          for lang, wants in (('ar', ['حيدان', 'عاصم']), ('eng', ['haid', 'hayd', 'heid', 'asem', 'asim', 'aasim'])):
+          for lang, wants in (('ar', ['طنيج']), ('eng', ['tunaij', 'tonaij', 'tneij', 'tunej', 'khalifa'])):
               d = json.load(open('r_' + lang + '.json'))
               print('##### lang', lang, 'reciters', len(d['reciters']))
               for r in d['reciters']:
