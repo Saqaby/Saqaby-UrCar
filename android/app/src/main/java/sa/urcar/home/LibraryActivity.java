@@ -26,6 +26,9 @@ public class LibraryActivity extends Activity {
     private LinearLayout reciters;
     private GridLayout surahs;
     private TextView now, pause, resume, space;
+    private final TextView[] surahViews = new TextView[114];
+    private String keptFor = "";   // the reciter whose downloaded surahs the frames show
+    private final boolean[] kept = new boolean[114];
     private final java.util.List<Object[]> rows = new java.util.ArrayList<>();   // {reciter id, progress text, delete cell, download icon}
     private JSONArray rec, sur;
 
@@ -137,7 +140,9 @@ public class LibraryActivity extends Activity {
             l.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
             l.setMargins(5, 5, 5, 5);
             surahs.addView(t, l);
+            surahViews[i] = t;
         }
+        keptFor = "";
         refresh();
     }
 
@@ -149,6 +154,23 @@ public class LibraryActivity extends Activity {
         if (r == null) return;
         ps.listen(r.optString("id"), r.optString("name"), r.optString("server"), s, name);
         refresh();
+    }
+
+    /** A gold frame around each surah of the chosen reciter that is on the screen (it plays without the internet). */
+    private void frames() {
+        String id = chosen();
+        boolean all = !id.equals(keptFor);
+        keptFor = id;
+        for (int i = 0; i < surahViews.length; i++) {
+            TextView t = surahViews[i];
+            if (t == null) continue;
+            boolean k = LibStore.file(this, id, i + 1).length() > 0;
+            if (!all && k == kept[i]) continue;
+            kept[i] = k;
+            android.graphics.drawable.GradientDrawable g = Ui.box(th.panel, th.line, 14);
+            if (k) g.setStroke(4, th.sand);
+            t.setBackground(g);
+        }
     }
 
     private LinearLayout iconCell(int kind) {
@@ -193,7 +215,8 @@ public class LibraryActivity extends Activity {
         String[] last = l == null ? null : l.last();
         resume.setVisibility(last == null ? View.GONE : View.VISIBLE);
         if (last != null) resume.setText("▶  تابع سورة " + last[0] + " بصوت " + last[1] + " من " + last[2]);
-        space.setText("المتاح على الشاشة " + LibStore.gb(LibStore.free(this)));
+        space.setText("الإطار الذهبي: سورة على الشاشة تعمل بلا إنترنت.  المتاح على الشاشة " + LibStore.gb(LibStore.free(this)));
+        frames();
         for (Object[] r : rows) {   // each reciter's download: its progress, a tick when complete; the bin when there is something
             String id = (String) r[0];
             Integer at = LibStore.running.get(id);
