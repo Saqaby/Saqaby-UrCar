@@ -4,9 +4,7 @@
 
 | الجزء | أين هو | لمن | الرخصة أو الحال |
 |---|---|---|---|
-| الخط IBM Plex Sans Arabic (ملفاته باسم Thmanyah) | `assets/fonts/`، `android/app/src/main/assets/fonts/` | IBM | SIL Open Font License 1.1 (`IBMPlexSansArabic-OFL.txt`) |
-| علامات Noto Naskh Arabic | `assets/fonts/` | Google | SIL Open Font License 1.1 (`NotoNaskhArabic-OFL.txt`) |
-| خط حفص العثماني | `assets/fonts/` (المعاينة فقط) | مجمع الملك فهد | بشروطه في `UthmanicHafs-NOTICE.txt`؛ لا يُعدَّل |
+| الخط IBM Plex Sans Arabic | `android/app/src/main/assets/fonts/` | IBM | SIL Open Font License 1.1 (`IBMPlexSansArabic-OFL.txt`) |
 | الآيات | `android/app/src/main/assets/quotes.json` (`src/quotes/verses.txt`) | نص Tanzil البسيط عبر fawazahmed0/quran-api | شروط Tanzil: النقل حرفيًا مع ذكر المصدر tanzil.net |
 | الأحاديث | `quotes.json` (`src/quotes/hadith.txt`) | صحيح البخاري وصحيح مسلم عبر fawazahmed0/hadith-api | ملكية عامة (Unlicense) |
 | أقوال السلف | `quotes.json` (`src/quotes/salaf.json`) | الكتب المذكورة مع كل قول (بالجزء والصفحة)، وُجدت في turath.io | نصوص تراثية؛ المصدر مذكور مع كل قول |
