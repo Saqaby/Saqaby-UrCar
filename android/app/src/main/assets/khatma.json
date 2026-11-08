@@ -242,6 +242,12 @@
 "mp3quran": 219
 },
 {
+"id": "asim-luhaidan",
+"name": "عاصم اللحيدان",
+"server": "https://cdn.mp3quran.net/audio/asim-luhaidan/r1/",
+"mp3quran": 21201
+},
+{
 "id": "abdullah-mousa",
 "name": "عبدالله الموسى",
 "server": "https://cdn.mp3quran.net/audio/abdullah-mousa/r1/",
