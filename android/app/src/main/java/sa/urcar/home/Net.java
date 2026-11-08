@@ -15,7 +15,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-/** The few things the panel fetches: the temperature (Open-Meteo, as UrTV), and the FM table from this repository. */
+/** The few things the panel fetches: the temperature (Open-Meteo), and the FM table from this repository. */
 final class Net {
     private Net() {}
 
@@ -68,7 +68,7 @@ final class Net {
         } catch (Exception e) { return null; }
     }
 
-    /** The larger of PM10 and dust (µg/m³) now at that place, Open-Meteo's air quality (as UrTV); -1 when unknown. */
+    /** The larger of PM10 and dust (µg/m³) now at that place, Open-Meteo's air quality; -1 when unknown. */
     static double dust(double lat, double lon) {
         try {
             JSONObject c = new JSONObject(get(String.format(java.util.Locale.US,

@@ -29,9 +29,7 @@
 
 ### المرحلة ٣: القرار والرسم
 1. اكتب `device/DEVICE.md`: لكل من الكاميرا والملاحة والراديو والأبعاد: ما ثبت بالتجربة، والطريقة المختارة، وما لم يُتحقق منه.
-2. شغّل `python3 src/build.py`: المعاينة تأخذ مقاس الشاشة وتطبيقات الملاحة المثبّتة من `device/profile.json`.
-3. التزم وادفع: `device/profile.json` و`device/tw-components.txt` و`device/tests.md` و`device/DEVICE.md` و`dist/`.
-4. بعدها فقط يبدأ كود أندرويد، مبنيًّا على `DEVICE.md`.
+2. التزم وادفع: `device/profile.json` و`device/tw-components.txt` و`device/tests.md` و`device/DEVICE.md`.
 
 ## ممنوع على الشاشة دون موافقة صريحة من المالك في نفس المحادثة
 - `pm uninstall` أو `pm disable` أو `settings put` أو `reboot` أو إعادة ضبط المصنع.

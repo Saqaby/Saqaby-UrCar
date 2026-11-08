@@ -11,7 +11,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.widget.TextView;
 
-/** Colours, fonts, Arabic digits and the few drawn icons. The colours are the preview's tokens (src/template.html). */
+/** Colours, fonts (IBM Plex Sans Arabic, OFL), Arabic digits and the drawn icons. */
 final class Ui {
     private Ui() {}
 
@@ -30,9 +30,9 @@ final class Ui {
     }
 
     private static Typeface regular, medium, display;
-    static Typeface regular(Context c) { if (regular == null) regular = load(c, "Thmanyah-Regular.otf"); return regular; }
-    static Typeface medium(Context c) { if (medium == null) medium = load(c, "Thmanyah-Medium.otf"); return medium; }
-    static Typeface display(Context c) { if (display == null) display = load(c, "ThmanyahDisplay-Bold.otf"); return display; }
+    static Typeface regular(Context c) { if (regular == null) regular = load(c, "IBMPlexSansArabic-Regular.otf"); return regular; }
+    static Typeface medium(Context c) { if (medium == null) medium = load(c, "IBMPlexSansArabic-Medium.otf"); return medium; }
+    static Typeface display(Context c) { if (display == null) display = load(c, "IBMPlexSansArabic-Bold.otf"); return display; }
     private static Typeface load(Context c, String f) {
         try { return Typeface.createFromAsset(c.getAssets(), "fonts/" + f); } catch (Exception e) { return Typeface.DEFAULT; }
     }

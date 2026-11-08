@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.util.Calendar;
 
 /**
- * The quote card: a verse, a hadith or a saying of the salaf, a new one every hour (UrTV changes every 8 hours).
+ * The quote card: a verse, a hadith or a saying of the salaf, a new one every hour.
  * The hour of the year picks the kind (verse, hadith, salaf, in turn) and which one of it, so the same hour of the
  * same day always shows the same text. assets/quotes.json is made by src/quotes_for_app.py.
  */

@@ -187,7 +187,7 @@ public class PanelService extends Service implements Panel.Actions {
             boolean fresh = now - fixAt < 6000, moving = fresh && kmh >= 10;
             drive.showSpeed(fresh ? Math.round(kmh) : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1, limitNow());
             drive.showQibla(day.qibla());
-            // Radarbot first; else dust (PM10 or dust >= 150 µg/m³ in the last 3 hours, as UrTV)
+            // Radarbot first; else dust (PM10 or dust >= 150 µg/m³ in the last 3 hours)
             String alert = now - NotiListener.radarAt < 20_000 ? NotiListener.radar : null;
             if (alert == null && now < glareUntil) alert = "🕶 الشمس أمامك مباشرة";
             boolean rest = false;

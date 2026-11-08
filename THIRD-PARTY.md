@@ -7,11 +7,13 @@
 | الخط IBM Plex Sans Arabic (ملفاته باسم Thmanyah) | `assets/fonts/`، `android/app/src/main/assets/fonts/` | IBM | SIL Open Font License 1.1 (`IBMPlexSansArabic-OFL.txt`) |
 | علامات Noto Naskh Arabic | `assets/fonts/` | Google | SIL Open Font License 1.1 (`NotoNaskhArabic-OFL.txt`) |
 | خط حفص العثماني | `assets/fonts/` (المعاينة فقط) | مجمع الملك فهد | بشروطه في `UthmanicHafs-NOTICE.txt`؛ لا يُعدَّل |
-| نصوص الآيات والأحاديث وأقوال السلف | `assets/shared/`، `android/app/src/main/assets/quotes.json` | مأخوذة من UrTV كما هي | انظر «UrTV» أدناه |
+| الآيات | `android/app/src/main/assets/quotes.json` (`src/quotes/verses.txt`) | نص Tanzil البسيط عبر fawazahmed0/quran-api | شروط Tanzil: النقل حرفيًا مع ذكر المصدر tanzil.net |
+| الأحاديث | `quotes.json` (`src/quotes/hadith.txt`) | صحيح البخاري وصحيح مسلم عبر fawazahmed0/hadith-api | ملكية عامة (Unlicense) |
+| أقوال السلف | `quotes.json` (`src/quotes/salaf.json`) | الكتب المذكورة مع كل قول (بالجزء والصفحة)، وُجدت في turath.io | نصوص تراثية؛ المصدر مذكور مع كل قول |
 | آيتا ذكر الركوب (الزخرف ١٣–١٤) | `android/app/src/main/assets/duas.json` | نص Tanzil البسيط، عبر fawazahmed0/quran-api وsemarketir/quranjson | شروط Tanzil: النقل حرفيًا مع ذكر المصدر tanzil.net |
-| دعاء السفر | `android/app/src/main/assets/duas.json` | من حديث سنن أبي داود ٢٥٩٨ كما في UrTV | نص نبوي؛ مصدر المجموعة المنقول منها انظر «UrTV» |
+| دعاء السفر | `android/app/src/main/assets/duas.json` | سنن أبي داود ٢٥٩٨ عبر fawazahmed0/hadith-api | ملكية عامة (Unlicense) |
 | عدد آيات السور | `android/app/src/main/assets/khatma.json` | fawazahmed0/quran-api | بيانات عامة |
-| فهرس القرّاء وأسماء السور | `android/app/src/main/assets/khatma.json` | UrTV، وروابطه من mp3quran.net | انظر «UrTV» و«التلاوات» |
+| فهرس القرّاء وأسماء السور | `android/app/src/main/assets/khatma.json` (`src/khatma_for_app.py`) | واجهة mp3quran.net البرمجية | بيانات عامة من مصدر التلاوات |
 | التلاوات | تُبَث من cdn.mp3quran.net ولا تُحفظ في المستودع | mp3quran.net وأصحابها | بشروط mp3quran.net؛ لم نقرأها بعد (الموقع محجوب في بيئة العمل) |
 | إذاعة القرآن الكريم السعودية | تُبَث من stream.radiojar.com | هيئة الإذاعة والتلفزيون | بث مباشر؛ لا نعيد نشره |
 | الأذان (عبدالملك الملا) | يُنزَّل من archive.org | مجموعة «Azaan of World Mosques» | Public Domain Mark 1.0 |
@@ -24,14 +26,11 @@
 
 ## UrTV
 
-أجزاء من UrCar منقولة من [Saqaby/UrTV](https://github.com/Saqaby/UrTV)، وهو نفسه نسخة معدّلة من `tshi-dev/urtv`:
-- حساب المواقيت بطريقة ISNA (`android/app/src/main/java/sa/urcar/home/PrayerMath.java`، ودوال المعاينة في `src/template.html`).
-- دوال تجهيز المحتوى (`src/content.py`)، وأيقونات الطقس، ومنطق التذكير بالصيام.
-- بيانات الآيات والأحاديث وأقوال السلف، وفهرس القرّاء.
-
-**مستودع UrTV ليس فيه رخصة.** فحقوق أجزائه الأصلية لأصحابها، وتعديلات Saqaby عليه له.
-وجزء الواجهة الرئيسية في UrTV مقتبس من [mihirgupta0900/tv-home](https://github.com/mihirgupta0900/tv-home) برخصة MIT،
-ولم يُنقل منه شيء إلى UrCar.
-
-**قبل النشر على نطاق واسع:** اطلب إذن صاحب `tshi-dev/urtv` لما نُقل من أجزائه الأصلية، أو أعد كتابتها.
-ولم نحدّد بعد بالتفصيل أي الملفات المنقولة كتبها هو وأيها كتبها Saqaby.
+بدأ المشروع بأجزاء منقولة من Saqaby/UrTV (وهو نسخة معدّلة من `tshi-dev/urtv`، بلا رخصة). أُعيدت كتابتها كلها في نوفمبر ٢٠٢٦،
+فلم يبق في UrCar شيء منه:
+- حساب المواقيت (`PrayerMath.java`): مكتوب من جديد من معادلات NOAA المنشورة للشمس، وطابق الحساب السابق في حدود دقيقة.
+- الآيات والأحاديث وأقوال السلف: اختيار جديد من مصادره (انظر الجدول أعلاه).
+- فهرس القرّاء وأسماء السور: من واجهة mp3quran.net مباشرة.
+- المعاينة القديمة (`src/template.html` و`src/build.py` و`src/content.py` و`dist/`) وبياناتها: حُذفت.
+- الخطوط: IBM Plex Sans Arabic بأسمائها الأصلية (OFL).
+- رابط الأذان ورابط بث الإذاعة: عنوانان عامّان، مصدرهما Internet Archive وradiojar، لا شيء من كود UrTV.

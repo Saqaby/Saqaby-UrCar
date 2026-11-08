@@ -18,7 +18,7 @@ import java.io.InputStream;
 
 /**
  * «ختمة السيارة»: a recitation that goes on from trip to trip. It plays surah after surah from where it stopped (the
- * surah and the second are kept on the screen) and counts the completed khatmas. assets/khatma.json: UrTV's
+ * surah and the second are kept on the screen) and counts the completed khatmas. assets/khatma.json (src/khatma_for_app.py, from mp3quran.net's API):
  * mp3quran.net reciters (server + 001.mp3 … 114.mp3) and the surahs with their ayah counts (sum 6236).
  * The adhan, a call or another sound pauses it and it goes on by itself after, 3 seconds back so nothing is missed.
  */
@@ -83,11 +83,7 @@ final class Khatma {
             byte[] buf = new byte[8192];
             for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n);
             JSONObject j = new JSONObject(b.toString("UTF-8"));
-            // the owner's three: found in mp3quran.net's own list (find-reciters.yml), Hafs murattal, all 114 surahs
-            reciters = new JSONArray()
-                    .put(new JSONObject().put("id", "asim-luhaidan").put("name", "عاصم اللحيدان").put("server", "https://cdn.mp3quran.net/audio/asim-luhaidan/r1/"))
-                    .put(new JSONObject().put("id", "abdullah-mousa").put("name", "عبدالله الموسى").put("server", "https://cdn.mp3quran.net/audio/abdullah-mousa/r1/"))
-                    .put(new JSONObject().put("id", "khalifa-tunaiji").put("name", "خليفة الطنيجي").put("server", "https://cdn.mp3quran.net/audio/khalifa-tunaiji/r1/"));
+            reciters = new JSONArray();
             JSONArray rest = j.getJSONArray("reciters");
             for (int i = 0; i < rest.length(); i++) reciters.put(rest.getJSONObject(i));
             // in the order of the Arabic alphabet (the owner's wish), as the library and the settings list them

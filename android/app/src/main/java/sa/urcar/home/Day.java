@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * The day at the car's place: the prayer times (ISNA, PrayerMath from UrTV), the Hijri date (Umm al-Qura), the
+ * The day at the car's place: the prayer times (ISNA, PrayerMath), the Hijri date (Umm al-Qura), the
  * Ramadan window, and the adhan countdown: from 30 minutes before each adhan, then the time since it for 20 minutes.
  */
 final class Day {
@@ -151,7 +151,7 @@ final class Day {
     }
 
     /**
-     * One reminder for the quote card, most important first, as UrTV's fasting card: tomorrow is Arafah, Ashura or
+     * One reminder for the quote card, most important first: tomorrow is Arafah, Ashura or
      * Tasu'a, one of the white days (13-15), or a Monday or Thursday (not in Ramadan, never on the days of Eid or
      * Tashreeq); else on Friday «سورة الكهف». null when there is none.
      */

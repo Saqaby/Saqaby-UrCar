@@ -10,14 +10,14 @@ import java.io.File;
 
 /**
  * The adhan at each prayer time, and the Quran radio stream when there is no FM station near. The adhan takes the
- * audio focus for a moment (AUDIOFOCUS_GAIN_TRANSIENT): what was playing pauses and comes back after it, as in UrTV.
+ * audio focus for a moment (AUDIOFOCUS_GAIN_TRANSIENT): what was playing pauses and comes back after it.
  */
 final class Sound {
-    /** عبدالملك الملا, from UrTV's Adhan.java (archive.org, Public Domain Mark 1.0) */
+    /** عبدالملك الملا, from the Internet Archive's «Azaan of World Mosques» (Public Domain Mark 1.0) */
     static final String ADHAN_URL = "https://archive.org/download/azaan-of-world-mosques_202608/"
             + "%D8%B9%D8%A8%D8%AF%D8%A7%D9%84%D9%85%D9%84%D9%83%20%D8%A7%D9%84%D9%85%D9%84%D8%A7_%D9%85%D9%83%D8%A9"
             + "%20%28www.alqurantranslation.com%29.mp3";
-    /** إذاعة القرآن الكريم السعودية, the first station of UrTV's stations.json */
+    /** إذاعة القرآن الكريم السعودية, its public stream on radiojar */
     static final String RADIO_URL = "https://stream.radiojar.com/0tpy1h0kxtzuv";
 
     private final Context c;
