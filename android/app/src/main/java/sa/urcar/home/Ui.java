@@ -19,7 +19,8 @@ final class Ui {
         final int bg, panel, panel2, line, fg, muted, sand, sandInk, go;
         Theme(boolean day) {
             if (day) {
-                bg = 0xffe9ece6; panel = 0xfff8f9f5; panel2 = 0xffffffff; line = 0xffd3d9d1;
+                // white with a cool cast: car screens render warm, and the owner saw the old grey-green as light brown
+                bg = 0xffeef2f6; panel = 0xffffffff; panel2 = 0xfff6f8fb; line = 0xffd3dbe3;
                 fg = 0xff122022; muted = 0xff5b6b67; sand = 0xff9a6d1c; sandInk = 0xfffffaf0; go = 0xff1d8a62;
             } else {
                 bg = 0xff0b1314; panel = 0xff121d1f; panel2 = 0xff18272a; line = 0xff24383b;
