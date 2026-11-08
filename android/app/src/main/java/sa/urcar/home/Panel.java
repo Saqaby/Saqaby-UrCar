@@ -16,7 +16,7 @@ import android.widget.TextView;
  * the screen is 1280×720 at density 1.0, so sizes are pixels of a 720-high panel (H = 1% of it, the preview's cqh).
  */
 final class Panel extends LinearLayout {
-    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); }
+    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); void library(); }
 
     private final Actions act;
     private final float H;
@@ -30,7 +30,9 @@ final class Panel extends LinearLayout {
     private LinearLayout card, prayerPage, musicPage, musicOn, radioBtn, kBtn, keysRow, tabs;
     private TextView kT, kF;
     private Ui.Icon kIcon;
-    private boolean kOn;
+    private boolean kOn, libOn;
+    private LinearLayout libBtn;
+    private Ui.Icon libIcon;
     private final LinearLayout[] keys = new LinearLayout[4];
     private final Ui.Icon[] keyIcons = new Ui.Icon[4];
     private final TextView[] keyLabels = new TextView[4];
@@ -167,6 +169,14 @@ final class Panel extends LinearLayout {
         LayoutParams kl = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
         kl.setMarginStart(px(1.4f));
         quran.addView(kBtn, kl);
+        libBtn = row();   // the audio library: a square with headphones
+        libBtn.setGravity(Gravity.CENTER);
+        libIcon = new Ui.Icon(c, Ui.Icon.PHONES, 0);
+        libBtn.addView(libIcon, new LayoutParams(px(5), px(5)));
+        libBtn.setOnClickListener(v -> act.library());
+        LayoutParams ll = new LayoutParams(px(10), LayoutParams.MATCH_PARENT);
+        ll.setMarginStart(px(1.4f));
+        quran.addView(libBtn, ll);
         addView(quran, new LayoutParams(LayoutParams.MATCH_PARENT, px(10)) {{ topMargin = px(1.6f); }});
 
         // ---- the four buttons
@@ -271,7 +281,11 @@ final class Panel extends LinearLayout {
         kIcon.set(kOn ? Ui.Icon.PAUSE : Ui.Icon.PLAY, kOn ? th.sandInk : th.sand);
         kT.setTextColor(kOn ? th.sandInk : th.fg);
         kF.setTextColor(kOn ? th.sandInk : th.muted);
+        libBtn.setBackground(libOn ? Ui.box(th.sand, 0, px(2)) : Ui.box(th.panel, th.line, px(2)));
+        libIcon.set(Ui.Icon.PHONES, libOn ? th.sandInk : th.sand);
     }
+    /** The library's button turns gold while one of its surahs plays. */
+    void showLibrary(boolean on) { if (on != libOn) { libOn = on; paintRadio(radioOn); } }
     /** «ختمة السيارة»: «الختمة» or «إيقاف الختمة», and «٣٧٪، يوسف» under it. */
     void showKhatma(String label, String line, boolean on) {
         set(kT, label); set(kF, line);

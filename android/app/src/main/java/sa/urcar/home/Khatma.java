@@ -40,8 +40,8 @@ final class Khatma {
 
     /**
      * The steering wheel's buttons and the screen's own media widget: a media session for the khatma. Play goes on
-     * (from the second it stopped), pause stops it as its button does, next goes to the next surah, previous goes back
-     * 10 seconds. It stays active while the app runs, so «play» on the wheel can start it again.
+     * (from the second it stopped), pause stops it as its button does, previous goes back 10 seconds; no skipping
+     * between surahs (the owner's choice: the khatma goes from Al-Fatiha to An-Nas; single surahs are in the library). It stays active while the app runs, so «play» on the wheel can start it again.
      */
     private android.media.session.MediaSession ms;
     private void session() {
@@ -52,7 +52,6 @@ final class Khatma {
                     @Override public void onPlay() { if (on && held != null) resume(); else if (!on) start(); }
                     @Override public void onPause() { if (on) stop(); }
                     @Override public void onStop() { if (on) stop(); }
-                    @Override public void onSkipToNext() { if (on) next(); }
                     @Override public void onSkipToPrevious() { back(10_000); }
                 });
             }
@@ -66,7 +65,7 @@ final class Khatma {
             ms.setPlaybackState(new android.media.session.PlaybackState.Builder()
                     .setActions(android.media.session.PlaybackState.ACTION_PLAY | android.media.session.PlaybackState.ACTION_PAUSE
                             | android.media.session.PlaybackState.ACTION_PLAY_PAUSE | android.media.session.PlaybackState.ACTION_STOP
-                            | android.media.session.PlaybackState.ACTION_SKIP_TO_NEXT | android.media.session.PlaybackState.ACTION_SKIP_TO_PREVIOUS)
+                            | android.media.session.PlaybackState.ACTION_SKIP_TO_PREVIOUS)
                     .setState(st, pos, st == android.media.session.PlaybackState.STATE_PLAYING ? 1f : 0f).build());
             ms.setActive(true);
         } catch (Exception ignored) { }
@@ -109,6 +108,7 @@ final class Khatma {
         for (int i = 0; i < reciters.length(); i++) if (reciters.optJSONObject(i).optString("id").equals(reciterId())) return reciters.optJSONObject(i).optString("server");
         return reciters.length() > 0 ? reciters.optJSONObject(0).optString("server") : "";
     }
+    JSONArray surahs() { return surahs; }
     String surahName() { JSONObject s = surahs.optJSONObject(surah() - 1); return s == null ? "" : s.optString("name"); }
 
     /** The share of the Quran heard, by ayahs: the surahs before this one, and this one by the second reached. */

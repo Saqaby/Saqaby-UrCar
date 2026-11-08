@@ -60,6 +60,7 @@ public class PanelService extends Service implements Panel.Actions {
     private final Day day = new Day();
     private Sound sound;
     private Khatma khatma;
+    private Listen library;
     private long stillSince, restUntil;
     private int restFor;
     private boolean khatmaPausedByStop, khatmaMoved;
@@ -101,6 +102,8 @@ public class PanelService extends Service implements Panel.Actions {
         khatma = new Khatma(this);
         new java.io.File(getFilesDir(), "soundlog.txt").delete();   // the v27 test log, no longer kept
         khatma.changed = () -> h.post(this::drawRadio);
+        library = new Listen(this);
+        library.changed = () -> h.post(this::drawRadio);
         day.lat = Prefs.of(this).getFloat("lat", (float) day.lat);
         day.lon = Prefs.of(this).getFloat("lon", (float) day.lon);
         startLocation();
@@ -114,6 +117,7 @@ public class PanelService extends Service implements Panel.Actions {
         h.removeCallbacksAndMessages(null);
         sound.release();
         khatma.stop();
+        library.stop();
         if (lm != null) try { lm.removeUpdates(gps); } catch (Exception ignored) { }
         if (live == this) live = null;
         super.onDestroy();
@@ -272,7 +276,7 @@ public class PanelService extends Service implements Panel.Actions {
         if (moving) {
             stillSince = 0;
             if (khatma.on) khatmaMoved = true;
-            if (khatmaPausedByStop) { khatmaPausedByStop = false; khatma.start(); }
+            if (khatmaPausedByStop) { khatmaPausedByStop = false; if (!library.on()) khatma.start(); }
         } else {
             if (stillSince == 0) stillSince = now;
             if (khatma.on && khatmaMoved && now - stillSince > 3 * 60_000L) { khatma.stop(); khatmaPausedByStop = true; khatmaMoved = false; }
@@ -281,6 +285,7 @@ public class PanelService extends Service implements Panel.Actions {
 
     private void drawRadio() {
         if (panel == null) return;
+        panel.showLibrary(library.on());
         if (khatma.on && khatma.held() != null)   // waiting for a call or another sound to end
             panel.showKhatma("الختمة تنتظر", (heldWhy.isEmpty() ? "صوت آخر" : heldWhy) + "، اضغط لتكمل", true);
         else panel.showKhatma(khatma.on ? "إيقاف الختمة" : "ختمة السيارة", Ui.ar(khatma.percent()) + "٪، " + khatma.surahName()
@@ -352,7 +357,7 @@ public class PanelService extends Service implements Panel.Actions {
                 if (Prefs.of(this).getBoolean("khatma_auto", true) && !khatma.on && !sound.radioOn) {
                     h.postDelayed(() -> {   // after the dhikr, and only if nothing else is playing
                         MediaController mc = NotiListener.session(this);
-                        if (!khatma.on && !sound.radioOn && (mc == null || !NotiListener.playing(mc))) khatma.start();
+                        if (!khatma.on && !sound.radioOn && !library.on() && (mc == null || !NotiListener.playing(mc))) khatma.start();
                     }, 20_000);
                 }
                 duaUntil = now + 60_000;
@@ -585,10 +590,21 @@ public class PanelService extends Service implements Panel.Actions {
         String last = Prefs.of(this).getString("last_audio", "com.google.android.youtube");
         launchPkg(last);
     }
+    /** The headphones: the audio library. */
+    @Override public void library() { launch(new Intent(this, LibraryActivity.class)); }
+    Listen libraryPlayer() { return library; }
+    /** A surah from the library, now: the khatma (which keeps its place) and the radio stop. */
+    void listen(String id, String name, String server, int s, String surah) {
+        if (khatma.on) { khatma.stop(); khatmaPausedByStop = false; }
+        sound.stopRadio();
+        library.play(id, name, server, s, surah);
+    }
+
     @Override public void khatma() {
         if (khatma.on && khatma.held() != null) { khatmaGoOn(); return; }
         if (khatma.on) { khatma.stop(); khatmaPausedByStop = false; return; }
         sound.stopRadio();
+        library.stop();
         khatmaMoved = false;
         khatma.start();
     }
@@ -615,6 +631,7 @@ public class PanelService extends Service implements Panel.Actions {
         }
         if (!Net.online(this)) { Toast.makeText(this, "لا إنترنت، ولا تردد FM معروف هنا", Toast.LENGTH_LONG).show(); return; }
         khatma.stop();
+        library.stop();
         sound.startRadio();
     }
 

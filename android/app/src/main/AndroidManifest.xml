@@ -27,6 +27,7 @@
         </activity>
         <activity android:name=".SettingsActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".AppsActivity" android:exported="false" android:excludeFromRecents="true" />
+        <activity android:name=".LibraryActivity" android:exported="false" android:excludeFromRecents="true" />
 
         <service android:name=".PanelService" android:exported="false" />
         <service android:name=".NotiListener" android:exported="true"

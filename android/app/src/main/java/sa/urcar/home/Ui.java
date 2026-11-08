@@ -95,7 +95,7 @@ final class Ui {
     /** The icons of the panel, drawn on a 24-unit grid like the preview's SVGs. */
     static final class Icon extends View {
         static final int PLAY = 1, PAUSE = 2, PREV = 3, NEXT = 4, YOUTUBE = 5, BT = 6, GEAR = 7, APPS = 8, RADIO = 9,
-                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13;
+                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14;
         int kind;
         final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Icon(Context c, int kind, int color) {
@@ -138,6 +138,8 @@ final class Ui {
                     break;
                 case MOON: stroke(); path.addCircle(11, 12, 7.5f, Path.Direction.CW); c.drawPath(path, p); break;
                 case CLOUD: stroke(); c.drawRoundRect(new RectF(3, 9, 21, 18.5f), 4.75f, 4.75f, p); c.drawCircle(10, 10, 4, p); break;
+                case PHONES: stroke(); path.moveTo(4, 15); path.arcTo(new RectF(4, 4, 20, 20), 180, 180); c.drawPath(path, p);   // headphones
+                    fill(); c.drawRoundRect(new RectF(2.5f, 13, 7.5f, 21), 1.8f, 1.8f, p); c.drawRoundRect(new RectF(16.5f, 13, 21.5f, 21), 1.8f, 1.8f, p); break;
                 default: break;
             }
             c.restore();
