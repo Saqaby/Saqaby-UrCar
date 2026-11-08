@@ -25,6 +25,10 @@ final class Full extends FrameLayout {
     private final Runnable close;
     private Gauge gauge;
     private Rose rose;
+    private LinearLayout navBox;
+    private android.widget.ImageView navArrow;
+    private TextView navDist, navStep, navEta;
+    private boolean navOn;
     private TextView headingText, qiblaText, tripText, qTitle, qText, qSrc;
     private int quoteOffset;   // «التالي» in the quote view: hours ahead of the current one
 
@@ -92,6 +96,31 @@ final class Full extends FrameLayout {
         qiblaText.setGravity(Gravity.CENTER);
         right.addView(headingText, new LinearLayout.LayoutParams(-1, -2));
         right.addView(qiblaText, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 6; }});
+        // the navigation's next step, as on the speed card: while a guidance runs it takes room from the compass
+        navBox = new LinearLayout(c);
+        navBox.setOrientation(LinearLayout.VERTICAL);
+        navBox.setPadding(22, 16, 22, 16);
+        navBox.setBackground(Ui.box(th.panel2, th.line, 18));
+        LinearLayout nrow = new LinearLayout(c);
+        nrow.setGravity(Gravity.CENTER_VERTICAL);
+        nrow.setLayoutDirection(LAYOUT_DIRECTION_RTL);
+        navArrow = new android.widget.ImageView(c);
+        nrow.addView(navArrow, new LinearLayout.LayoutParams(84, 84));
+        navDist = Ui.text(c, 46, Ui.display(c), th.fg);
+        LinearLayout.LayoutParams ndl = new LinearLayout.LayoutParams(0, -2, 1);
+        ndl.setMarginStart(16);
+        nrow.addView(navDist, ndl);
+        navBox.addView(nrow);
+        navStep = Ui.text(c, 28, Ui.medium(c), th.fg);
+        navStep.setSingleLine(false);
+        navStep.setMaxLines(3);
+        navStep.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        navBox.addView(navStep, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 8; }});
+        navEta = Ui.text(c, 22, Ui.regular(c), th.muted);
+        navEta.setSingleLine(true);
+        navBox.addView(navEta, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 6; }});
+        navBox.setVisibility(GONE);
+        right.addView(navBox, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 12; }});
         tripText = Ui.text(c, 28, Ui.medium(c), th.fg);
         tripText.setGravity(Gravity.CENTER);
         tripText.setSingleLine(false);
@@ -139,6 +168,7 @@ final class Full extends FrameLayout {
                 gauge.invalidate();
                 if (d[1] >= 0) { rose.bearing = d[1]; set(headingText, DIRS[Math.round(d[1] / 45f) % 8]); }
                 else if (rose.bearing < 0) set(headingText, "الاتجاه أثناء السير");
+                showNav();
                 String t = PanelService.join(s.tripNow(), s.homeNow());
                 rose.home = s.homeBearing();
                 set(tripText, t.isEmpty() ? "الرحلة تبدأ مع السير" : t);
@@ -159,6 +189,26 @@ final class Full extends FrameLayout {
             h.postDelayed(this, 250);
         }
     };
+    /** The next step while a guidance runs (NotiListener); the compass gives up its words and some of its room. */
+    private void showNav() {
+        boolean on = NotiListener.navigating();
+        if (on != navOn) {
+            navOn = on;
+            navBox.setVisibility(on ? VISIBLE : GONE);
+            headingText.setVisibility(on ? GONE : VISIBLE);
+            qiblaText.setVisibility(on ? GONE : VISIBLE);
+        }
+        if (!on) return;
+        set(navDist, NotiListener.navDist); set(navStep, NotiListener.navStep); set(navEta, NotiListener.navEta);
+        navStep.setVisibility(NotiListener.navStep.isEmpty() ? GONE : VISIBLE);
+        navEta.setVisibility(NotiListener.navEta.isEmpty() ? GONE : VISIBLE);
+        android.graphics.drawable.Drawable icon = NotiListener.navIcon;
+        if (navArrow.getDrawable() != icon) {
+            navArrow.setImageDrawable(icon);
+            if (icon != null) navArrow.setColorFilter(th.sand, android.graphics.PorterDuff.Mode.SRC_IN);
+            navArrow.setVisibility(icon == null ? GONE : VISIBLE);
+        }
+    }
     private static void set(TextView t, String s) { if (!s.contentEquals(t.getText())) t.setText(s); }
 
     @Override protected void onDetachedFromWindow() { h.removeCallbacksAndMessages(null); super.onDetachedFromWindow(); }
