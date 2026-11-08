@@ -120,6 +120,10 @@ public class HomeActivity extends Activity {
         boolean right = Prefs.side(this).equals("right");
         item(list, th, false, "جهة السائق: " + (right ? "اليمين" : "اليسار"), "اللوحة تكون في جهة السائق. للتبديل",
                 () -> { Prefs.put(this, "side", right ? "left" : "right"); setup(); });
+        String bt = Device.btApp(this), ra = Device.radioApp(this);
+        item(list, th, false, "البلوتوث: " + Device.label(this, bt) + "، الراديو: " + Device.label(this, ra),
+                "اختيرا تلقائيًا من تطبيقات شاشتك. إن كان أحدهما خطأ فغيّره من الإعدادات،",
+                () -> startActivity(new Intent(this, SettingsActivity.class)));
         item(list, th, false, "قارئ الختمة والأذان والملاحة", "تُختار من الإعدادات، ولها اختيارات جاهزة. لفتحها",
                 () -> startActivity(new Intent(this, SettingsActivity.class)));
         TextView go = Ui.text(this, 30, Ui.medium(this), located() ? th.sandInk : th.muted);

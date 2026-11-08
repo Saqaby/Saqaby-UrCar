@@ -431,7 +431,8 @@ public class PanelService extends Service implements Panel.Actions {
     @Override public void youtube() { launchPkg("com.google.android.youtube"); }
     /** The screen's own «بلوتوث» app (com.tw.bt: calls, the phone's music); Android's Bluetooth settings if it is missing. */
     @Override public void bluetooth() {
-        Intent i = getPackageManager().getLaunchIntentForPackage("com.tw.bt");
+        String bt = Device.btApp(this);   // this screen's own, or the one chosen in the settings
+        Intent i = bt.isEmpty() ? null : getPackageManager().getLaunchIntentForPackage(bt);
         launch(i != null ? i : new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
     }
     @Override public void settings() { launch(new Intent(this, SettingsActivity.class)); }
@@ -603,8 +604,10 @@ public class PanelService extends Service implements Panel.Actions {
     @Override public void radio() {
         if (sound.radioOn) { sound.stopRadio(); return; }
         Object[] fm = Prefs.radioSource(this).equals("fm") ? Net.fmHere(this, day.lat, day.lon) : null;
-        if (fm != null) {
-            Intent i = new Intent().setComponent(new ComponentName("com.tw.radio", "com.tw.radio.RadioActivity"));
+        String ra = Device.radioApp(this);   // this screen's own radio app, if it has one
+        if (fm != null && !ra.isEmpty()) {
+            Intent i = ra.equals("com.tw.radio") ? new Intent().setComponent(new ComponentName("com.tw.radio", "com.tw.radio.RadioActivity"))
+                    : getPackageManager().getLaunchIntentForPackage(ra);
             launch(i);
             Toast.makeText(this, "اضبط الراديو على " + Ui.ar(String.format(java.util.Locale.US, "%.1f", ((Number) fm[1]).doubleValue())) + " FM، إذاعة القرآن في " + fm[0]
                     + (Boolean.TRUE.equals(fm[2]) ? "" : " (تردد غير مؤكد)"), Toast.LENGTH_LONG).show();

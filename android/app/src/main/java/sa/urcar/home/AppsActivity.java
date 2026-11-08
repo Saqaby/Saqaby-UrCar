@@ -28,7 +28,8 @@ public class AppsActivity extends Activity {
         root.setPadding(40, 24, 40, 24);
         LinearLayout top = new LinearLayout(this);
         TextView title = Ui.text(this, 34, Ui.medium(this), th.fg);
-        title.setText("التطبيقات");
+        final String pick = getIntent().getStringExtra("pick");   // «bt_app» or «radio_app»: choose, do not open
+        title.setText(pick == null ? "التطبيقات" : pick.equals("bt_app") ? "اختر تطبيق البلوتوث" : "اختر تطبيق الراديو");
         top.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
         TextView back = Ui.text(this, 24, Ui.medium(this), th.fg);
         back.setText("رجوع");
@@ -59,6 +60,7 @@ public class AppsActivity extends Activity {
             cell.addView(label, new LinearLayout.LayoutParams(180, -2));
             final String pkg = ri.activityInfo.packageName, cls = ri.activityInfo.name;
             cell.setOnClickListener(v -> {
+                if (pick != null) { Prefs.put(this, pick, pkg); finish(); return; }   // chosen as the screen's Bluetooth or radio app
                 startActivity(new Intent(Intent.ACTION_MAIN).setClassName(pkg, cls).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 finish();
             });

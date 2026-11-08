@@ -198,6 +198,21 @@ public class SettingsActivity extends Activity {
         head("دفتر الطريق");
         list.addView(note(tripLog()));
 
+        head("تطبيقا البلوتوث والراديو في الشاشة");
+        LinearLayout ap = grid();
+        for (String[] d : new String[][]{{"bt_app", "البلوتوث"}, {"radio_app", "الراديو"}}) {
+            String now = d[0].equals("bt_app") ? Device.btApp(this) : Device.radioApp(this);
+            ap.addView(chip(d[1] + ": " + Device.label(this, now) + " (غيّره)", false,
+                    () -> startActivity(new Intent(this, AppsActivity.class).putExtra("pick", d[0]))));
+        }
+        list.addView(ap);
+        if (!Prefs.of(this).getString("bt_app", "").isEmpty() || !Prefs.of(this).getString("radio_app", "").isEmpty()) {
+            LinearLayout ap2 = grid();
+            ap2.addView(chip("ارجع للاختيار التلقائي", false, () -> { Prefs.of(this).edit().remove("bt_app").remove("radio_app").apply(); build(); }));
+            list.addView(ap2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+        }
+        list.addView(note("يُختاران تلقائيًا بحسب الشاشة، فإن أخطأ الاختيار فاختر التطبيق الصحيح. بلا تطبيق بلوتوث تُفتح إعدادات البلوتوث، وبلا راديو تُشغَّل الإذاعة عبر الإنترنت."));
+
         head("الجهاز");
         LinearLayout dev = grid();
         dev.addView(chip("إعدادات أندرويد", false, () -> startActivity(new Intent(Settings.ACTION_SETTINGS))));
