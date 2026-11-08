@@ -1,0 +1,26 @@
+# One-off: the promo's voiceover with word timings, to time the motion graphic's scenes.
+name: transcribe-vo
+on:
+  push:
+    paths: ["tools/vo/vo.mp3", ".github/workflows/transcribe-vo.yml"]
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: |
+          sudo apt-get install -y -qq ffmpeg >/dev/null
+          pip install -q faster-whisper numpy
+          ffmpeg -v error -i tools/vo/vo.mp3 -ac 1 -ar 16000 -f f32le vo.raw
+          python3 - <<'PY'
+          import numpy as np
+          from faster_whisper import WhisperModel
+          a = np.fromfile("vo.raw", dtype=np.float32)
+          m = WhisperModel("large-v3", device="cpu", compute_type="int8")
+          segs, _ = m.transcribe(a, language="ar", beam_size=5, word_timestamps=True)
+          for s in segs:
+              print(f"SEG [{s.start:.2f}-{s.end:.2f}] {s.text}")
+              print("WORDS " + " ".join(f"{w.word.strip()}@{w.start:.2f}" for w in s.words))
+          PY
