@@ -27,10 +27,12 @@ final class Drive extends LinearLayout {
     private final Sign sign;
     private int lastLimit = -1;
     private final LinearLayout dests;
-    private final TextView[] destViews = new TextView[3];
+    private final LinearLayout[] destViews = new LinearLayout[4];
+    private final Ui.Icon[] destIcons = new Ui.Icon[4];
+    private TextView mosqueKm;
 
     /** openGauge / openQuote: the speed card and the quote card open to the whole screen (Full). */
-    Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque) {
+    Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque, Runnable fuel) {
         super(c);
         H = height / 100f;
         setOrientation(VERTICAL);
@@ -120,21 +122,31 @@ final class Drive extends LinearLayout {
         alertBox.setVisibility(GONE);
         addView(alertBox, new LayoutParams(LayoutParams.MATCH_PARENT, px(8)) {{ topMargin = px(1.6f); }});
 
-        // ---- quick destinations: home, work, the nearest mosque
+        // ---- quick destinations as symbols: home (a house), work (a briefcase), the nearest mosque, the nearest station
         dests = new LinearLayout(c);
         dests.setOrientation(HORIZONTAL);
-        String[] names = {"البيت", "العمل", "أقرب مسجد"};
-        Runnable[] go = {home, work, mosque};
-        for (int i = 0; i < 3; i++) {
-            TextView t = Ui.text(c, px(3.4f), Ui.medium(c), 0);
-            t.setText(names[i]);
-            t.setGravity(Gravity.CENTER);
+        int[] icons = {Ui.Icon.HOUSE, Ui.Icon.BRIEFCASE, Ui.Icon.MOSQUE, Ui.Icon.FUEL};
+        String[] says = {"البيت", "العمل", "أقرب مسجد", "أقرب محطة وقود"};
+        Runnable[] go = {home, work, mosque, fuel};
+        for (int i = 0; i < 4; i++) {
+            LinearLayout cell = new LinearLayout(c);
+            cell.setGravity(Gravity.CENTER);
+            cell.setContentDescription(says[i]);
+            destIcons[i] = new Ui.Icon(c, icons[i], 0);
+            cell.addView(destIcons[i], new LayoutParams(px(6), px(6)));
+            if (i == 2) {   // «٣ كم» beside the mosque while one is ahead around an adhan
+                mosqueKm = Ui.text(c, px(3.2f), Ui.medium(c), 0);
+                mosqueKm.setVisibility(GONE);
+                LayoutParams ml = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                ml.setMarginStart(px(1));
+                cell.addView(mosqueKm, ml);
+            }
             final Runnable r = go[i];
-            t.setOnClickListener(v -> r.run());
+            cell.setOnClickListener(v -> r.run());
             LayoutParams l = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
             if (i > 0) l.setMarginStart(px(1.4f));
-            dests.addView(t, l);
-            destViews[i] = t;
+            dests.addView(cell, l);
+            destViews[i] = cell;
         }
         addView(dests, new LayoutParams(LayoutParams.MATCH_PARENT, px(9)) {{ topMargin = px(1.6f); }});
 
@@ -180,13 +192,14 @@ final class Drive extends LinearLayout {
         paintDests();
     }
 
-    /** The three destinations; «أقرب مسجد» stands out around each adhan (30 minutes before to 20 after). */
+    /** The four destinations; the mosque stands out around each adhan (30 minutes before to 20 after). */
     private void paintDests() {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             boolean hot = i == 2 && mosqueHot;
             destViews[i].setBackground(hot ? Ui.box(th.sand, 0, px(2)) : Ui.box(th.panel, th.line, px(2)));
-            destViews[i].setTextColor(hot ? th.sandInk : th.fg);
+            destIcons[i].set(destIcons[i].kind, hot ? th.sandInk : th.sand);
         }
+        mosqueKm.setTextColor(mosqueHot ? th.sandInk : th.fg);
     }
     /**
      * While a navigation runs: the speed, a smaller compass (no words under it) and the next step: the turn's arrow,
@@ -217,8 +230,12 @@ final class Drive extends LinearLayout {
     }
 
     void setMosqueHot(boolean hot) { if (hot != mosqueHot) { mosqueHot = hot; paintDests(); } }
-    /** «مسجد بعد ٣ كم» on the mosque button while one is ahead around an adhan; null: «أقرب مسجد». */
-    void setMosqueAhead(String t) { set(destViews[2], t == null ? "أقرب مسجد" : t); }
+    /** «٣ كم» beside the mosque's symbol while one is ahead around an adhan; null: the symbol alone. */
+    void setMosqueAhead(String km) {
+        mosqueKm.setVisibility(km == null ? GONE : VISIBLE);
+        if (km != null) set(mosqueKm, km);
+        destViews[2].setContentDescription(km == null ? "أقرب مسجد" : "مسجد بعد " + km);
+    }
 
     void showTrip(String s) { set(trip, s); trip.setVisibility(s.isEmpty() ? GONE : VISIBLE); }
 

@@ -95,7 +95,7 @@ final class Ui {
     /** The icons of the panel, drawn on a 24-unit grid like the preview's SVGs. */
     static final class Icon extends View {
         static final int PLAY = 1, PAUSE = 2, PREV = 3, NEXT = 4, YOUTUBE = 5, BT = 6, GEAR = 7, APPS = 8, RADIO = 9,
-                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14;
+                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18;
         int kind;
         final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Icon(Context c, int kind, int color) {
@@ -140,6 +140,21 @@ final class Ui {
                 case CLOUD: stroke(); c.drawRoundRect(new RectF(3, 9, 21, 18.5f), 4.75f, 4.75f, p); c.drawCircle(10, 10, 4, p); break;
                 case PHONES: stroke(); path.moveTo(4, 15); path.arcTo(new RectF(4, 4, 20, 20), 180, 180); c.drawPath(path, p);   // headphones
                     fill(); c.drawRoundRect(new RectF(2.5f, 13, 7.5f, 21), 1.8f, 1.8f, p); c.drawRoundRect(new RectF(16.5f, 13, 21.5f, 21), 1.8f, 1.8f, p); break;
+                case HOUSE: stroke(); path.moveTo(2.5f, 11.5f); path.lineTo(12, 3.5f); path.lineTo(21.5f, 11.5f);   // the roof
+                    path.moveTo(5, 9.5f); path.lineTo(5, 20.5f); path.lineTo(19, 20.5f); path.lineTo(19, 9.5f); c.drawPath(path, p);
+                    c.drawRect(10, 14.5f, 14, 20.5f, p); break;
+                case BRIEFCASE: stroke(); c.drawRoundRect(new RectF(3, 7.5f, 21, 20), 2.2f, 2.2f, p);
+                    c.drawRoundRect(new RectF(9, 4, 15, 7.5f), 1.2f, 1.2f, p); c.drawLine(3, 13, 21, 13, p);
+                    fill(); c.drawRect(10.8f, 11.8f, 13.2f, 14.4f, p); break;
+                case MOSQUE: fill(); path.moveTo(5.5f, 13); path.arcTo(new RectF(5.5f, 7, 16.5f, 18), 180, 180); path.close(); c.drawPath(path, p);   // the dome
+                    c.drawRect(4.5f, 13, 17.5f, 21, p);
+                    c.drawRect(18.6f, 8.5f, 21.4f, 21, p);   // the minaret
+                    path.reset(); path.moveTo(18.6f, 8.5f); path.lineTo(20, 5); path.lineTo(21.4f, 8.5f); path.close(); c.drawPath(path, p);
+                    stroke(); c.drawLine(11, 7.2f, 11, 4.6f, p); fill(); c.drawCircle(11, 3.6f, 1.1f, p); break;   // the finial
+                case FUEL: stroke(); c.drawRoundRect(new RectF(4, 3.5f, 14, 21), 1.6f, 1.6f, p); c.drawLine(2.5f, 21, 15.5f, 21, p);
+                    fill(); c.drawRect(6.3f, 6, 11.7f, 10.5f, p);
+                    stroke(); path.moveTo(14, 9); path.lineTo(17, 9); path.lineTo(19.5f, 11.5f); path.lineTo(19.5f, 17.5f);
+                    path.arcTo(new RectF(16.5f, 16, 19.5f, 19), 0, 180); path.lineTo(16.5f, 13); path.lineTo(14, 13); c.drawPath(path, p); break;
                 default: break;
             }
             c.restore();

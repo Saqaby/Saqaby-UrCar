@@ -70,7 +70,7 @@ public class HomeActivity extends Activity {
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         Panel panel = new Panel(this, PanelService.live, h);
         PanelService s = PanelService.live;
-        Drive drive = new Drive(this, h, () -> showFull("gauge"), () -> showFull("quote"), () -> s.goPlace("home", "البيت"), () -> s.goPlace("work", "العمل"), s::mosque);
+        Drive drive = new Drive(this, h, () -> showFull("gauge"), () -> showFull("quote"), () -> s.goPlace("home", "البيت"), () -> s.goPlace("work", "العمل"), s::mosque, s::station);
         LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(w * 2 / 5, ViewGroup.LayoutParams.MATCH_PARENT);
         LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
         if (Prefs.side(this).equals("right")) { row.addView(drive, dl); row.addView(panel, pl); }

@@ -457,7 +457,7 @@ public class PanelService extends Service implements Panel.Actions {
     }
     /**
      * Around each adhan (the bar's time: 30 minutes before to 20 after) while moving, the nearest mosque ahead of the car
-     * from the app's own list (Mosques), every 5 seconds: «مسجد بعد ٣ كم» on the mosque button, which then leads to it.
+     * from the app's own list (Mosques), every 5 seconds: «٣ كم» beside the mosque's symbol, which then leads to it.
      * Kept 20 seconds when it falls out of view for a moment; otherwise the button searches around as before.
      */
     private Mosques mosques;
@@ -473,7 +473,7 @@ public class PanelService extends Service implements Panel.Actions {
         }
         if (ahead == null || now - aheadAt > 20_000) { ahead = null; return null; }
         double k = Day.km(day.lat, day.lon, mosques.lat((int) ahead[0]), mosques.lon((int) ahead[0]));
-        return "مسجد بعد " + Ui.ar(String.format(java.util.Locale.US, k < 10 ? "%.1f" : "%.0f", k)) + " كم";
+        return Ui.ar(String.format(java.util.Locale.US, k < 10 ? "%.1f" : "%.0f", k)) + " كم";
     }
 
     /** «أقرب مسجد»: a search for mosques around the car in the navigation app (Google Maps if it is there). */
