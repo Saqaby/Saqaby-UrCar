@@ -99,7 +99,7 @@ public class LibraryActivity extends Activity {
     private Listen listen() { return PanelService.live != null ? PanelService.live.libraryPlayer() : null; }
     private String chosen() {
         String id = Prefs.of(this).getString("lib_reciter", "");
-        return id.isEmpty() && rec.length() > 0 ? rec.optJSONObject(0).optString("id") : id;
+        return id.isEmpty() ? "asim-luhaidan" : id;
     }
 
     private void build() {

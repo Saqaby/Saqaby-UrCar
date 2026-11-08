@@ -83,13 +83,19 @@ final class Khatma {
             byte[] buf = new byte[8192];
             for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n);
             JSONObject j = new JSONObject(b.toString("UTF-8"));
-            // the owner's three, first: found in mp3quran.net's own list (find-reciters.yml), Hafs murattal, all 114 surahs
+            // the owner's three: found in mp3quran.net's own list (find-reciters.yml), Hafs murattal, all 114 surahs
             reciters = new JSONArray()
                     .put(new JSONObject().put("id", "asim-luhaidan").put("name", "عاصم اللحيدان").put("server", "https://cdn.mp3quran.net/audio/asim-luhaidan/r1/"))
                     .put(new JSONObject().put("id", "abdullah-mousa").put("name", "عبدالله الموسى").put("server", "https://cdn.mp3quran.net/audio/abdullah-mousa/r1/"))
                     .put(new JSONObject().put("id", "khalifa-tunaiji").put("name", "خليفة الطنيجي").put("server", "https://cdn.mp3quran.net/audio/khalifa-tunaiji/r1/"));
             JSONArray rest = j.getJSONArray("reciters");
             for (int i = 0; i < rest.length(); i++) reciters.put(rest.getJSONObject(i));
+            // in the order of the Arabic alphabet (the owner's wish), as the library and the settings list them
+            java.util.List<JSONObject> all = new java.util.ArrayList<>();
+            for (int i = 0; i < reciters.length(); i++) all.add(reciters.getJSONObject(i));
+            final java.text.Collator ar = java.text.Collator.getInstance(new java.util.Locale("ar"));
+            java.util.Collections.sort(all, (x, y) -> ar.compare(x.optString("name"), y.optString("name")));
+            reciters = new JSONArray(all);
             surahs = j.getJSONArray("surahs");
             total = 0;
             for (int i = 0; i < surahs.length(); i++) total += surahs.getJSONObject(i).getInt("ayahs");
@@ -100,7 +106,7 @@ final class Khatma {
     int surah() { return Math.max(1, Math.min(114, p().getInt("k_surah", 1))); }
     int done() { return p().getInt("k_done", 0); }
     JSONArray reciters() { return reciters; }
-    String reciterId() { return p().getString("k_reciter", reciters.length() > 0 ? reciters.optJSONObject(0).optString("id") : ""); }
+    String reciterId() { return p().getString("k_reciter", "asim-luhaidan"); }   // the first choice stays Asim Al-Luhaidan
     String reciterName() {
         for (int i = 0; i < reciters.length(); i++) if (reciters.optJSONObject(i).optString("id").equals(reciterId())) return reciters.optJSONObject(i).optString("name");
         return "";
