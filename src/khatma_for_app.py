@@ -13,7 +13,7 @@ def get(url):
     with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "UrCar-build"}), timeout=60) as r:
         return json.load(r)
 
-norm = lambda s: re.sub("[ً-ْـ]", "", s).replace("أ", "ا").replace("إ", "ا").replace("آ", "ا").replace("ة", "ه").replace("ى", "ي").replace(" ", "")
+norm = lambda s: re.sub("[ً-ْـ]", "", s).replace("أ", "ا").replace("إ", "ا").replace("آ", "ا").replace("ة", "ه").replace("ى", "ي").replace("ی", "ي").replace("ک", "ك").replace(" ", "")
 api = get("https://www.mp3quran.net/api/v3/reciters?language=ar")["reciters"]
 by = {}
 for r in api: by.setdefault(norm(r["name"]), []).append(r)
