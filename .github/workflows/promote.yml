@@ -1,17 +1,25 @@
 # Promotes the build on the owner's screen (release «app-latest», the test channel) to «app-stable», which every
-# other screen follows: run it by hand once a version has worked in the car.
+# other screen follows, once a version has worked in the car: by hand, or by a push of .github/stable-version holding
+# that version's number (it must still be the one in app-latest, so nothing newer and untried slips through).
 name: promote
 on:
   workflow_dispatch:
+  push:
+    paths: [".github/stable-version"]
 permissions:
   contents: write
 jobs:
   promote:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
           gh release download app-latest -R "$GITHUB_REPOSITORY" -p urcar.apk -p version.json
           cat version.json
+          if [ -f .github/stable-version ]; then
+            want=$(tr -dc 0-9 < .github/stable-version); have=$(tr -dc 0-9 < version.json)
+            [ "$want" = "$have" ] || { echo "app-latest is $have, not $want: nothing promoted"; exit 1; }
+          fi
           gh release view app-stable -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create app-stable -R "$GITHUB_REPOSITORY" --title "سيارتك: الإصدار المستقر" \
               --notes "ما جُرِّب على شاشة صاحب التطبيق واعتُمد. الشاشات على القناة المستقرة تتحدث منه." --target "$GITHUB_SHA"
