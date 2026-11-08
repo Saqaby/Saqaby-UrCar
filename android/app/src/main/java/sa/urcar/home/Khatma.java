@@ -83,10 +83,11 @@ final class Khatma {
             byte[] buf = new byte[8192];
             for (int n; (n = in.read(buf)) > 0; ) b.write(buf, 0, n);
             JSONObject j = new JSONObject(b.toString("UTF-8"));
-            // the owner's two, first: found in mp3quran.net's own list (find-reciters.yml), Hafs murattal, all 114 surahs
+            // the owner's three, first: found in mp3quran.net's own list (find-reciters.yml), Hafs murattal, all 114 surahs
             reciters = new JSONArray()
                     .put(new JSONObject().put("id", "asim-luhaidan").put("name", "عاصم اللحيدان").put("server", "https://cdn.mp3quran.net/audio/asim-luhaidan/r1/"))
-                    .put(new JSONObject().put("id", "abdullah-mousa").put("name", "عبدالله الموسى").put("server", "https://cdn.mp3quran.net/audio/abdullah-mousa/r1/"));
+                    .put(new JSONObject().put("id", "abdullah-mousa").put("name", "عبدالله الموسى").put("server", "https://cdn.mp3quran.net/audio/abdullah-mousa/r1/"))
+                    .put(new JSONObject().put("id", "khalifa-tunaiji").put("name", "خليفة الطنيجي").put("server", "https://cdn.mp3quran.net/audio/khalifa-tunaiji/r1/"));
             JSONArray rest = j.getJSONArray("reciters");
             for (int i = 0; i < rest.length(); i++) reciters.put(rest.getJSONObject(i));
             surahs = j.getJSONArray("surahs");

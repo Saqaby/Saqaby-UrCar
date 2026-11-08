@@ -13,7 +13,7 @@ jobs:
           python3 - <<'PY'
           import json
           k = json.load(open('android/app/src/main/assets/khatma.json'))
-          urls = [r['server'] + '001.mp3' for r in k['reciters'][:6]] + ['https://stream.radiojar.com/0tpy1h0kxtzuv']
+          urls = ['https://cdn.mp3quran.net/audio/khalifa-tunaiji/r1/001.mp3', 'https://cdn.mp3quran.net/audio/khalifa-tunaiji/r1/114.mp3']
           open('urls.txt', 'w').write('\n'.join(urls))
           PY
           while read -r u; do
