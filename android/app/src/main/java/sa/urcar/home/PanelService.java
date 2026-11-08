@@ -195,6 +195,7 @@ public class PanelService extends Service implements Panel.Actions {
             drive.setMosqueAhead(mosqueAhead(now));
             drive.showTrip(join(tripNow(), homeNow()));
             drive.showHome(homeBearing());
+            drive.showNav(NotiListener.navigating(), NotiListener.navDist, NotiListener.navStep, NotiListener.navEta, NotiListener.navIcon);
             drive.showRemind(day.remind(now));
             // the quote card: the riding (or travel) dhikr for a minute when a trip starts, else the hour's quote
             if (now < duaUntil && duas.get(duaKind) != null) drive.showQuote(duas.get(duaKind), moving);

@@ -20,6 +20,10 @@ final class Drive extends LinearLayout {
     private final TextView speed, unit, trip, heading, qibla, alert, remind, qTitle, qText, qSrc;
     private boolean mosqueHot, moving;
     private final Compass compass;
+    private LinearLayout cp, navBox;
+    private android.widget.ImageView navArrow;
+    private TextView navDist, navStep, navEta;
+    private boolean navOn;
     private final Sign sign;
     private int lastLimit = -1;
     private final LinearLayout dests;
@@ -70,6 +74,32 @@ final class Drive extends LinearLayout {
         cp.addView(heading, lp(px(1.2f)));
         cp.addView(qibla, lp(px(0.6f)));
         top.addView(cp, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        this.cp = cp;
+        // the navigation's next step: shown while a navigation runs, in room taken from the compass
+        navBox = new LinearLayout(c);
+        navBox.setOrientation(VERTICAL);
+        navBox.setGravity(Gravity.CENTER_VERTICAL);
+        navBox.setPadding(px(1.6f), px(1), px(1.6f), px(1));
+        LinearLayout nrow = new LinearLayout(c);
+        nrow.setGravity(Gravity.CENTER_VERTICAL);
+        navArrow = new android.widget.ImageView(c);
+        nrow.addView(navArrow, new LayoutParams(px(9), px(9)));
+        navDist = Ui.text(c, px(5), Ui.display(c), 0);
+        LayoutParams dl = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
+        dl.setMarginStart(px(1.2f));
+        nrow.addView(navDist, dl);
+        navBox.addView(nrow);
+        navStep = Ui.text(c, px(3.2f), Ui.medium(c), 0);
+        navStep.setSingleLine(false);
+        navStep.setMaxLines(3);
+        navStep.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        navBox.addView(navStep, lp(px(0.8f)));
+        navEta = Ui.text(c, px(2.5f), Ui.regular(c), 0);
+        navEta.setSingleLine(true);
+        navEta.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        navBox.addView(navEta, lp(px(0.6f)));
+        navBox.setVisibility(GONE);
+        top.addView(navBox, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1.4f));
         // the card: speed and compass side by side, the trip across the bottom (it had no room under the speed)
         speedCard = new LinearLayout(c);
         speedCard.setOrientation(VERTICAL);
@@ -138,6 +168,9 @@ final class Drive extends LinearLayout {
         setBackgroundColor(th.bg);
         speedCard.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
         speed.setTextColor(th.fg); unit.setTextColor(th.muted); heading.setTextColor(th.sand);
+        navDist.setTextColor(th.fg); navStep.setTextColor(th.fg); navEta.setTextColor(th.muted);
+        navBox.setBackground(Ui.box(th.panel2, th.line, px(2)));
+        if (navArrow.getDrawable() != null) navArrow.setColorFilter(th.sand, android.graphics.PorterDuff.Mode.SRC_IN);
         compass.colors(th);
         alertBox.setBackground(Ui.box(0xffe9a24b, 0, px(1.6f))); alert.setTextColor(0xff1b1408);
         quoteBox.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
@@ -155,6 +188,34 @@ final class Drive extends LinearLayout {
             destViews[i].setTextColor(hot ? th.sandInk : th.fg);
         }
     }
+    /**
+     * While a navigation runs: the speed, a smaller compass (no words under it) and the next step: the turn's arrow,
+     * the distance, the instruction and the arrival. Otherwise the speed and the compass as before.
+     */
+    void showNav(boolean on, String dist, String step, String eta, android.graphics.drawable.Drawable icon) {
+        if (on != navOn) {
+            navOn = on;
+            navBox.setVisibility(on ? VISIBLE : GONE);
+            heading.setVisibility(on ? GONE : VISIBLE);
+            qibla.setVisibility(on ? GONE : VISIBLE);
+            LayoutParams cl = (LayoutParams) compass.getLayoutParams();
+            cl.width = cl.height = px(on ? 14 : 22);
+            speed.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px(on ? 13 : 17));   // three share the card
+            compass.setLayoutParams(cl);
+            ((LayoutParams) cp.getLayoutParams()).weight = on ? 0.6f : 1f;
+            cp.requestLayout();
+        }
+        if (!on) return;
+        set(navDist, dist); set(navStep, step); set(navEta, eta);
+        navStep.setVisibility(step.isEmpty() ? GONE : VISIBLE);
+        navEta.setVisibility(eta.isEmpty() ? GONE : VISIBLE);
+        if (navArrow.getDrawable() != icon) {
+            navArrow.setImageDrawable(icon);
+            if (icon != null) navArrow.setColorFilter(th.sand, android.graphics.PorterDuff.Mode.SRC_IN);   // the arrow in the card's gold
+            navArrow.setVisibility(icon == null ? GONE : VISIBLE);
+        }
+    }
+
     void setMosqueHot(boolean hot) { if (hot != mosqueHot) { mosqueHot = hot; paintDests(); } }
     /** «مسجد بعد ٣ كم» on the mosque button while one is ahead around an adhan; null: «أقرب مسجد». */
     void setMosqueAhead(String t) { set(destViews[2], t == null ? "أقرب مسجد" : t); }

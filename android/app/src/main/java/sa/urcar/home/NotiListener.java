@@ -23,7 +23,36 @@ public class NotiListener extends NotificationListenerService {
     static volatile long radarAt;
     static final String RADARBOT = "com.vialsoft.radarbot_free";
 
+    /**
+     * The navigation app's next step, from its ongoing navigation notification (Google Maps puts the distance in the
+     * title, the instruction in the text, the arrival in the sub-text and the turn's arrow as the large icon). Kept
+     * until the notification goes. Not yet seen on the owner's screen; Waze's notification may say less.
+     */
+    static volatile String navDist = "", navStep = "", navEta = "";
+    static volatile android.graphics.drawable.Drawable navIcon;
+    static volatile String navPkg = "";
+    static final String[] NAV_APPS = {"com.google.android.apps.maps", "com.waze", "com.here.app.maps", "net.osmand", "net.osmand.plus", "com.sygic.aura"};
+    static boolean navigating() { return !navPkg.isEmpty() && !(navDist.isEmpty() && navStep.isEmpty()); }
+
+    private void nav(android.service.notification.StatusBarNotification sbn) {
+        android.app.Notification n = sbn.getNotification();
+        boolean navCat = android.app.Notification.CATEGORY_NAVIGATION.equals(n.category);
+        if (!java.util.Arrays.asList(NAV_APPS).contains(sbn.getPackageName()) || !sbn.isOngoing() || !(navCat || sbn.getPackageName().equals("com.waze"))) return;
+        android.os.Bundle x = n.extras;
+        CharSequence t = x.getCharSequence(android.app.Notification.EXTRA_TITLE), s = x.getCharSequence(android.app.Notification.EXTRA_TEXT),
+                sub = x.getCharSequence(android.app.Notification.EXTRA_SUB_TEXT);
+        navDist = t == null ? "" : t.toString().trim();
+        navStep = s == null ? "" : s.toString().trim();
+        navEta = sub == null ? "" : sub.toString().trim();
+        try { navIcon = n.getLargeIcon() != null ? n.getLargeIcon().loadDrawable(this) : null; } catch (Exception e) { navIcon = null; }
+        navPkg = sbn.getPackageName();
+    }
+    @Override public void onListenerConnected() {   // a navigation already running when the screen starts
+        try { for (android.service.notification.StatusBarNotification sbn : getActiveNotifications()) nav(sbn); } catch (Exception ignored) { }
+    }
+
     @Override public void onNotificationPosted(android.service.notification.StatusBarNotification sbn) {
+        nav(sbn);
         if (!sbn.getPackageName().startsWith("com.vialsoft.radarbot")) return;
         android.os.Bundle x = sbn.getNotification().extras;
         CharSequence t = x.getCharSequence(android.app.Notification.EXTRA_TITLE), s = x.getCharSequence(android.app.Notification.EXTRA_TEXT);
@@ -34,6 +63,7 @@ public class NotiListener extends NotificationListenerService {
     }
     @Override public void onNotificationRemoved(android.service.notification.StatusBarNotification sbn) {
         if (sbn.getPackageName().startsWith("com.vialsoft.radarbot")) radarAt = 0;
+        if (sbn.getPackageName().equals(navPkg) && sbn.isOngoing()) { navPkg = ""; navDist = navStep = navEta = ""; navIcon = null; }
     }
 
 
