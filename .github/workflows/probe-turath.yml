@@ -1,0 +1,13 @@
+# One-off: does turath.io's search answer from GitHub's servers, and in what shape.
+name: probe-turath
+on:
+  push:
+    paths: [".github/workflows/probe-turath.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for u in "https://api.turath.io/search?q=%D8%A7%D8%A8%D9%86%20%D8%A2%D8%AF%D9%85%20%D8%A5%D9%86%D9%85%D8%A7%20%D8%A3%D9%86%D8%AA%20%D8%A3%D9%8A%D8%A7%D9%85&ver=3" "https://app.turath.io/api/search?q=test"; do
+            echo "== $u"; curl -sS -m 30 -A "Mozilla/5.0" -w "\nHTTP %{http_code}\n" "$u" | head -c 1500; echo
+          done
