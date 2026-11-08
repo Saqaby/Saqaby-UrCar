@@ -595,9 +595,14 @@ public class PanelService extends Service implements Panel.Actions {
     Listen libraryPlayer() { return library; }
     /** A surah from the library, now: the khatma (which keeps its place) and the radio stop. */
     void listen(String id, String name, String server, int s, String surah) {
+        quietForLibrary();
+        library.play(id, name, server, s, surah);
+    }
+    /** The library's «تابع»: the last surah from the second it stopped. */
+    void listenOn() { quietForLibrary(); library.resumeLast(); }
+    private void quietForLibrary() {
         if (khatma.on) { khatma.stop(); khatmaPausedByStop = false; }
         sound.stopRadio();
-        library.play(id, name, server, s, surah);
     }
 
     @Override public void khatma() {

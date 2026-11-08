@@ -148,8 +148,9 @@ final class Khatma {
         on = true;
         notifyChanged();
         final int s = surah();
-        File f = cacheFile(s);
-        if (f.length() > 0) play(f.getPath(), false, s);   // already on the screen
+        File f = cacheFile(s), kept = LibStore.file(c, reciterId(), s);
+        if (kept.length() > 0) play(kept.getPath(), false, s);   // the reciter's recitation downloaded in the library
+        else if (f.length() > 0) play(f.getPath(), false, s);   // already on the screen
         else play(url(s), true, s);                        // streamed; if the screen's player refuses it, downloaded
         prefetch(s >= 114 ? 1 : s + 1);
     }

@@ -95,7 +95,7 @@ final class Ui {
     /** The icons of the panel, drawn on a 24-unit grid like the preview's SVGs. */
     static final class Icon extends View {
         static final int PLAY = 1, PAUSE = 2, PREV = 3, NEXT = 4, YOUTUBE = 5, BT = 6, GEAR = 7, APPS = 8, RADIO = 9,
-                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18;
+                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21;
         int kind;
         final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Icon(Context c, int kind, int color) {
@@ -155,6 +155,12 @@ final class Ui {
                     fill(); c.drawRect(6.3f, 6, 11.7f, 10.5f, p);
                     stroke(); path.moveTo(14, 9); path.lineTo(17, 9); path.lineTo(19.5f, 11.5f); path.lineTo(19.5f, 17.5f);
                     path.arcTo(new RectF(16.5f, 16, 19.5f, 19), 0, 180); path.lineTo(16.5f, 13); path.lineTo(14, 13); c.drawPath(path, p); break;
+                case DOWNLOAD: stroke(); c.drawLine(12, 3.5f, 12, 15, p); path.moveTo(7, 10.5f); path.lineTo(12, 15.5f); path.lineTo(17, 10.5f);
+                    c.drawPath(path, p); c.drawLine(4.5f, 20, 19.5f, 20, p); break;
+                case TRASH: stroke(); c.drawLine(4, 6.5f, 20, 6.5f, p); c.drawRect(9.5f, 3.5f, 14.5f, 6.5f, p);
+                    path.moveTo(6, 6.5f); path.lineTo(7.2f, 20.5f); path.lineTo(16.8f, 20.5f); path.lineTo(18, 6.5f); c.drawPath(path, p);
+                    c.drawLine(10.2f, 10, 10.2f, 17, p); c.drawLine(13.8f, 10, 13.8f, 17, p); break;
+                case DONE: stroke(); path.moveTo(4.5f, 12.5f); path.lineTo(9.5f, 17.5f); path.lineTo(19.5f, 6.5f); c.drawPath(path, p); break;
                 default: break;
             }
             c.restore();
