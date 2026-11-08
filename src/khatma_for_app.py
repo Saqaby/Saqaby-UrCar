@@ -31,7 +31,7 @@ for rid, name in json.load(open("src/reciters_wanted.json", encoding="utf-8")):
 
 suwar = sorted(get("https://www.mp3quran.net/api/v3/suwar?language=ar")["suwar"], key=lambda s: s["id"])
 info = get("https://raw.githubusercontent.com/fawazahmed0/quran-api/1/info.json")["chapters"]
-ayahs = {c["chapter"]: c["verses"] for c in info}
+ayahs = {c["chapter"]: len(c["verses"]) if isinstance(c["verses"], list) else c["verses"] for c in info}
 surahs = [{"n": s["id"], "name": s["name"].strip(), "ayahs": ayahs[s["id"]]} for s in suwar]
 assert len(surahs) == 114 and sum(s["ayahs"] for s in surahs) == 6236
 
