@@ -24,5 +24,9 @@ jobs:
             gh release create app-stable -R "$GITHUB_REPOSITORY" --title "سيارتك: الإصدار المستقر" \
               --notes "ما جُرِّب على شاشة صاحب التطبيق واعتُمد. الشاشات على القناة المستقرة تتحدث منه." --target "$GITHUB_SHA"
           gh release upload app-stable -R "$GITHUB_REPOSITORY" urcar.apk version.json --clobber
+          mkdir -p apk/stable && cp urcar.apk version.json apk/stable/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apk/stable && git commit -q -m "apk/stable/: the promoted version (the updater's second copy)" && git push -q || echo "no change"
         env:
           GH_TOKEN: ${{ github.token }}

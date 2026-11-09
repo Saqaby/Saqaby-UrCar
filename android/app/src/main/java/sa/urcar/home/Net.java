@@ -55,6 +55,7 @@ final class Net {
             byte[] buf = new byte[16384];
             for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
         } finally { h.disconnect(); }
+        to.delete();
         if (!part.renameTo(to)) throw new Exception("rename");
     }
 

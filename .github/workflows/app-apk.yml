@@ -50,3 +50,17 @@ jobs:
             urcar.apk
             version.json
           prerelease: true
+      # a second copy for the updater, served by raw.githubusercontent.com (the release downloads redirect to
+      # another host and have failed on the owner's screen, 404/504)
+      - if: env.SIGNED == '1'
+        run: |
+          cp urcar.apk version.json /tmp/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3; do
+            git fetch -q origin "$GITHUB_REF_NAME" && git reset -q --hard "origin/$GITHUB_REF_NAME"
+            cp /tmp/urcar.apk /tmp/version.json apk/
+            git add apk/urcar.apk apk/version.json
+            git commit -q -m "apk/: version ${{ github.run_number }} (the updater's second copy)" || break
+            git push -q && break
+          done

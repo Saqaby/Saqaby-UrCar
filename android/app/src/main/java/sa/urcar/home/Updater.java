@@ -30,20 +30,56 @@ final class Updater {
      */
     static String base(Context c) { return REPO + (Prefs.of(c).getString("channel", "stable").equals("test") ? "app-latest/" : "app-stable/"); }
 
+    /** The same files kept in the repository, served by raw.githubusercontent.com without a redirect to another host. */
+    static final String RAW = "https://raw.githubusercontent.com/Saqaby/Saqaby-UrCar/claude/urcar-arabic-head-unit-2e7knc/apk/";
+    static String mirror(Context c) { return RAW + (Prefs.of(c).getString("channel", "stable").equals("test") ? "" : "stable/"); }
+
+    /**
+     * The release first, then its copy in the repository; each tried twice. The owner's screen got 404s and 504s from
+     * the release downloads (which redirect to another host) and stopped updating at version 50.
+     */
     static void check(Context c, boolean manual) {
+        String[] bases = {base(c), mirror(c)};
+        Exception last = null;
         try {
             int ours = c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionCode;
-            int theirs = new JSONObject(Net.get(base(c) + "version.json")).getInt("versionCode");
+            int theirs = -1;
+            for (String b : bases) {
+                for (int i = 0; i < 2 && theirs < 0; i++) {
+                    try { theirs = new JSONObject(Net.get(b + "version.json")).getInt("versionCode"); }
+                    catch (Exception e) { last = e; sleep(2000); }
+                }
+                if (theirs >= 0) break;
+            }
+            if (theirs < 0) throw last;
             if (theirs <= ours) { if (manual) toast(c, "سيارتك محدّثة (الإصدار " + Ui.ar(ours) + ")"); return; }
             if (manual) toast(c, "يُنزَّل الإصدار " + Ui.ar(theirs) + "…");
             File apk = new File(c.getCacheDir(), "urcar.apk");
-            Net.download(base(c) + "urcar.apk", apk);
+            boolean got = false;
+            for (String b : bases) {
+                for (int i = 0; i < 2 && !got; i++) {
+                    try {
+                        apk.delete();
+                        Net.download(b + "urcar.apk", apk);
+                        got = isApk(apk);
+                        if (!got) last = new Exception("الملف المنزَّل ليس تطبيقًا");
+                    } catch (Exception e) { last = e; sleep(3000); }
+                }
+                if (got) break;
+            }
+            if (!got) throw last;
             install(c, apk);
         } catch (Exception e) {
             if (manual) toast(c, e instanceof java.net.UnknownHostException ? "لا إنترنت في الشاشة الآن: وصّلها بشبكة الجوال ثم أعد المحاولة"
-                    : "لم أصل إلى التحديث: " + e.getClass().getSimpleName());
+                    : "لم أصل إلى التحديث: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " (" + e.getMessage() + ")"));
         }
     }
+    /** An APK is a zip of some size: «PK» first, more than half a megabyte. */
+    private static boolean isApk(File f) {
+        if (f.length() < 500_000) return false;
+        try (FileInputStream in = new FileInputStream(f)) { return in.read() == 'P' && in.read() == 'K'; } catch (Exception e) { return false; }
+    }
+    private static void sleep(long ms) { try { Thread.sleep(ms); } catch (InterruptedException ignored) { } }
 
     private static void install(Context c, File apk) throws Exception {
         PackageInstaller pi = c.getPackageManager().getPackageInstaller();
