@@ -15,6 +15,15 @@ import android.widget.TextView;
 final class Ui {
     private Ui() {}
 
+    /** The weather's icon for a WMO code, the moon for a clear night. */
+    static int wxIcon(int code, boolean night) {
+        if (code <= 2) return night ? Icon.MOON : Icon.SUN;
+        if (code == 45 || code == 48) return Icon.FOG;
+        if (code >= 95) return Icon.STORM;
+        if (code >= 51) return Icon.RAIN;
+        return Icon.CLOUD;
+    }
+
     static final class Theme {
         final int bg, panel, panel2, line, fg, muted, sand, sandInk, go;
         Theme(boolean day) {
@@ -95,7 +104,7 @@ final class Ui {
     /** The icons of the panel, drawn on a 24-unit grid like the preview's SVGs. */
     static final class Icon extends View {
         static final int PLAY = 1, PAUSE = 2, PREV = 3, NEXT = 4, YOUTUBE = 5, BT = 6, GEAR = 7, APPS = 8, RADIO = 9,
-                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21;
+                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21, RAIN = 22, STORM = 23, FOG = 24;
         int kind;
         final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Icon(Context c, int kind, int color) {
@@ -161,6 +170,11 @@ final class Ui {
                     path.moveTo(6, 6.5f); path.lineTo(7.2f, 20.5f); path.lineTo(16.8f, 20.5f); path.lineTo(18, 6.5f); c.drawPath(path, p);
                     c.drawLine(10.2f, 10, 10.2f, 17, p); c.drawLine(13.8f, 10, 13.8f, 17, p); break;
                 case DONE: stroke(); path.moveTo(4.5f, 12.5f); path.lineTo(9.5f, 17.5f); path.lineTo(19.5f, 6.5f); c.drawPath(path, p); break;
+                case RAIN: stroke(); c.drawRoundRect(new RectF(3, 5, 21, 14.5f), 4.75f, 4.75f, p);
+                    c.drawLine(8, 17, 7, 21, p); c.drawLine(12.5f, 17, 11.5f, 21, p); c.drawLine(17, 17, 16, 21, p); break;
+                case STORM: stroke(); c.drawRoundRect(new RectF(3, 4, 21, 13.5f), 4.75f, 4.75f, p);
+                    path.moveTo(13, 14); path.lineTo(10, 18); path.lineTo(14, 18); path.lineTo(11, 22.5f); c.drawPath(path, p); break;
+                case FOG: stroke(); c.drawLine(4, 8, 20, 8, p); c.drawLine(3, 12, 21, 12, p); c.drawLine(5, 16, 19, 16, p); break;
                 default: break;
             }
             c.restore();

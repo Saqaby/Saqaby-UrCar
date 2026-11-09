@@ -25,9 +25,9 @@ final class Panel extends LinearLayout {
 
     private LinearLayout ramRow;
     private TextView ramL, ramN, ramU;
-    private TextView clock, ap, temp, hijri, greg, place, bar, tabP, tabM, nm, tm, cd, ram, mApp, mTitle, mArtist, mEmpty, rT, rF;
-    private Ui.Icon wxIcon, pinIcon, rIcon, playIcon, prevIcon, nextIcon;
-    private LinearLayout card, prayerPage, musicPage, musicOn, radioBtn, kBtn, keysRow, tabs;
+    private TextView clock, ap, temp, hijri, greg, place, bar, tabP, tabM, tabW, wTemp, wSky, wLine1, wLine2, nm, tm, cd, ram, mApp, mTitle, mArtist, mEmpty, rT, rF;
+    private Ui.Icon wIcon, wxIcon, pinIcon, rIcon, playIcon, prevIcon, nextIcon;
+    private LinearLayout card, prayerPage, musicPage, weatherPage, wHours, musicOn, radioBtn, kBtn, keysRow, tabs;
     private TextView kT, kF;
     private Ui.Icon kIcon;
     private boolean kOn, libOn;
@@ -62,6 +62,8 @@ final class Panel extends LinearLayout {
         temp = Ui.text(c, px(4), med, 0);
         wxIcon = new Ui.Icon(c, Ui.Icon.SUN, 0);
         r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(wxIcon, new LayoutParams(px(4.4f), px(4.4f))); r1.addView(temp);
+        temp.setOnClickListener(v -> showPage("w"));
+        wxIcon.setOnClickListener(v -> showPage("w"));
         addView(r1);
         hijri = Ui.text(c, px(3.3f), med, 0);
         addView(hijri, lp(px(0.6f)));
@@ -85,9 +87,12 @@ final class Panel extends LinearLayout {
         tabs = row();
         tabP = Ui.text(c, px(2.9f), reg, 0); tabP.setPadding(px(1.8f), px(1), px(1.8f), px(1));
         tabM = Ui.text(c, px(2.9f), reg, 0); tabM.setPadding(px(1.8f), px(1), px(1.8f), px(1));
+        tabW = Ui.text(c, px(2.9f), reg, 0); tabW.setPadding(px(1.8f), px(1), px(1.8f), px(1));
+        tabW.setText("الطقس");
         tabP.setOnClickListener(v -> showPage("p"));
         tabM.setOnClickListener(v -> showPage("m"));
-        tabs.addView(tabP); tabs.addView(tabM);
+        tabW.setOnClickListener(v -> showPage("w"));
+        tabs.addView(tabP); tabs.addView(tabM); tabs.addView(tabW);
         card.addView(tabs);
         FrameLayout pages = new FrameLayout(c);
 
@@ -138,6 +143,36 @@ final class Panel extends LinearLayout {
         mEmpty.setOnClickListener(v -> act.openMusic());
         musicPage.addView(mEmpty, lp(px(1.4f)));
         pages.addView(musicPage);
+
+        // ---- the weather page: now, today, the next five hours (Open-Meteo)
+        weatherPage = new LinearLayout(c);
+        weatherPage.setOrientation(VERTICAL);
+        LinearLayout wr = row();
+        wIcon = new Ui.Icon(c, Ui.Icon.SUN, 0);
+        wr.addView(wIcon, new LayoutParams(px(7), px(7)));
+        wTemp = Ui.text(c, px(7), disp, 0);
+        wTemp.setPadding(px(1.4f), 0, px(1.4f), 0);
+        wr.addView(wTemp);
+        wSky = Ui.text(c, px(3.4f), med, 0);
+        wr.addView(wSky);
+        weatherPage.addView(wr, lp(px(0.6f)));
+        wLine1 = Ui.text(c, px(2.6f), reg, 0);
+        wLine2 = Ui.text(c, px(2.6f), reg, 0);
+        weatherPage.addView(wLine1, lp(px(0.8f)));
+        weatherPage.addView(wLine2, lp(px(0.4f)));
+        wHours = row();
+        for (int i = 0; i < 5; i++) {
+            LinearLayout hcell = new LinearLayout(c);
+            hcell.setOrientation(VERTICAL);
+            hcell.setGravity(Gravity.CENTER);
+            TextView hh = Ui.text(c, px(2.3f), reg, 0);
+            Ui.Icon hi = new Ui.Icon(c, Ui.Icon.SUN, 0);
+            TextView ht = Ui.text(c, px(2.6f), med, 0);
+            hcell.addView(hh); hcell.addView(hi, new LayoutParams(px(3.6f), px(3.6f))); hcell.addView(ht);
+            wHours.addView(hcell, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        }
+        weatherPage.addView(wHours, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT) {{ topMargin = px(1.4f); }});
+        pages.addView(weatherPage);
         card.addView(pages);
         card.setOnTouchListener(new SwipeTouch());
         addView(card, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1) {{ topMargin = px(1.6f); }});
@@ -221,6 +256,7 @@ final class Panel extends LinearLayout {
         Prefs.put(getContext(), "page", p);
         prayerPage.setVisibility(p.equals("p") ? VISIBLE : INVISIBLE);
         musicPage.setVisibility(p.equals("m") ? VISIBLE : INVISIBLE);
+        weatherPage.setVisibility(p.equals("w") ? VISIBLE : INVISIBLE);
         paintTabs();
     }
 
@@ -231,7 +267,7 @@ final class Panel extends LinearLayout {
             if (e.getAction() == MotionEvent.ACTION_DOWN) { x0 = e.getX(); y0 = e.getY(); return true; }
             if (e.getAction() == MotionEvent.ACTION_UP) {
                 float dx = e.getX() - x0, dy = e.getY() - y0;
-                if (Math.abs(dx) > px(6) && Math.abs(dx) > Math.abs(dy)) showPage(page.equals("p") ? "m" : "p");
+                if (Math.abs(dx) > px(6) && Math.abs(dx) > Math.abs(dy)) showPage(page.equals("p") ? "m" : page.equals("m") ? "w" : "p");
                 return true;
             }
             return true;
@@ -244,6 +280,11 @@ final class Panel extends LinearLayout {
         th = new Ui.Theme(d);
         setBackgroundColor(th.bg);
         clock.setTextColor(th.fg); ap.setTextColor(th.muted); temp.setTextColor(th.fg); wxIcon.set(wxIcon.kind, th.sand);
+        wTemp.setTextColor(th.fg); wSky.setTextColor(th.sand); wLine1.setTextColor(th.muted); wLine2.setTextColor(th.muted);
+        for (int i = 0; i < wHours.getChildCount(); i++) {
+            LinearLayout cell = (LinearLayout) wHours.getChildAt(i);
+            ((TextView) cell.getChildAt(0)).setTextColor(th.muted); ((TextView) cell.getChildAt(2)).setTextColor(th.fg);
+        }
         hijri.setTextColor(th.sand); greg.setTextColor(th.muted); place.setTextColor(th.muted); pinIcon.set(Ui.Icon.PIN, th.muted);
         bar.setBackground(Ui.box(th.sand, 0, px(1.6f))); bar.setTextColor(th.sandInk);
         card.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
@@ -268,6 +309,8 @@ final class Panel extends LinearLayout {
         tabM.setBackground(page.equals("m") ? Ui.box(th.panel2, 0, px(3)) : null);
         tabP.setTextColor(page.equals("p") ? th.fg : th.muted);
         tabM.setTextColor(page.equals("m") ? th.fg : th.muted);
+        tabW.setBackground(page.equals("w") ? Ui.box(th.panel2, 0, px(3)) : null);
+        tabW.setTextColor(page.equals("w") ? th.fg : th.muted);
     }
 
     private boolean radioOn;
@@ -297,6 +340,27 @@ final class Panel extends LinearLayout {
         set(clock, clockText); set(ap, apText); set(hijri, hijriText); set(greg, gregText);
     }
     void showPlace(String name) { set(place, name); pinIcon.setVisibility(name.isEmpty() ? GONE : VISIBLE); }
+    /** The weather page; w null: «يُحدَّث الطقس…». */
+    void showForecast(Net.Wx w, boolean night) {
+        if (weatherPage == null) return;
+        if (w == null) { set(wTemp, ""); set(wSky, "يُحدَّث الطقس عند الاتصال بالإنترنت"); set(wLine1, ""); set(wLine2, ""); wHours.setVisibility(GONE); return; }
+        wIcon.set(Ui.wxIcon(w.code, night), th.sand);
+        set(wTemp, Ui.ar(Math.round(w.temp)) + "°");
+        set(wSky, Net.sky(w.code));
+        set(wLine1, "الإحساس " + Ui.ar(Math.round(w.feels)) + "°" + (w.hum >= 0 ? "  ·  الرطوبة " + Ui.ar(w.hum) + "٪" : "")
+                + (w.wind >= 0 ? "  ·  الرياح " + Ui.ar(Math.round(w.wind)) + " كم/س" : ""));
+        set(wLine2, "العظمى " + Ui.ar(Math.round(w.max)) + "°  ·  الصغرى " + Ui.ar(Math.round(w.min)) + "°"
+                + (w.rain >= 0 ? "  ·  المطر " + Ui.ar(w.rain) + "٪" : ""));
+        wHours.setVisibility(VISIBLE);
+        for (int i = 0; i < 5; i++) {
+            LinearLayout cell = (LinearLayout) wHours.getChildAt(i);
+            int h = w.hour[i], h12 = h % 12 == 0 ? 12 : h % 12;
+            set((TextView) cell.getChildAt(0), Ui.ar(h12) + (h < 12 ? " ص" : " م"));
+            ((Ui.Icon) cell.getChildAt(1)).set(Ui.wxIcon(w.hcode[i], h < 6 || h >= 18), th.sand);
+            set((TextView) cell.getChildAt(2), Ui.ar(Math.round(w.htemp[i])) + "°");
+        }
+    }
+
     void showWeather(String t, int icon, boolean stale) {
         set(temp, t);
         wxIcon.set(icon, th.sand);
