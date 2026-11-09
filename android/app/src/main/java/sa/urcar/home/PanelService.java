@@ -65,7 +65,6 @@ public class PanelService extends Service implements Panel.Actions {
     private int restFor;
     private boolean khatmaPausedByStop, khatmaMoved;
     private double[] wx;   // {°C, code}
-    private Net.Wx forecast;   // the weather page
     private long wxAt, fmAt, updAt;
     private double wxLat, wxLon;
     private String lastFg = "", playedFor = "";
@@ -165,7 +164,6 @@ public class PanelService extends Service implements Panel.Actions {
             int icon = Ui.wxIcon((int) wx[1], day.night(now));
             panel.showWeather(Ui.ar(Math.round(wx[0])) + "°", icon, now - wxAt > 3 * 3600_000L);
         } else panel.showWeather("", Ui.Icon.SUN, false);
-        panel.showForecast(forecast, day.night(now));
         panel.showBar(day.bar(now));
         int cur = day.current(now);
         if (cur >= 0) {
@@ -313,9 +311,8 @@ public class PanelService extends Service implements Panel.Actions {
             wxAt = now; wxLat = day.lat; wxLon = day.lon;
             final double la = day.lat, lo = day.lon;
             new Thread(() -> {
-                Net.Wx f = Net.forecast(la, lo);
-                double[] r = f != null ? new double[]{f.temp, f.code} : Net.weather(la, lo);
-                if (r != null) h.post(() -> { wx = r; wxAt = System.currentTimeMillis(); if (f != null) forecast = f; });
+                double[] r = Net.weather(la, lo);
+                if (r != null) h.post(() -> { wx = r; wxAt = System.currentTimeMillis(); });
                 double d = Net.dust(la, lo);
                 if (d >= 0) h.post(() -> { dust = d; dustAt = System.currentTimeMillis(); });
             }).start();

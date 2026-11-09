@@ -69,52 +69,6 @@ final class Net {
         } catch (Exception e) { return null; }
     }
 
-    /** The weather page's data (Open-Meteo, CC BY 4.0): now, today, and the next five hours. */
-    static final class Wx {
-        double temp, feels, wind, max, min;
-        int code, hum, rain;
-        int[] hour = new int[5], hcode = new int[5];
-        double[] htemp = new double[5];
-    }
-    static Wx forecast(double lat, double lon) {
-        try {
-            JSONObject j = new JSONObject(get(String.format(java.util.Locale.US,
-                    "https://api.open-meteo.com/v1/forecast?latitude=%.3f&longitude=%.3f&timezone=auto&forecast_days=2"
-                            + "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code"
-                            + "&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max", lat, lon)));
-            JSONObject c = j.getJSONObject("current"), d = j.getJSONObject("daily"), h = j.getJSONObject("hourly");
-            Wx w = new Wx();
-            w.temp = c.getDouble("temperature_2m"); w.feels = c.optDouble("apparent_temperature", w.temp);
-            w.hum = c.optInt("relative_humidity_2m", -1); w.wind = c.optDouble("wind_speed_10m", -1); w.code = c.optInt("weather_code", 0);
-            w.max = d.getJSONArray("temperature_2m_max").getDouble(0); w.min = d.getJSONArray("temperature_2m_min").getDouble(0);
-            w.rain = d.getJSONArray("precipitation_probability_max").optInt(0, -1);
-            // the hours after the current one, from the place's own clock («2026-11-09T14:00»)
-            String now = c.getString("time").substring(0, 13);
-            org.json.JSONArray times = h.getJSONArray("time"), ht = h.getJSONArray("temperature_2m"), hc = h.getJSONArray("weather_code");
-            int k = 0;
-            for (int i = 0; i < times.length() && k < 5; i++) {
-                String t = times.getString(i);
-                if (t.substring(0, 13).compareTo(now) <= 0) continue;
-                w.hour[k] = Integer.parseInt(t.substring(11, 13)); w.htemp[k] = ht.getDouble(i); w.hcode[k] = hc.getInt(i); k++;
-            }
-            return w;
-        } catch (Exception e) { return null; }
-    }
-    /** The WMO weather code in Arabic. */
-    static String sky(int code) {
-        if (code == 0) return "صحو";
-        if (code == 1) return "صحو غالبًا";
-        if (code == 2) return "غائم جزئيًا";
-        if (code == 3) return "غائم";
-        if (code == 45 || code == 48) return "ضباب";
-        if (code >= 51 && code <= 57) return "رذاذ";
-        if (code >= 61 && code <= 67) return "مطر";
-        if (code >= 71 && code <= 77) return "ثلج";
-        if (code >= 80 && code <= 82) return "زخات مطر";
-        if (code >= 95) return "عاصفة رعدية";
-        return "";
-    }
-
     /** The larger of PM10 and dust (µg/m³) now at that place, Open-Meteo's air quality; -1 when unknown. */
     static double dust(double lat, double lon) {
         try {

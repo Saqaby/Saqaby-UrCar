@@ -15,7 +15,7 @@ import android.widget.TextView;
 final class Ui {
     private Ui() {}
 
-    /** The weather's icon for a WMO code, the moon for a clear night. */
+    /** The weather's icon for a WMO code (Open-Meteo), the moon for a clear night. */
     static int wxIcon(int code, boolean night) {
         if (code <= 2) return night ? Icon.MOON : Icon.SUN;
         if (code == 45 || code == 48) return Icon.FOG;
