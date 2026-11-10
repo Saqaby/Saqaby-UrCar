@@ -258,6 +258,12 @@
 "name": "خليفة الطنيجي",
 "server": "https://cdn.mp3quran.net/audio/khalifa-tunaiji/r1/",
 "mp3quran": 24
+},
+{
+"id": "idrees-abkr",
+"name": "إدريس أبكر",
+"server": "https://cdn.mp3quran.net/audio/idrees-abkar/r1/",
+"mp3quran": 12
 }
 ],
 "surahs": [
