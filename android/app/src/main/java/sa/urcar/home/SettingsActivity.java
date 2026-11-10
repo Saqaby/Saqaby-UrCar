@@ -69,6 +69,11 @@ public class SettingsActivity extends Activity {
         if (!hud.isEmpty()) navRow.addView(chip("هدهد", hud.equals(nav), () -> { Prefs.put(this, "nav", hud); changed(); }));
         list.addView(navRow);
 
+        String seen;
+        synchronized (NotiListener.navSeen) { seen = String.join("\n", NotiListener.navSeen); }
+        list.addView(note("تنبيهات الطريق من تطبيق الملاحة (كاميرا، سرعة، مطب…) تظهر في السطر البرتقالي إن كتبها في إشعاراته. آخر ما أرسله:\n"
+                + (seen.isEmpty() ? "لا شيء بعد: شغّل الملاحة إلى وجهة ثم ارجع هنا." : seen)));
+
         head("جهة السائق");
         LinearLayout side = grid();
         String s = Prefs.side(this);

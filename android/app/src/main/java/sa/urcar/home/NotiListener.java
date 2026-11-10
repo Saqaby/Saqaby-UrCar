@@ -34,7 +34,33 @@ public class NotiListener extends NotificationListenerService {
     static final String[] NAV_APPS = {"com.google.android.apps.maps", "com.waze", "com.here.app.maps", "net.osmand", "net.osmand.plus", "com.sygic.aura"};
     static boolean navigating() { return !navPkg.isEmpty() && !(navDist.isEmpty() && navStep.isEmpty()); }
 
+    /**
+     * Road alerts from the chosen navigation app (Hudhud and others): any of its notifications whose words speak of a
+     * camera, a speed limit, a bump, an accident or roadworks goes to the orange line for 20 seconds, as Radarbot's.
+     * Not yet seen what Hudhud writes there: its last notifications are kept (package, title and text, nothing else)
+     * for the settings to show, so the words can be set to what it really says.
+     */
+    private static final java.util.regex.Pattern ROAD = java.util.regex.Pattern.compile(
+            "(?i)كامير|ساهر|رادار|سرعة|السرعه|مطب|حادث|حادِث|أعمال|اعمال|تحويلة|ازدحام|camera|speed|radar|bump|accident|roadwork|hazard|police");
+    static final java.util.ArrayDeque<String> navSeen = new java.util.ArrayDeque<>();
+    private void roadAlert(android.service.notification.StatusBarNotification sbn) {
+        String pkg = sbn.getPackageName(), nav = Prefs.of(this).getString("nav", "");
+        if (nav.isEmpty() || !pkg.equals(nav) || pkg.startsWith("com.vialsoft.radarbot")) return;
+        android.os.Bundle x = sbn.getNotification().extras;
+        CharSequence t = x.getCharSequence(android.app.Notification.EXTRA_TITLE), s = x.getCharSequence(android.app.Notification.EXTRA_TEXT),
+                big = x.getCharSequence(android.app.Notification.EXTRA_BIG_TEXT);
+        String v = ((t == null ? "" : t) + (s == null || s.length() == 0 ? "" : "، " + s)).trim();
+        if (big != null && big.length() > 0 && !v.contains(big)) v = (v + "، " + big).trim();
+        if (v.isEmpty()) return;
+        synchronized (navSeen) {
+            String line = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(new java.util.Date()) + "  " + v;
+            if (navSeen.isEmpty() || !navSeen.peekLast().endsWith(v)) { navSeen.addLast(line); while (navSeen.size() > 12) navSeen.removeFirst(); }
+        }
+        if (ROAD.matcher(v).find()) { radar = v; radarAt = System.currentTimeMillis(); }
+    }
+
     private void nav(android.service.notification.StatusBarNotification sbn) {
+        roadAlert(sbn);
         android.app.Notification n = sbn.getNotification();
         boolean navCat = android.app.Notification.CATEGORY_NAVIGATION.equals(n.category);
         // any app's ongoing navigation notification (Hudhud and others); the known apps and the chosen one without the category
