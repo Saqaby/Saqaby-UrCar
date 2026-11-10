@@ -41,7 +41,9 @@ final class LibStore {
     static String gb(long b) { return Ui.ar(String.format(java.util.Locale.US, b >= 1e9 ? "%.1f" : "%.2f", b / 1e9)) + " غ.ب"; }
 
     /** Start, or stop when already running. */
-    static void downloadAll(Context c, String id, String name, String server) {
+    static void downloadAll(Context c, String id, String name, String server) { downloadAll(c, id, name, server, null); }
+    /** have: the reciter's surahs as Khatma's reciter entry lists them, null for all 114. */
+    static void downloadAll(Context c, String id, String name, String server, org.json.JSONObject have) {
         if (running.containsKey(id)) { cancel.add(id); return; }
         final Context app = c.getApplicationContext();
         final Handler h = new Handler(Looper.getMainLooper());
@@ -51,6 +53,7 @@ final class LibStore {
             int failed = 0;
             dir(app, id).mkdirs();
             for (int s = 1; s <= 114 && !cancel.contains(id); s++) {
+                if (have != null && !Khatma.has(have, s)) continue;
                 running.put(id, s);
                 File f = file(app, id, s);
                 if (f.length() > 0) continue;

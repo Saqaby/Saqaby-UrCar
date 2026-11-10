@@ -21,4 +21,8 @@ jobs:
           git fetch -q origin "$GITHUB_REF_NAME" && git reset -q --hard "origin/$GITHUB_REF_NAME"
           cp /tmp/khatma.json android/app/src/main/assets/
           git add android/app/src/main/assets/khatma.json
-          git commit -m "assets/khatma.json from mp3quran.net and quran-api (src/khatma_for_app.py)" && git push || echo "no change"
+          if git commit -m "assets/khatma.json from mp3quran.net and quran-api (src/khatma_for_app.py)"; then
+            git push && gh workflow run app-apk.yml --ref "$GITHUB_REF_NAME"   # a push by this token starts no workflow
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -119,12 +119,12 @@ public class LibraryActivity extends Activity {
             TextView prog = Ui.text(this, 17, Ui.medium(this), th.sand);
             prog.setVisibility(View.GONE);
             dl.addView(prog);
-            dl.setOnClickListener(v -> download(id, name, server));
+            dl.setOnClickListener(v -> download(r, id, name, server));
             row.addView(dl, cellLp());
             LinearLayout del = iconCell(Ui.Icon.TRASH);
             del.setOnClickListener(v -> delete(id, name));
             row.addView(del, cellLp());
-            rows.add(new Object[]{id, prog, del, dl.getChildAt(0)});
+            rows.add(new Object[]{id, prog, del, dl.getChildAt(0), Khatma.total(r)});
             LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(-1, -2);
             l.bottomMargin = 10;
             reciters.addView(row, l);
@@ -152,6 +152,7 @@ public class LibraryActivity extends Activity {
         JSONObject r = null;
         for (int i = 0; i < rec.length(); i++) if (rec.optJSONObject(i).optString("id").equals(chosen())) r = rec.optJSONObject(i);
         if (r == null) return;
+        if (!Khatma.has(r, s)) { android.widget.Toast.makeText(this, "سورة " + name + " ليست بصوت " + r.optString("name") + " في mp3quran.net", android.widget.Toast.LENGTH_SHORT).show(); return; }
         ps.listen(r.optString("id"), r.optString("name"), r.optString("server"), s, name);
         refresh();
     }
@@ -159,11 +160,14 @@ public class LibraryActivity extends Activity {
     /** A gold frame around each surah of the chosen reciter that is on the screen (it plays without the internet). */
     private void frames() {
         String id = chosen();
+        JSONObject chosenR = null;
+        for (int i = 0; i < rec.length(); i++) if (rec.optJSONObject(i).optString("id").equals(id)) chosenR = rec.optJSONObject(i);
         boolean all = !id.equals(keptFor);
         keptFor = id;
         for (int i = 0; i < surahViews.length; i++) {
             TextView t = surahViews[i];
             if (t == null) continue;
+            t.setAlpha(chosenR == null || Khatma.has(chosenR, i + 1) ? 1f : .3f);   // not by this reciter
             boolean k = LibStore.file(this, id, i + 1).length() > 0;
             if (!all && k == kept[i]) continue;
             kept[i] = k;
@@ -188,14 +192,14 @@ public class LibraryActivity extends Activity {
     }
 
     /** All 114 surahs of a reciter onto the screen, after saying how much room it needs; pressed again, it stops. */
-    private void download(String id, String name, String server) {
-        if (LibStore.running.containsKey(id)) { LibStore.downloadAll(this, id, name, server); refresh(); return; }
-        if (LibStore.count(this, id) >= 114) { android.widget.Toast.makeText(this, "تلاوات " + name + " كاملة على الشاشة", android.widget.Toast.LENGTH_SHORT).show(); return; }
+    private void download(JSONObject r, String id, String name, String server) {
+        if (LibStore.running.containsKey(id)) { LibStore.downloadAll(this, id, name, server, r); refresh(); return; }
+        if (LibStore.count(this, id) >= Khatma.total(r)) { android.widget.Toast.makeText(this, "تلاوات " + name + " كاملة على الشاشة", android.widget.Toast.LENGTH_SHORT).show(); return; }
         new android.app.AlertDialog.Builder(this)
                 .setTitle("تنزيل تلاوات " + name)
                 .setMessage("تُنزَّل السور الـ١١٤ لتعمل بلا إنترنت، في المكتبة والختمة. تأخذ عادة بين نصف غيغابايت وغيغابايتين بحسب القارئ، "
                         + "ومن باقة الجوال إن كانت الشاشة متصلة به. المتاح على الشاشة: " + LibStore.gb(LibStore.free(this)) + ".")
-                .setPositiveButton("نزّل", (d, w) -> { LibStore.downloadAll(this, id, name, server); refresh(); })
+                .setPositiveButton("نزّل", (d, w) -> { LibStore.downloadAll(this, id, name, server, r); refresh(); })
                 .setNegativeButton("لا", null).show();
     }
     private void delete(String id, String name) {
@@ -224,9 +228,10 @@ public class LibraryActivity extends Activity {
             TextView prog = (TextView) r[1];
             Ui.Icon icon = (Ui.Icon) r[3];
             prog.setVisibility(at != null ? View.VISIBLE : View.GONE);
-            if (at != null) prog.setText(Ui.ar(have) + "/١١٤");
+            int total = (Integer) r[4];
+            if (at != null) prog.setText(Ui.ar(have) + "/" + Ui.ar(total));
             icon.setVisibility(at != null ? View.GONE : View.VISIBLE);
-            if (at == null) icon.set(have >= 114 ? Ui.Icon.DONE : Ui.Icon.DOWNLOAD, th.sand);
+            if (at == null) icon.set(have >= total ? Ui.Icon.DONE : Ui.Icon.DOWNLOAD, th.sand);
             ((View) r[2]).setVisibility(have > 0 || at != null ? View.VISIBLE : View.INVISIBLE);
         }
     }

@@ -179,7 +179,7 @@ public class SettingsActivity extends Activity {
         list.addView(note("وصلت إلى " + Ui.ar(k.percent()) + "٪، سورة " + k.surahName() + (k.done() > 0 ? "، وأتممت " + Ui.ar(k.done()) + " ختمة" : "") + ". القارئ: " + k.reciterName() + "."));
         LinearLayout kr = grid();
         kr.addView(chip("تغيير القارئ", false, () -> {
-            org.json.JSONArray rs = k.reciters();
+            org.json.JSONArray rs = k.complete();   // a khatma needs all 114 surahs
             String[] names = new String[rs.length()];
             for (int i = 0; i < rs.length(); i++) names[i] = rs.optJSONObject(i).optString("name");
             new android.app.AlertDialog.Builder(this).setTitle("القارئ").setItems(names, (d, i) -> { k.setReciter(rs.optJSONObject(i).optString("id")); build(); }).show();

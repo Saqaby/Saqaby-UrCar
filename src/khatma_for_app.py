@@ -1,8 +1,8 @@
 """android/app/src/main/assets/khatma.json, from the sources themselves (run by .github/workflows/khatma.yml):
 
 - the reciters: the names chosen for UrCar (src/reciters_wanted.json: [our short id, the name]) looked up in
-  mp3quran.net's own API (/api/v3/reciters), each with its Hafs-from-Asim murattal recitation of all 114 surahs
-  (server + 001.mp3 … 114.mp3);
+  mp3quran.net's own API (/api/v3/reciters), each with its Hafs-from-Asim recitation, all 114 murattal if there is
+  one, else all 114 in another style, else the fullest, then with «surahs» listing what it has (server + 001.mp3 …);
 - the surahs: their Arabic names from mp3quran.net's /api/v3/suwar, their ayah counts from fawazahmed0/quran-api's
   info.json (Unlicense; Tanzil's counts, sum 6236).
 A wanted name not found, or found without a complete Hafs murattal recitation, is left out and said.
@@ -20,14 +20,15 @@ for r in api: by.setdefault(norm(r["name"]), []).append(r)
 
 out, missing = [], []
 for rid, name in json.load(open("src/reciters_wanted.json", encoding="utf-8")):
-    best = None
-    for r in by.get(norm(name), []):
-        for m in r["moshaf"]:
-            if m.get("surah_total") == 114 and "حفص" in m["name"] and "مرتل" in m["name"]:
-                best = best or (r, m)
-    if not best: missing.append(name); continue
-    r, m = best
-    out.append({"id": rid, "name": name, "server": m["server"], "mp3quran": r["id"]})
+    # Hafs from Asim: all 114 murattal first, then all 114 in another style («تلاوة مميزة»), then the fullest
+    cands = [(r, m) for r in by.get(norm(name), []) for m in r["moshaf"] if "حفص" in m["name"]]
+    if not cands: missing.append(name); continue
+    r, m = max(cands, key=lambda c: (c[1].get("surah_total") == 114, "مرتل" in c[1]["name"], c[1].get("surah_total", 0)))
+    e = {"id": rid, "name": name, "server": m["server"], "mp3quran": r["id"]}
+    if m.get("surah_total") != 114:   # only these surahs: in the library, not for the khatma
+        e["surahs"] = sorted(int(x) for x in str(m.get("surah_list", "")).split(",") if x.strip())
+    if m.get("surah_total") != 114 or "مرتل" not in m["name"]: print("note:", name, "|", m["name"], "|", m.get("surah_total"))
+    out.append(e)
 
 suwar = sorted(get("https://www.mp3quran.net/api/v3/suwar?language=ar")["suwar"], key=lambda s: s["id"])
 info = get("https://raw.githubusercontent.com/fawazahmed0/quran-api/1/info.json")["chapters"]

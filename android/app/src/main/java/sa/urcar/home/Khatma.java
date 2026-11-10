@@ -102,6 +102,20 @@ final class Khatma {
     int surah() { return Math.max(1, Math.min(114, p().getInt("k_surah", 1))); }
     int done() { return p().getInt("k_done", 0); }
     JSONArray reciters() { return reciters; }
+    /** Has this reciter this surah? (a reciter with «surahs» has only those: the library only, not the khatma) */
+    static boolean has(JSONObject r, int s) {
+        JSONArray l = r.optJSONArray("surahs");
+        if (l == null) return true;
+        for (int i = 0; i < l.length(); i++) if (l.optInt(i) == s) return true;
+        return false;
+    }
+    static int total(JSONObject r) { JSONArray l = r.optJSONArray("surahs"); return l == null ? 114 : l.length(); }
+    /** The reciters with all 114 surahs: those the khatma can be read by. */
+    JSONArray complete() {
+        JSONArray a = new JSONArray();
+        for (int i = 0; i < reciters.length(); i++) if (!reciters.optJSONObject(i).has("surahs")) a.put(reciters.optJSONObject(i));
+        return a;
+    }
     String reciterId() { return p().getString("k_reciter", "asim-luhaidan"); }   // the first choice stays Asim Al-Luhaidan
     String reciterName() {
         for (int i = 0; i < reciters.length(); i++) if (reciters.optJSONObject(i).optString("id").equals(reciterId())) return reciters.optJSONObject(i).optString("name");
