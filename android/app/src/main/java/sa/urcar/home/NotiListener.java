@@ -37,7 +37,10 @@ public class NotiListener extends NotificationListenerService {
     private void nav(android.service.notification.StatusBarNotification sbn) {
         android.app.Notification n = sbn.getNotification();
         boolean navCat = android.app.Notification.CATEGORY_NAVIGATION.equals(n.category);
-        if (!java.util.Arrays.asList(NAV_APPS).contains(sbn.getPackageName()) || !sbn.isOngoing() || !(navCat || sbn.getPackageName().equals("com.waze"))) return;
+        // any app's ongoing navigation notification (Hudhud and others); the known apps and the chosen one without the category
+        String pkg = sbn.getPackageName();
+        boolean known = java.util.Arrays.asList(NAV_APPS).contains(pkg) || pkg.equals(Prefs.of(this).getString("nav", ""));
+        if (!sbn.isOngoing() || !(navCat || (known && pkg.equals("com.waze")))) return;
         android.os.Bundle x = n.extras;
         CharSequence t = x.getCharSequence(android.app.Notification.EXTRA_TITLE), s = x.getCharSequence(android.app.Notification.EXTRA_TEXT),
                 sub = x.getCharSequence(android.app.Notification.EXTRA_SUB_TEXT);

@@ -26,8 +26,23 @@ final class Prefs {
         for (String[] n : NAV) if (installed(c, n[0])) return n[0];
         return "";
     }
+    /**
+     * «هدهد» (Hudhud Maps, Saudi): its Android package is not published anywhere we could read, so it is found on the
+     * screen by its name, «هدهد» or «HudHud»; "" when it is not installed.
+     */
+    static String hudhud(Context c) {
+        android.content.pm.PackageManager pm = c.getPackageManager();
+        java.util.regex.Pattern name = java.util.regex.Pattern.compile("(?i)هدهد|هُدهُد|hud\\s?hud");
+        for (android.content.pm.ResolveInfo ri : pm.queryIntentActivities(new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                .addCategory(android.content.Intent.CATEGORY_LAUNCHER), 0)) {
+            String pkg = ri.activityInfo.packageName;
+            if (!pkg.equals(c.getPackageName()) && name.matcher(ri.loadLabel(pm).toString()).find()) return pkg;
+        }
+        return "";
+    }
     static String navName(Context c, String pkg) {
         for (String[] n : NAV) if (n[0].equals(pkg)) return n[1];
+        if (!pkg.isEmpty() && pkg.equals(hudhud(c))) return "هدهد";
         return pkg;
     }
     static boolean installed(Context c, String pkg) {

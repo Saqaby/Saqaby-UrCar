@@ -65,6 +65,8 @@ public class SettingsActivity extends Activity {
             if (!Prefs.installed(this, n[0])) continue;
             navRow.addView(chip(n[1], n[0].equals(nav), () -> { Prefs.put(this, "nav", n[0]); changed(); }));
         }
+        final String hud = Prefs.hudhud(this);   // found by its name on the screen
+        if (!hud.isEmpty()) navRow.addView(chip("هدهد", hud.equals(nav), () -> { Prefs.put(this, "nav", hud); changed(); }));
         list.addView(navRow);
 
         head("جهة السائق");
