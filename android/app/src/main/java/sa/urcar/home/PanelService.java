@@ -395,35 +395,33 @@ public class PanelService extends Service implements Panel.Actions {
      * home and shows it for a minute, once a trip (kept on the screen, so a restart at home does not play it again).
      */
     /**
-     * The GPS put the car at home some 70 to 80 m early (the owner's report), so the car coming within 150 m of the
-     * home only starts a wait: 75 seconds later, if the car is still within 250 m (it stopped there, it did not drive
-     * past), the du'a plays. A trip that leaves before then starts the wait again on its next arrival.
+     * Home again: near the saved home (150 m: the GPS can be 70 to 80 m off) the du'a for entering the home waits for
+     * the car to stop: its speed under 3 km/h for 3 seconds (or no fix for 5, as when the GPS goes quiet in a car
+     * standing still), while still within 250 m. Driving on past the home cancels the wait. Once a trip of 2 km or more.
      */
-    private long homeNearAt;
-    private static final long HOME_WAIT_MS = 75_000;
+    private boolean homeNear;
+    private long homeStillSince;
     private void arrivedHome(Location l, long now) {
         float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
-        if (hl > 90 || tripStart == 0 || tripKm < 2 || duas.get("home") == null) { homeNearAt = 0; return; }
+        if (hl > 90 || tripStart == 0 || tripKm < 2 || duas.get("home") == null) { homeNear = false; return; }
         if (Prefs.of(this).getLong("home_done", 0) == tripStart) return;
         double k = Day.km(hl, ho, l.getLatitude(), l.getLongitude());
-        if (homeNearAt == 0) {
-            if (k <= 0.15) homeNearAt = now;   // near: wait
-            return;
-        }
-        if (k > 0.25) { homeNearAt = 0; return; }   // drove on past the home
-        if (now - homeNearAt < HOME_WAIT_MS) return;
-        homeNearAt = 0;
+        if (!homeNear) { if (k <= 0.15) { homeNear = true; homeStillSince = 0; } return; }
+        if (k > 0.25) homeNear = false;   // drove on past the home
+    }
+    /** Each second: near home, has the car stopped? */
+    private void homeTick(long now) {
+        if (!homeNear) return;
+        boolean still = now - fixAt > 5000 || kmh < 3;
+        if (!still) { homeStillSince = 0; return; }
+        if (homeStillSince == 0) { homeStillSince = now; return; }
+        if (now - homeStillSince < 3000) return;
+        homeNear = false;
+        if (Prefs.of(this).getLong("home_done", 0) == tripStart) return;
         Prefs.of(this).edit().putLong("home_done", tripStart).apply();
         duaKind = "home";
         duaUntil = now + 60_000;
         if (Prefs.of(this).getBoolean("dua_sound", true)) sound.playDua("home", Prefs.of(this).getFloat("adhan_vol", 1f));
-    }
-    /** GPS stops sending positions to a car standing still on some screens: the wait is also checked each second. */
-    private void homeTick(long now) {
-        if (homeNearAt == 0 || now - homeNearAt < HOME_WAIT_MS) return;
-        Location l = new Location("tick");
-        l.setLatitude(day.lat); l.setLongitude(day.lon);
-        arrivedHome(l, now);
     }
     void testDua(String which) { sound.playDua(which, Prefs.of(this).getFloat("adhan_vol", 1f)); }
 
