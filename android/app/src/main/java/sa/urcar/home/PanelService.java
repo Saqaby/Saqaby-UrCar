@@ -471,6 +471,11 @@ public class PanelService extends Service implements Panel.Actions {
         else if (nav.equals("com.google.android.apps.maps")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("google.navigation:q=" + la + "," + lo));
         else i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + la + "," + lo + "?q=" + la + "," + lo));
         if (!nav.isEmpty()) i.setPackage(nav);
+        if (!nav.isEmpty() && i.resolveActivity(getPackageManager()) == null) {   // the chosen app takes no place from another app
+            launchPkg(nav);
+            Toast.makeText(this, "اختر " + label + " في " + Prefs.navName(this, nav), Toast.LENGTH_LONG).show();
+            return;
+        }
         try { startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
         catch (Exception e) { launch(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + la + "," + lo + "?q=" + la + "," + lo))); }
     }
@@ -504,15 +509,23 @@ public class PanelService extends Service implements Panel.Actions {
             goPlace("ahead", "المسجد");
             return;
         }
-        String q = android.net.Uri.encode("مسجد"), nav = Prefs.nav(this);
+        searchNearby("مسجد", "أقرب مسجد");
+    }
+    /**
+     * A search around the car in the navigation app chosen in the settings (Hudhud for the owner), not Google Maps: Waze
+     * by its link, any other by a «geo:» search sent to that app alone. An app that takes no such search is opened as it
+     * is, with a word to search in it; Google Maps only when no navigation app is chosen.
+     */
+    void searchNearby(String what, String label) {
+        String q = android.net.Uri.encode(what), nav = Prefs.nav(this);
         Intent i;
-        if (nav.equals("com.waze")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://waze.com/ul?q=" + q)).setPackage("com.waze");
-        else {
-            i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + day.lat + "," + day.lon + "?q=" + q));
-            if (Prefs.installed(this, "com.google.android.apps.maps")) i.setPackage("com.google.android.apps.maps");
-        }
-        try { startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
-        catch (Exception e) { launch(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + day.lat + "," + day.lon + "?q=" + q))); }
+        if (nav.equals("com.waze")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://waze.com/ul?q=" + q));
+        else i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + day.lat + "," + day.lon + "?q=" + q));
+        if (nav.isEmpty()) { if (Prefs.installed(this, "com.google.android.apps.maps")) i.setPackage("com.google.android.apps.maps"); launch(i); return; }
+        i.setPackage(nav);
+        if (i.resolveActivity(getPackageManager()) != null) { launch(i); return; }
+        launchPkg(nav);   // it takes no search from another app
+        Toast.makeText(this, "ابحث عن «" + what + "» في " + Prefs.navName(this, nav), Toast.LENGTH_LONG).show();
     }
     /** For the full-screen gauge: {km/h or -1 without a recent fix, bearing or -1, qibla}. */
     float[] driveNow() {
@@ -633,11 +646,7 @@ public class PanelService extends Service implements Panel.Actions {
         khatma.start();
     }
     /** The nearest stations (the rest reminder). */
-    void station() {
-        Intent i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:" + day.lat + "," + day.lon + "?q=" + android.net.Uri.encode("محطة وقود")));
-        if (Prefs.installed(this, "com.google.android.apps.maps")) i.setPackage("com.google.android.apps.maps");
-        launch(i);
-    }
+    void station() { searchNearby("محطة وقود", "أقرب محطة"); }
     Khatma khatmaPlayer() { return khatma; }
 
     /** FM near: the screen's radio opens and the frequency is shown (probe: com.tw.radio takes no command). Else the stream. */
