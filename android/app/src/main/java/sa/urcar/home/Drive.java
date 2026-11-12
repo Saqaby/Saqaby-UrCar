@@ -53,8 +53,9 @@ final class Drive extends LinearLayout {
         unit.setText("كم/س");
         trip = Ui.text(c, px(3), Ui.medium(c), 0);
         trip.setGravity(Gravity.CENTER);
-        LinearLayout srow = new LinearLayout(c);   // the speed, and the road's limit beside it
-        srow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout srow = new LinearLayout(c);   // the speed, and the road's limit beside it: centred over the unit
+        srow.setGravity(Gravity.CENTER);
+        unit.setGravity(Gravity.CENTER);
         srow.addView(speed);
         sign = new Sign(c);
         LayoutParams sl = new LayoutParams(px(10), px(10));

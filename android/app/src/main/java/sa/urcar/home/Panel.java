@@ -29,6 +29,9 @@ final class Panel extends LinearLayout {
     private Ui.Icon wxIcon, pinIcon, rIcon, playIcon, prevIcon, nextIcon;
     private LinearLayout card, prayerPage, musicPage, musicOn, radioBtn, kBtn, keysRow, tabs;
     private TextView kT, kF;
+    private View rule;
+    private final TextView[] dayNames = new TextView[5], dayTimes = new TextView[5];
+    private int dayHot = -2;
     private Ui.Icon kIcon;
     private boolean kOn, libOn;
     private LinearLayout libBtn;
@@ -109,7 +112,23 @@ final class Panel extends LinearLayout {
         ramU = Ui.text(c, px(3), reg, 0);
         ramRow.addView(ramL); ramRow.addView(ramN); ramRow.addView(ramU);
         prayerPage.addView(ramRow, lp(px(1.4f)));
-        pages.addView(prayerPage);
+        // the day's five adhans across the card's foot (it stood empty): the name over its time, the next one in gold
+        prayerPage.addView(new View(c), new LayoutParams(1, 0, 1));
+        rule = new View(c);
+        prayerPage.addView(rule, new LayoutParams(LayoutParams.MATCH_PARENT, 1));
+        LinearLayout strip = row();
+        for (int i = 0; i < 5; i++) {
+            LinearLayout cell = new LinearLayout(c);
+            cell.setOrientation(VERTICAL);
+            cell.setGravity(Gravity.CENTER);
+            dayNames[i] = Ui.text(c, px(2.4f), reg, 0);
+            dayTimes[i] = Ui.text(c, px(3), med, 0);
+            cell.addView(dayNames[i], lp(0));
+            cell.addView(dayTimes[i], lp(0));
+            strip.addView(cell, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        }
+        prayerPage.addView(strip, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT) {{ topMargin = px(1.2f); }});
+        pages.addView(prayerPage, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
         musicPage = new LinearLayout(c);
         musicPage.setOrientation(VERTICAL);
@@ -139,7 +158,7 @@ final class Panel extends LinearLayout {
         mEmpty.setOnClickListener(v -> act.openMusic());
         musicPage.addView(mEmpty, lp(px(1.4f)));
         pages.addView(musicPage);
-        card.addView(pages);
+        card.addView(pages, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
         card.setOnTouchListener(new SwipeTouch());
         addView(card, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1) {{ topMargin = px(1.6f); }});
 
@@ -254,12 +273,25 @@ final class Panel extends LinearLayout {
         playBtn.setBackground(Ui.box(th.sand, 0, px(5)));
         prevIcon.set(Ui.Icon.PREV, th.fg); nextIcon.set(Ui.Icon.NEXT, th.fg); playIcon.set(playIcon.kind, th.sandInk);
         for (int i = 0; i < 4; i++) {
-            keys[i].setBackground(Ui.box(th.panel, th.line, px(2.4f)));
+            keys[i].setBackground(Ui.box(th.panel, th.line, px(2)));
             keyIcons[i].set(keyIcons[i].kind, th.sand);
             keyLabels[i].setTextColor(th.fg);
         }
+        rule.setBackgroundColor(th.line);
+        paintDay();
         paintRadio(radioOn);
         paintTabs();
+    }
+    private void paintDay() {
+        for (int i = 0; i < 5; i++) {
+            dayNames[i].setTextColor(i == dayHot ? th.sand : th.muted);
+            dayTimes[i].setTextColor(i == dayHot ? th.sand : th.fg);
+        }
+    }
+    /** The five adhans of the day: names, clocks without «ص/م», and which one is next or current (-1: none today). */
+    void showDay(String[] names, String[] clocks, int hot) {
+        for (int i = 0; i < 5; i++) { set(dayNames[i], names[i]); set(dayTimes[i], clocks[i]); }
+        if (hot != dayHot) { dayHot = hot; paintDay(); }
     }
     boolean isDay() { return day; }
 
@@ -311,7 +343,8 @@ final class Panel extends LinearLayout {
     private boolean nowState;
     void showPrayer(String label, String name, String time, String count, String ramadan, int ramadanDays, boolean now) {
         set(tabP, label); set(nm, name); set(tm, time); set(cd, count);
-        ramRow.setVisibility(ramadanDays > 0 ? VISIBLE : GONE);
+        // under the adhan bar the card is shorter: the day's adhans keep their place, the count to Ramadan waits
+        ramRow.setVisibility(ramadanDays > 0 && bar.getVisibility() != VISIBLE ? VISIBLE : GONE);
         if (ramadanDays > 0) { set(ramN, Ui.ar(ramadanDays)); set(ramU, ramadanDays >= 3 && ramadanDays <= 10 ? "أيام" : "يومًا"); }
         set(ram, ramadanDays > 0 ? "" : ramadan);   // during Ramadan: iftar and imsak
         ram.setVisibility(ramadanDays > 0 || ramadan.isEmpty() ? GONE : VISIBLE);

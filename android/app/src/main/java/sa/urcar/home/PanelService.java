@@ -179,6 +179,18 @@ public class PanelService extends Service implements Panel.Actions {
             String key = n[0] + "@" + n[1];
             if (n[1] - now <= Day.BEFORE_MIN * 60_000L && !key.equals(turnedFor)) { turnedFor = key; panel.showPage("p"); }
         }
+        String[] dn = new String[5], dc = new String[5];
+        int hot = cur;
+        if (hot < 0) { long[] n = day.next(now); hot = n[1] == day.at((int) n[0]) ? (int) n[0] : -1; }   // tomorrow's Fajr: none of today's
+        int hotAt = -1;
+        for (int i = 0; i < 5; i++) {
+            int k = Day.FIVE[i];
+            dn[i] = day.name(k, now);
+            String t = Day.clockOf(day.at(k));
+            dc[i] = t.substring(0, t.indexOf(' '));
+            if (k == hot) hotAt = i;
+        }
+        panel.showDay(dn, dc, hotAt);
         MediaController mc = NotiListener.session(this);
         panel.showMusic(mc, mc == null ? "" : NotiListener.appName(this, mc.getPackageName()),
                 mc == null ? "" : NotiListener.title(mc), mc == null ? "" : NotiListener.artist(mc), mc != null && NotiListener.playing(mc));
