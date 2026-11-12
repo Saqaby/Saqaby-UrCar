@@ -59,13 +59,13 @@ final class Net {
         if (!part.renameTo(to)) throw new Exception("rename");
     }
 
-    /** {temperature °C, Open-Meteo weather code}, or null */
+    /** {temperature °C, Open-Meteo weather code, visibility in metres or -1}, or null */
     static double[] weather(double lat, double lon) {
         try {
             JSONObject j = new JSONObject(get(String.format(java.util.Locale.US,
-                    "https://api.open-meteo.com/v1/forecast?latitude=%.3f&longitude=%.3f&current=temperature_2m,weather_code", lat, lon)));
+                    "https://api.open-meteo.com/v1/forecast?latitude=%.3f&longitude=%.3f&current=temperature_2m,weather_code,visibility", lat, lon)));
             JSONObject cur = j.getJSONObject("current");
-            return new double[]{cur.getDouble("temperature_2m"), cur.optInt("weather_code", 0)};
+            return new double[]{cur.getDouble("temperature_2m"), cur.optInt("weather_code", 0), cur.optDouble("visibility", -1)};
         } catch (Exception e) { return null; }
     }
 

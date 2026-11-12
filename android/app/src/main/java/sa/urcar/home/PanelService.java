@@ -187,13 +187,13 @@ public class PanelService extends Service implements Panel.Actions {
             boolean fresh = now - fixAt < 6000, moving = fresh && kmh >= 10;
             drive.showSpeed(fresh ? Math.round(kmh) : (fixAt == 0 ? -1 : 0), fresh ? bearing : -1, limitNow());
             drive.showQibla(day.qibla());
-            // Radarbot first; else dust (PM10 or dust >= 150 µg/m³ in the last 3 hours)
+            // Radarbot first; else dust (dustNow)
             String alert = now - NotiListener.radarAt < 20_000 ? NotiListener.radar : null;
             if (alert == null && now < glareUntil) alert = "🕶 الشمس أمامك مباشرة";
             boolean rest = false;
             if (alert == null && now < restUntil) { alert = "قدت " + Ui.hours((int) ((now - tripStart) / 3600_000L)) + "، قف للراحة. اضغط لأقرب محطة"; rest = true; }
             drive.setAlertAction(rest ? this::station : null);
-            if (alert == null && dust >= 150 && now - dustAt < 3 * 3600_000L) alert = dust >= 400 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
+            if (alert == null && dustNow(now)) alert = wx[2] < 1000 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
             drive.showAlert(alert);
             drive.setMosqueHot(day.bar(now) != null);
             drive.setMosqueAhead(mosqueAhead(now));
@@ -207,6 +207,19 @@ public class PanelService extends Service implements Panel.Actions {
         }
     }
     private String turnedFor = "";
+
+    /**
+     * Dust only when it is seen: the modelled dust (Open-Meteo's air quality, a forecast for a wide square) at 150 µg/m³
+     * or more, and the visibility under 5 km, with no rain, drizzle or fog to explain it (weather code 0-3). The owner
+     * saw «غبار» on a clear day (the model at 200, the visibility 17 km) and «غبار كثيف» under rain clouds (the
+     * visibility 2 km from the rain). Dense: under 1 km.
+     */
+    private boolean dustNow(long now) {
+        if (dust < 150 || now - dustAt > 3 * 3600_000L || wx == null || wx.length < 3) return false;
+        double vis = wx[2];
+        int code = (int) wx[1];
+        return vis >= 0 && vis < 5000 && code <= 3;
+    }
 
 
     private boolean themeDay(long now) {
