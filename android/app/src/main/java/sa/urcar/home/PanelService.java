@@ -544,14 +544,24 @@ public class PanelService extends Service implements Panel.Actions {
 
     /** «أقرب مسجد»: a search for mosques around the car in the navigation app (Google Maps if it is there). */
     void mosque() {
-        if (ahead != null && mosques != null) {   // the one ahead: straight to it
+        boolean jumua = jumuaTime(System.currentTimeMillis());
+        // the one ahead: straight to it; before the Friday prayer only when it is a «جامع» by its name
+        if (ahead != null && mosques != null && (!jumua || mosques.name((int) ahead[0]).contains("جامع"))) {
             int i = (int) ahead[0];
             float la = (float) mosques.lat(i), lo = (float) mosques.lon(i);
             Prefs.of(this).edit().putFloat("ahead_lat", la).putFloat("ahead_lon", lo).apply();
             goPlace("ahead", "المسجد");
             return;
         }
-        searchNearby("مسجد", "أقرب مسجد");
+        if (jumua) searchNearby("جامع", "أقرب جامع"); else searchNearby("مسجد", "أقرب مسجد");
+    }
+    /** Friday from 10 in the morning until an hour after the Dhuhr adhan: the owner is on the way to the Friday prayer, held in a «جامع». */
+    private boolean jumuaTime(long now) {
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(now);
+        if (c.get(Calendar.DAY_OF_WEEK) != Calendar.FRIDAY || c.get(Calendar.HOUR_OF_DAY) < 10) return false;
+        day.ensure(now);
+        return now < day.at(PrayerMath.DHUHR) + 3600_000L;
     }
     /**
      * A search around the car in the navigation app chosen in the settings (Hudhud for the owner), not Google Maps: Waze
