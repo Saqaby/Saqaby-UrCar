@@ -1,0 +1,24 @@
+# One-off: Open-Meteo's dust, PM10 and visibility around Dammam yesterday and today, against the owner's sky
+# («very cloudy» yesterday, «clear, a few clouds» today, both shown as dust by the app).
+name: check-dust
+on:
+  push:
+    paths: [".github/workflows/check-dust.yml"]
+jobs:
+  c:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          A="https://air-quality-api.open-meteo.com/v1/air-quality?latitude=26.43&longitude=50.10&hourly=pm10,dust&past_days=1&forecast_days=1&timezone=Asia%2FRiyadh"
+          W="https://api.open-meteo.com/v1/forecast?latitude=26.43&longitude=50.10&hourly=visibility,weather_code,cloud_cover,relative_humidity_2m&past_days=1&forecast_days=1&timezone=Asia%2FRiyadh&current=visibility,weather_code"
+          curl -s "$A" -o a.json; curl -s "$W" -o w.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('a.json'))['hourly']; w=json.load(open('w.json'))
+          print('current', w.get('current'))
+          h=w['hourly']
+          for i,t in enumerate(a['time']):
+              if i%2: continue
+              j=h['time'].index(t) if t in h['time'] else None
+              print(t, 'pm10', a['pm10'][i], 'dust', a['dust'][i], '| vis', j is not None and h['visibility'][j], 'code', j is not None and h['weather_code'][j], 'cloud', j is not None and h['cloud_cover'][j], 'rh', j is not None and h['relative_humidity_2m'][j])
+          PY
