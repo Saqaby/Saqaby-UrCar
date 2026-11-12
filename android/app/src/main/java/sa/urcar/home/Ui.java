@@ -104,7 +104,7 @@ final class Ui {
     /** The icons of the panel, drawn on a 24-unit grid like the preview's SVGs. */
     static final class Icon extends View {
         static final int PLAY = 1, PAUSE = 2, PREV = 3, NEXT = 4, YOUTUBE = 5, BT = 6, GEAR = 7, APPS = 8, RADIO = 9,
-                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21, RAIN = 22, STORM = 23, FOG = 24;
+                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21, RAIN = 22, STORM = 23, FOG = 24, NAVI = 25;
         int kind;
         final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Icon(Context c, int kind, int color) {
@@ -175,6 +175,7 @@ final class Ui {
                 case STORM: stroke(); c.drawRoundRect(new RectF(3, 4, 21, 13.5f), 4.75f, 4.75f, p);
                     path.moveTo(13, 14); path.lineTo(10, 18); path.lineTo(14, 18); path.lineTo(11, 22.5f); c.drawPath(path, p); break;
                 case FOG: stroke(); c.drawLine(4, 8, 20, 8, p); c.drawLine(3, 12, 21, 12, p); c.drawLine(5, 16, 19, 16, p); break;
+                case NAVI: fill(); path.moveTo(12, 2.5f); path.lineTo(20.5f, 21); path.lineTo(12, 16.6f); path.lineTo(3.5f, 21); path.close(); c.drawPath(path, p); break;   // the navigation arrow
                 default: break;
             }
             c.restore();

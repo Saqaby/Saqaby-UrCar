@@ -14,20 +14,31 @@ import android.widget.Toast;
 
 /** «الإعدادات»: the navigation app, the driver's side, day/night, the Quran radio, Android's settings, the update. */
 public class SettingsActivity extends Activity {
-    private LinearLayout list;
+    private LinearLayout list, side, content;
+    private ScrollView body;
     private Ui.Theme th;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
-        ScrollView sv = new ScrollView(this);
-        list = new LinearLayout(this);
-        list.setOrientation(LinearLayout.VERTICAL);
-        list.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        list.setPadding(48, 32, 48, 48);
-        sv.addView(list);
         th = new Ui.Theme(false);
-        sv.setBackgroundColor(th.bg);
-        setContentView(sv);
+        // the sections down the side (the start, RTL), the chosen one's cards beside them
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.HORIZONTAL);
+        root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        root.setBackgroundColor(th.bg);
+        side = new LinearLayout(this);
+        side.setOrientation(LinearLayout.VERTICAL);
+        side.setPadding(28, 32, 28, 28);
+        side.setBackgroundColor(th.panel);
+        root.addView(side, new LinearLayout.LayoutParams(300, -1));
+        body = new ScrollView(this);
+        content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        content.setPadding(32, 12, 32, 40);
+        body.addView(content);
+        root.addView(body, new LinearLayout.LayoutParams(0, -1, 1));
+        setContentView(root);
     }
     @Override protected void onResume() { super.onResume(); build(); }
 
@@ -49,31 +60,40 @@ public class SettingsActivity extends Activity {
         build();
     }
 
+    /** The sections, each a tab of the side list: what the driver sees, the road, the Quran and the sounds, the screen, about. */
+    private static final String[][] TABS = {{"screen", "الشاشة"}, {"road", "الملاحة والطريق"}, {"quran", "القرآن والأذكار"}, {"device", "الجهاز والتطبيقات"}, {"about", "عن التطبيق"}};
+
     private void build() {
-        list.removeAllViews();
-        LinearLayout top = new LinearLayout(this);
-        TextView title = Ui.text(this, 36, Ui.medium(this), th.fg);
+        String tab = Prefs.of(this).getString("set_tab", "screen");
+        side.removeAllViews();
+        TextView title = Ui.text(this, 32, Ui.display(this), th.fg);
         title.setText("الإعدادات");
-        top.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
-        top.addView(chip("رجوع", false, this::finish));
-        list.addView(top);
-
-        head("تطبيق الملاحة (يُفتح من بطاقة السرعة)");
-        LinearLayout navRow = grid();
-        String nav = Prefs.nav(this);
-        for (String[] n : Prefs.NAV) {
-            if (!Prefs.installed(this, n[0])) continue;
-            navRow.addView(chip(n[1], n[0].equals(nav), () -> { Prefs.put(this, "nav", n[0]); changed(); }));
+        side.addView(title, new LinearLayout.LayoutParams(-2, -2) {{ bottomMargin = 24; }});
+        for (String[] t : TABS) {
+            boolean on = t[0].equals(tab);
+            TextView b = Ui.text(this, 24, Ui.medium(this), on ? th.sandInk : th.fg);
+            b.setText(t[1]);
+            b.setPadding(24, 18, 24, 18);
+            b.setBackground(on ? Ui.box(th.sand, 0, 14) : null);
+            b.setOnClickListener(v -> { Prefs.put(this, "set_tab", t[0]); body.scrollTo(0, 0); build(); });
+            side.addView(b, new LinearLayout.LayoutParams(-1, -2) {{ bottomMargin = 6; }});
         }
-        final String hud = Prefs.hudhud(this);   // found by its name on the screen
-        if (!hud.isEmpty()) navRow.addView(chip("هدهد", hud.equals(nav), () -> { Prefs.put(this, "nav", hud); changed(); }));
-        list.addView(navRow);
+        side.addView(new android.view.View(this), new LinearLayout.LayoutParams(1, 0, 1));
+        TextView back = chip("رجوع", false, this::finish);
+        back.setGravity(android.view.Gravity.CENTER);
+        side.addView(back, new LinearLayout.LayoutParams(-1, -2));
 
-        String seen;
-        synchronized (NotiListener.navSeen) { seen = String.join("\n", NotiListener.navSeen); }
-        list.addView(note("تنبيهات الطريق من تطبيق الملاحة (كاميرا، سرعة، مطب…) تظهر في السطر البرتقالي إن كتبها في إشعاراته. آخر ما أرسله:\n"
-                + (seen.isEmpty() ? "لا شيء بعد: شغّل الملاحة إلى وجهة ثم ارجع هنا." : seen)));
+        content.removeAllViews();
+        switch (tab) {
+            case "road": road(); break;
+            case "quran": quran(); break;
+            case "device": device(); break;
+            case "about": about(); break;
+            default: screen();
+        }
+    }
 
+    private void screen() {
         head("جهة السائق");
         LinearLayout side = grid();
         String s = Prefs.side(this);
@@ -89,6 +109,52 @@ public class SettingsActivity extends Activity {
         look.addView(chip("ليلي", t.equals("dark"), () -> { Prefs.put(this, "theme", "dark"); changed(); }));
         list.addView(look);
 
+    }
+
+    private void road() {
+        head("تطبيق الملاحة");
+        LinearLayout navRow = grid();
+        String nav = Prefs.nav(this);
+        for (String[] n : Prefs.NAV) {
+            if (!Prefs.installed(this, n[0])) continue;
+            navRow.addView(chip(n[1], n[0].equals(nav), () -> { Prefs.put(this, "nav", n[0]); changed(); }));
+        }
+        final String hud = Prefs.hudhud(this);   // found by its name on the screen
+        if (!hud.isEmpty()) navRow.addView(chip("هدهد", hud.equals(nav), () -> { Prefs.put(this, "nav", hud); changed(); }));
+        list.addView(navRow);
+
+        String seen;
+        synchronized (NotiListener.navSeen) { seen = String.join("\n", NotiListener.navSeen); }
+        list.addView(note("تنبيهات الطريق من تطبيق الملاحة (كاميرا، سرعة، مطب…) تظهر في السطر البرتقالي إن كتبها في إشعاراته. آخر ما أرسله:\n"
+                + (seen.isEmpty() ? "لا شيء بعد: شغّل الملاحة إلى وجهة ثم ارجع هنا." : seen)));
+
+        head("الوجهات السريعة");
+        LinearLayout dest = grid();
+        for (String[] d : new String[][]{{"home", "البيت"}, {"work", "العمل"}}) {
+            boolean saved = Prefs.of(this).getFloat(d[0] + "_lat", 999) < 90;
+            dest.addView(chip("احفظ موقعي الآن كـ" + d[1] + (saved ? " (محفوظ)" : ""), saved, () -> {
+                Prefs.of(this).edit().putFloat(d[0] + "_lat", Prefs.of(this).getFloat("lat", 999)).putFloat(d[0] + "_lon", Prefs.of(this).getFloat("lon", 999)).apply();
+                Toast.makeText(this, "حُفظ " + d[1] + " على موقع السيارة الآن", Toast.LENGTH_SHORT).show();
+                build();
+            }));
+        }
+        list.addView(dest);
+        list.addView(note("قف عند البيت أو العمل واضغط الزر، فيُحفظ موقع السيارة من GPS."));
+
+        head("حد السرعة للطريق");
+        boolean limOn = Prefs.of(this).getBoolean("limit_on", true);
+        LinearLayout lr = grid();
+        lr.addView(chip("يظهر", limOn, () -> { Prefs.of(this).edit().putBoolean("limit_on", true).apply(); build(); }));
+        lr.addView(chip("لا يظهر", !limOn, () -> { Prefs.of(this).edit().putBoolean("limit_on", false).apply(); build(); }));
+        list.addView(lr);
+        list.addView(note("لوحة بجانب السرعة، وتحمرّ السرعة إذا تجاوزتها. من خرائط OpenStreetMap للطرق الرئيسية في الخليج، محفوظة في التطبيق وتعمل بلا إنترنت، وتُحدَّث شهريًا. ليست كل الطرق فيها حدودها، وقد لا تطابق اللوحات: المرجع لوحات الطريق."));
+
+        head("دفتر الطريق");
+        list.addView(note(tripLog()));
+
+    }
+
+    private void quran() {
         head("إذاعة القرآن");
         LinearLayout radio = grid();
         String r = Prefs.radioSource(this);
@@ -120,18 +186,26 @@ public class SettingsActivity extends Activity {
         }));
         list.addView(fix);
 
-        head("الوجهات السريعة (تحت السرعة في الشاشة الرئيسية)");
-        LinearLayout dest = grid();
-        for (String[] d : new String[][]{{"home", "البيت"}, {"work", "العمل"}}) {
-            boolean saved = Prefs.of(this).getFloat(d[0] + "_lat", 999) < 90;
-            dest.addView(chip("احفظ موقعي الآن كـ" + d[1] + (saved ? " (محفوظ)" : ""), saved, () -> {
-                Prefs.of(this).edit().putFloat(d[0] + "_lat", Prefs.of(this).getFloat("lat", 999)).putFloat(d[0] + "_lon", Prefs.of(this).getFloat("lon", 999)).apply();
-                Toast.makeText(this, "حُفظ " + d[1] + " على موقع السيارة الآن", Toast.LENGTH_SHORT).show();
-                build();
-            }));
-        }
-        list.addView(dest);
-        list.addView(note("قف عند البيت أو العمل واضغط الزر، فيُحفظ موقع السيارة من GPS."));
+        head("ختمة السيارة");
+        Khatma k = PanelService.live != null ? PanelService.live.khatmaPlayer() : new Khatma(this);
+        list.addView(note("وصلت إلى " + Ui.ar(k.percent()) + "٪، سورة " + k.surahName() + (k.done() > 0 ? "، وأتممت " + Ui.ar(k.done()) + " ختمة" : "") + ". القارئ: " + k.reciterName() + "."));
+        LinearLayout kr = grid();
+        kr.addView(chip("تغيير القارئ", false, () -> {
+            org.json.JSONArray rs = k.complete();   // a khatma needs all 114 surahs
+            String[] names = new String[rs.length()];
+            for (int i = 0; i < rs.length(); i++) names[i] = rs.optJSONObject(i).optString("name");
+            new android.app.AlertDialog.Builder(this).setTitle("القارئ").setItems(names, (d, i) -> { k.setReciter(rs.optJSONObject(i).optString("id")); build(); }).show();
+        }));
+        boolean ka = Prefs.of(this).getBoolean("khatma_auto", true);
+        kr.addView(chip("تبدأ وحدها مع الرحلة", ka, () -> { Prefs.of(this).edit().putBoolean("khatma_auto", true).apply(); build(); }));
+        kr.addView(chip("بالزر فقط", !ka, () -> { Prefs.of(this).edit().putBoolean("khatma_auto", false).apply(); build(); }));
+        list.addView(kr);
+        LinearLayout kr2 = grid();
+        kr2.addView(chip("ابدأ من الفاتحة", false, () -> { k.restart(); build(); }));
+        list.addView(kr2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
+        String kerr = Prefs.of(this).getString("k_err", "");
+        if (!kerr.isEmpty()) list.addView(note("آخر ما أوقف الختمة: " + kerr));
+        list.addView(note("تبدأ مع الرحلة إن لم يكن صوت آخر يعمل، وتتوقف بعد ٣ دقائق من الوقوف، وتكمل حين تتحرك. تقف مع المكالمة أو أي صوت آخر (مقطع، موسيقى الجوال، إشعار) وتكمل وحدها بعد انتهائه، راجعةً ٣ ثوانٍ. وإن بقيت تنتظر فزرها يكملها. التلاوات من mp3quran.net وتحتاج إنترنت."));
 
         head("الأذان في السيارة");
         LinearLayout ad = grid();
@@ -148,15 +222,8 @@ public class SettingsActivity extends Activity {
         }
         list.addView(vol, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
 
-        head("حد السرعة للطريق");
-        boolean limOn = Prefs.of(this).getBoolean("limit_on", true);
-        LinearLayout lr = grid();
-        lr.addView(chip("يظهر", limOn, () -> { Prefs.of(this).edit().putBoolean("limit_on", true).apply(); build(); }));
-        lr.addView(chip("لا يظهر", !limOn, () -> { Prefs.of(this).edit().putBoolean("limit_on", false).apply(); build(); }));
-        list.addView(lr);
-        list.addView(note("لوحة بجانب السرعة، وتحمرّ السرعة إذا تجاوزتها. من خرائط OpenStreetMap للطرق الرئيسية في الخليج، محفوظة في التطبيق وتعمل بلا إنترنت، وتُحدَّث شهريًا. ليست كل الطرق فيها حدودها، وقد لا تطابق اللوحات: المرجع لوحات الطريق."));
-
-        head("صوت الأذكار: الركوب والسفر عند بدء الرحلة، ودخول المنزل عند الوصول إليه");
+        head("أصوات الأذكار");
+        list.addView(note("ذكر الركوب ودعاء السفر عند بدء الرحلة، ودعاء دخول المنزل عند الوصول إليه."));
         LinearLayout du = grid();
         for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}, {"home", "دعاء دخول المنزل"}}) {
             boolean have = Sound.duaFile(this, d[0]).exists();
@@ -181,31 +248,10 @@ public class SettingsActivity extends Activity {
         if (du3.getChildCount() > 0) list.addView(du3, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
         list.addView(note("في التطبيق صوتان أساسيان. ولك أن تستبدل أيًّا منهما بتسجيل على الشاشة، فيُحفظ داخل التطبيق ولا يُرفع إلى أي مكان. الصوت بمستوى صوت الأذان."));
 
-        head("ختمة السيارة");
-        Khatma k = PanelService.live != null ? PanelService.live.khatmaPlayer() : new Khatma(this);
-        list.addView(note("وصلت إلى " + Ui.ar(k.percent()) + "٪، سورة " + k.surahName() + (k.done() > 0 ? "، وأتممت " + Ui.ar(k.done()) + " ختمة" : "") + ". القارئ: " + k.reciterName() + "."));
-        LinearLayout kr = grid();
-        kr.addView(chip("تغيير القارئ", false, () -> {
-            org.json.JSONArray rs = k.complete();   // a khatma needs all 114 surahs
-            String[] names = new String[rs.length()];
-            for (int i = 0; i < rs.length(); i++) names[i] = rs.optJSONObject(i).optString("name");
-            new android.app.AlertDialog.Builder(this).setTitle("القارئ").setItems(names, (d, i) -> { k.setReciter(rs.optJSONObject(i).optString("id")); build(); }).show();
-        }));
-        boolean ka = Prefs.of(this).getBoolean("khatma_auto", true);
-        kr.addView(chip("تبدأ وحدها مع الرحلة", ka, () -> { Prefs.of(this).edit().putBoolean("khatma_auto", true).apply(); build(); }));
-        kr.addView(chip("بالزر فقط", !ka, () -> { Prefs.of(this).edit().putBoolean("khatma_auto", false).apply(); build(); }));
-        list.addView(kr);
-        LinearLayout kr2 = grid();
-        kr2.addView(chip("ابدأ من الفاتحة", false, () -> { k.restart(); build(); }));
-        list.addView(kr2, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
-        String kerr = Prefs.of(this).getString("k_err", "");
-        if (!kerr.isEmpty()) list.addView(note("آخر ما أوقف الختمة: " + kerr));
-        list.addView(note("تبدأ مع الرحلة إن لم يكن صوت آخر يعمل، وتتوقف بعد ٣ دقائق من الوقوف، وتكمل حين تتحرك. تقف مع المكالمة أو أي صوت آخر (مقطع، موسيقى الجوال، إشعار) وتكمل وحدها بعد انتهائه، راجعةً ٣ ثوانٍ. وإن بقيت تنتظر فزرها يكملها. التلاوات من mp3quran.net وتحتاج إنترنت."));
+    }
 
-        head("دفتر الطريق");
-        list.addView(note(tripLog()));
-
-        head("تطبيقا البلوتوث والراديو في الشاشة");
+    private void device() {
+        head("تطبيقا البلوتوث والراديو");
         LinearLayout ap = grid();
         for (String[] d : new String[][]{{"bt_app", "البلوتوث"}, {"radio_app", "الراديو"}}) {
             String now = d[0].equals("bt_app") ? Device.btApp(this) : Device.radioApp(this);
@@ -220,7 +266,7 @@ public class SettingsActivity extends Activity {
         }
         list.addView(note("يُختاران تلقائيًا بحسب الشاشة، فإن أخطأ الاختيار فاختر التطبيق الصحيح. بلا تطبيق بلوتوث تُفتح إعدادات البلوتوث، وبلا راديو تُشغَّل الإذاعة عبر الإنترنت."));
 
-        head("الجهاز");
+        head("الجهاز والتحديثات");
         LinearLayout dev = grid();
         dev.addView(chip("إعدادات أندرويد", false, () -> startActivity(new Intent(Settings.ACTION_SETTINGS))));
         dev.addView(chip("الواجهة الأصلية", false, () -> {
@@ -249,11 +295,15 @@ public class SettingsActivity extends Activity {
             cl.addView(chip("امسح العطل", false, () -> { Crash.file(this).delete(); build(); }));
             list.addView(cl, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 8; }});
         }
+    }
+
+    private void about() {
+        head("عن التطبيق");
         String v;
         try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { v = "?"; }
         list.addView(note("الإصدار " + v + ". التحديثات من github.com/Saqaby/Saqaby-UrCar"));
-        list.addView(note("© ٢٠٢٦ سلمان الصقعبي (Salman Alsaqabi)، linkedin.com/in/سلمان-الصقعبي-78a098159. جميع الحقوق محفوظة. الاستخدام الشخصي مجاني؛ ولا يُنسخ التطبيق أو يُعدَّل أو يُعاد نشره بلا إذن.\n"
-                + "بيانات الطقس من Open-Meteo.com (CC BY 4.0). حدود السرعة © OpenStreetMap contributors (ODbL). أسماء المدن من GeoNames.org (CC BY 4.0). الخط IBM Plex Sans Arabic (OFL). التلاوات من mp3quran.net. التفاصيل في LICENSE وTHIRD-PARTY.md في المستودع."));
+        list.addView(note("© ٢٠٢٦ سلمان الصقعبي. جميع الحقوق محفوظة."));
+        list.addView(note("الطقس Open-Meteo.com، حدود السرعة © OpenStreetMap، المدن GeoNames.org، الخط IBM Plex Sans Arabic، التلاوات mp3quran.net."));
     }
 
     /** «هذا الشهر: ٤٢ رحلة، ١٢٣٠ كم، ٣١ ساعة» and the month before, from the trips kept on the screen. */
@@ -289,13 +339,16 @@ public class SettingsActivity extends Activity {
         build();
     }
 
+    /** A section: a card of its own with its title; what follows goes into it. */
     private void head(String t) {
-        TextView h = Ui.text(this, 22, Ui.regular(this), th.muted);
+        list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(28, 22, 28, 26);
+        list.setBackground(Ui.box(th.panel, th.line, 18));
+        TextView h = Ui.text(this, 25, Ui.medium(this), th.sand);
         h.setText(t);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
-        lp.topMargin = 30;
-        lp.bottomMargin = 10;
-        list.addView(h, lp);
+        list.addView(h, new LinearLayout.LayoutParams(-2, -2) {{ bottomMargin = 14; }});
+        content.addView(list, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 20; }});
     }
     private TextView note(String t) {
         TextView n = Ui.text(this, 19, Ui.regular(this), th.muted);
@@ -304,10 +357,31 @@ public class SettingsActivity extends Activity {
         n.setPadding(0, 12, 0, 8);
         return n;
     }
-    private LinearLayout grid() {
-        LinearLayout g = new LinearLayout(this);
-        g.setOrientation(LinearLayout.HORIZONTAL);
-        return g;
+    /** A row of chips that wraps to the next line when it runs out of room. */
+    private LinearLayout grid() { return new Flow(this); }
+    static final class Flow extends LinearLayout {
+        Flow(android.content.Context c) { super(c); }
+        @Override protected void onMeasure(int ws, int hs) {
+            int w = MeasureSpec.getSize(ws), x = 0, y = 0, rowH = 0;
+            for (int i = 0; i < getChildCount(); i++) {
+                View ch = getChildAt(i);
+                measureChild(ch, MeasureSpec.makeMeasureSpec(w, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+                int cw = ch.getMeasuredWidth() + 14;
+                if (x > 0 && x + cw > w) { x = 0; y += rowH + 12; rowH = 0; }
+                x += cw; rowH = Math.max(rowH, ch.getMeasuredHeight());
+            }
+            setMeasuredDimension(w, y + rowH);
+        }
+        @Override protected void onLayout(boolean changed, int l, int t, int r, int b) {
+            int w = r - l, x = 0, y = 0, rowH = 0;
+            for (int i = 0; i < getChildCount(); i++) {
+                View ch = getChildAt(i);
+                int cw = ch.getMeasuredWidth(), chh = ch.getMeasuredHeight();
+                if (x > 0 && x + cw + 14 > w + 14) { x = 0; y += rowH + 12; rowH = 0; }
+                ch.layout(w - x - cw, y, w - x, y + chh);   // right to left
+                x += cw + 14; rowH = Math.max(rowH, chh);
+            }
+        }
     }
     private TextView chip(String text, boolean on, Runnable r) {
         TextView c = Ui.text(this, 24, Ui.medium(this), on ? th.sand : th.fg);

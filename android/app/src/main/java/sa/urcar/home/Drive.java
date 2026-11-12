@@ -30,10 +30,11 @@ final class Drive extends LinearLayout {
     private final LinearLayout[] destViews = new LinearLayout[4];
     private final Ui.Icon[] destIcons = new Ui.Icon[4];
     private TextView mosqueKm;
-    private final TextView[] destLabels = new TextView[4];
+    private LinearLayout navCell;
+    private Ui.Icon navIcon;
 
     /** openGauge / openQuote: the speed card and the quote card open to the whole screen (Full). */
-    Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque, Runnable fuel) {
+    Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque, Runnable fuel, Runnable navApp) {
         super(c);
         H = height / 100f;
         setOrientation(VERTICAL);
@@ -130,19 +131,13 @@ final class Drive extends LinearLayout {
         dests.setOrientation(HORIZONTAL);
         int[] icons = {Ui.Icon.HOUSE, Ui.Icon.BRIEFCASE, Ui.Icon.MOSQUE, Ui.Icon.FUEL};
         String[] says = {"البيت", "العمل", "أقرب مسجد", "أقرب محطة وقود"};
-        String[] names = {"البيت", "العمل", "مسجد", "وقود"};
         Runnable[] go = {home, work, mosque, fuel};
         for (int i = 0; i < 4; i++) {
             LinearLayout cell = new LinearLayout(c);
             cell.setGravity(Gravity.CENTER);
             cell.setContentDescription(says[i]);
             destIcons[i] = new Ui.Icon(c, icons[i], 0);
-            cell.addView(destIcons[i], new LayoutParams(px(5), px(5)));
-            destLabels[i] = Ui.text(c, px(3), Ui.medium(c), 0);
-            destLabels[i].setText(names[i]);
-            LayoutParams nl = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            nl.setMarginStart(px(1.2f));
-            cell.addView(destLabels[i], nl);
+            cell.addView(destIcons[i], new LayoutParams(px(6), px(6)));
             if (i == 2) {   // «٣ كم» beside the mosque while one is ahead around an adhan
                 mosqueKm = Ui.text(c, px(3.2f), Ui.medium(c), 0);
                 mosqueKm.setVisibility(GONE);
@@ -157,6 +152,16 @@ final class Drive extends LinearLayout {
             dests.addView(cell, l);
             destViews[i] = cell;
         }
+        // and the navigation app itself (the one chosen in the settings), set apart by a gold tint
+        navCell = new LinearLayout(c);
+        navCell.setGravity(Gravity.CENTER);
+        navCell.setContentDescription("تطبيق الملاحة");
+        navIcon = new Ui.Icon(c, Ui.Icon.NAVI, 0);
+        navCell.addView(navIcon, new LayoutParams(px(5.4f), px(5.4f)));
+        navCell.setOnClickListener(v -> navApp.run());
+        LayoutParams nl = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+        nl.setMarginStart(px(1.4f));
+        dests.addView(navCell, nl);
         addView(dests, new LayoutParams(LayoutParams.MATCH_PARENT, px(9)) {{ topMargin = px(1.6f); }});
 
         // ---- the quote of the hour
@@ -212,9 +217,10 @@ final class Drive extends LinearLayout {
             boolean hot = i == 2 && mosqueHot;
             destViews[i].setBackground(hot ? Ui.box(th.sand, 0, px(2)) : Ui.box(th.panel, th.line, px(2)));
             destIcons[i].set(destIcons[i].kind, hot ? th.sandInk : th.sand);
-            destLabels[i].setTextColor(hot ? th.sandInk : th.fg);
         }
         mosqueKm.setTextColor(mosqueHot ? th.sandInk : th.fg);
+        navCell.setBackground(Ui.box(Ui.alpha(th.sand, .16f), Ui.alpha(th.sand, .55f), px(2)));
+        navIcon.set(Ui.Icon.NAVI, th.sand);
     }
     /**
      * While a navigation runs: the speed, a smaller compass (no words under it) and the next step: the turn's arrow,
@@ -248,7 +254,6 @@ final class Drive extends LinearLayout {
     /** «٣ كم» beside the mosque's symbol while one is ahead around an adhan; null: the symbol alone. */
     void setMosqueAhead(String km) {
         mosqueKm.setVisibility(km == null ? GONE : VISIBLE);
-        destLabels[2].setVisibility(km == null ? VISIBLE : GONE);   // the distance takes the word's place
         if (km != null) set(mosqueKm, km);
         destViews[2].setContentDescription(km == null ? "أقرب مسجد" : "مسجد بعد " + km);
     }

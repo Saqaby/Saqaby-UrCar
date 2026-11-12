@@ -671,6 +671,13 @@ public class PanelService extends Service implements Panel.Actions {
         khatma.start();
     }
     /** The nearest stations (the rest reminder). */
+    /** The navigation arrow beside the destinations: the chosen navigation app, on its guidance if one runs. */
+    void navApp() {
+        if (NotiListener.navigating()) { NotiListener.openNav(this); return; }
+        String nav = Prefs.nav(this);
+        if (nav.isEmpty()) { Toast.makeText(this, "اختر تطبيق الملاحة من الإعدادات", Toast.LENGTH_LONG).show(); launch(new Intent(this, SettingsActivity.class)); return; }
+        launchPkg(nav);
+    }
     void station() { searchNearby("محطة وقود", "أقرب محطة"); }
     Khatma khatmaPlayer() { return khatma; }
 
