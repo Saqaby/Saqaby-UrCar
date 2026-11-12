@@ -30,6 +30,7 @@ final class Panel extends LinearLayout {
     private LinearLayout card, prayerPage, musicPage, musicOn, radioBtn, kBtn, keysRow, tabs;
     private TextView kT, kF;
     private View rule;
+    private LinearLayout head;
     private final TextView[] dayNames = new TextView[5], dayTimes = new TextView[5];
     private int dayHot = -2;
     private Ui.Icon kIcon;
@@ -60,21 +61,34 @@ final class Panel extends LinearLayout {
     private void build(Context c) {
         Typeface reg = Ui.regular(c), med = Ui.medium(c), disp = Ui.display(c);
         // ---- clock and temperature
+        // a card of its own, like the rest: the clock large, the weather and the place facing it, the two dates under them
+        head = new LinearLayout(c);
+        head.setOrientation(VERTICAL);
+        head.setPadding(px(2.4f), px(0.8f), px(2.4f), px(1.6f));
         LinearLayout r1 = row();
-        clock = Ui.text(c, px(6.2f), disp, 0); clock.setTextDirection(TEXT_DIRECTION_LTR);
-        ap = Ui.text(c, px(3), reg, 0); ap.setPadding(px(1.2f), 0, 0, 0);
-        temp = Ui.text(c, px(4), med, 0);
+        clock = Ui.text(c, px(9), disp, 0); clock.setTextDirection(TEXT_DIRECTION_LTR);
+        ap = Ui.text(c, px(3.4f), reg, 0); ap.setPadding(px(1.2f), 0, 0, 0);
+        temp = Ui.text(c, px(4.6f), med, 0); temp.setPadding(px(0.8f), 0, 0, 0);
         wxIcon = new Ui.Icon(c, Ui.Icon.SUN, 0);
-        r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(wxIcon, new LayoutParams(px(4.4f), px(4.4f))); r1.addView(temp);
-        addView(r1);
-        hijri = Ui.text(c, px(3.3f), med, 0);
-        addView(hijri, lp(px(0.6f)));
-        LinearLayout r3 = row();
-        greg = Ui.text(c, px(2.7f), reg, 0);
+        LinearLayout side = new LinearLayout(c);
+        side.setOrientation(VERTICAL);
+        side.setGravity(Gravity.END);
+        LinearLayout wr = row();
+        wr.addView(wxIcon, new LayoutParams(px(4.8f), px(4.8f))); wr.addView(temp);
+        LinearLayout plr = row();
         pinIcon = new Ui.Icon(c, Ui.Icon.PIN, 0);
         place = Ui.text(c, px(2.7f), reg, 0);
-        r3.addView(greg); r3.addView(spacer()); r3.addView(pinIcon, new LayoutParams(px(2.9f), px(2.9f))); r3.addView(place);
-        addView(r3, lp(px(0.6f)));
+        plr.addView(pinIcon, new LayoutParams(px(2.9f), px(2.9f))); plr.addView(place);
+        side.addView(wr, lp(0)); side.addView(plr, lp(px(0.6f)));
+        r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(side);
+        head.addView(r1);
+        LinearLayout r3 = row();
+        hijri = Ui.text(c, px(3), med, 0);
+        greg = Ui.text(c, px(2.5f), reg, 0);
+        greg.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        r3.addView(hijri); r3.addView(spacer()); r3.addView(greg);
+        head.addView(r3, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        addView(head);
 
         // ---- the adhan bar
         bar = Ui.text(c, px(3.6f), med, 0);
@@ -266,6 +280,7 @@ final class Panel extends LinearLayout {
         clock.setTextColor(th.fg); ap.setTextColor(th.muted); temp.setTextColor(th.fg); wxIcon.set(wxIcon.kind, th.sand);
         hijri.setTextColor(th.sand); greg.setTextColor(th.muted); place.setTextColor(th.muted); pinIcon.set(Ui.Icon.PIN, th.muted);
         bar.setBackground(Ui.box(th.sand, 0, px(1.6f))); bar.setTextColor(th.sandInk);
+        head.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
         card.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
         nm.setTextColor(th.fg); tm.setTextColor(th.muted); cd.setTextColor(th.sand); ram.setTextColor(th.muted); ramL.setTextColor(th.muted); ramN.setTextColor(th.sand); ramU.setTextColor(th.muted);
         mApp.setTextColor(th.muted); mTitle.setTextColor(th.fg); mArtist.setTextColor(th.muted); mEmpty.setTextColor(th.muted);

@@ -30,6 +30,7 @@ final class Drive extends LinearLayout {
     private final LinearLayout[] destViews = new LinearLayout[4];
     private final Ui.Icon[] destIcons = new Ui.Icon[4];
     private TextView mosqueKm;
+    private final TextView[] destLabels = new TextView[4];
 
     /** openGauge / openQuote: the speed card and the quote card open to the whole screen (Full). */
     Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque, Runnable fuel) {
@@ -129,13 +130,19 @@ final class Drive extends LinearLayout {
         dests.setOrientation(HORIZONTAL);
         int[] icons = {Ui.Icon.HOUSE, Ui.Icon.BRIEFCASE, Ui.Icon.MOSQUE, Ui.Icon.FUEL};
         String[] says = {"البيت", "العمل", "أقرب مسجد", "أقرب محطة وقود"};
+        String[] names = {"البيت", "العمل", "مسجد", "وقود"};
         Runnable[] go = {home, work, mosque, fuel};
         for (int i = 0; i < 4; i++) {
             LinearLayout cell = new LinearLayout(c);
             cell.setGravity(Gravity.CENTER);
             cell.setContentDescription(says[i]);
             destIcons[i] = new Ui.Icon(c, icons[i], 0);
-            cell.addView(destIcons[i], new LayoutParams(px(6), px(6)));
+            cell.addView(destIcons[i], new LayoutParams(px(5), px(5)));
+            destLabels[i] = Ui.text(c, px(3), Ui.medium(c), 0);
+            destLabels[i].setText(names[i]);
+            LayoutParams nl = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            nl.setMarginStart(px(1.2f));
+            cell.addView(destLabels[i], nl);
             if (i == 2) {   // «٣ كم» beside the mosque while one is ahead around an adhan
                 mosqueKm = Ui.text(c, px(3.2f), Ui.medium(c), 0);
                 mosqueKm.setVisibility(GONE);
@@ -155,11 +162,10 @@ final class Drive extends LinearLayout {
         // ---- the quote of the hour
         quoteBox = new LinearLayout(c);
         quoteBox.setOrientation(VERTICAL);
-        quoteBox.setGravity(Gravity.CENTER_VERTICAL);
         quoteBox.setPadding(px(3), px(2), px(3), px(2));
         remind = Ui.text(c, px(2.8f), Ui.medium(c), 0);
         remind.setVisibility(GONE);
-        quoteBox.addView(remind, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{ bottomMargin = px(1.2f); }});
+
         qTitle = Ui.text(c, px(2.8f), Ui.regular(c), 0);
         qText = Ui.text(c, px(3.8f), Ui.medium(c), 0);
         qText.setSingleLine(false);
@@ -167,9 +173,15 @@ final class Drive extends LinearLayout {
         qText.setEllipsize(android.text.TextUtils.TruncateAt.END);
         qText.setLineSpacing(0, 1.35f);
         qSrc = Ui.text(c, px(2.5f), Ui.regular(c), 0);
-        quoteBox.addView(qTitle);
-        quoteBox.addView(qText, lp(px(1.2f)));
-        quoteBox.addView(qSrc, lp(px(1.2f)));
+        // the kind and the day's reminder across the top, the source at the foot, the text in the middle of what is left
+        LinearLayout qHead = new LinearLayout(c);
+        qHead.setGravity(Gravity.CENTER_VERTICAL);
+        qHead.addView(qTitle, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        qHead.addView(remind);
+        quoteBox.addView(qHead, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        qText.setGravity(Gravity.CENTER_VERTICAL);
+        quoteBox.addView(qText, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+        quoteBox.addView(qSrc);
         quoteBox.setOnClickListener(v -> openQuote.run());
         addView(quoteBox, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1) {{ topMargin = px(1.6f); }});
         setDay(false);
@@ -200,6 +212,7 @@ final class Drive extends LinearLayout {
             boolean hot = i == 2 && mosqueHot;
             destViews[i].setBackground(hot ? Ui.box(th.sand, 0, px(2)) : Ui.box(th.panel, th.line, px(2)));
             destIcons[i].set(destIcons[i].kind, hot ? th.sandInk : th.sand);
+            destLabels[i].setTextColor(hot ? th.sandInk : th.fg);
         }
         mosqueKm.setTextColor(mosqueHot ? th.sandInk : th.fg);
     }
@@ -235,6 +248,7 @@ final class Drive extends LinearLayout {
     /** «٣ كم» beside the mosque's symbol while one is ahead around an adhan; null: the symbol alone. */
     void setMosqueAhead(String km) {
         mosqueKm.setVisibility(km == null ? GONE : VISIBLE);
+        destLabels[2].setVisibility(km == null ? VISIBLE : GONE);   // the distance takes the word's place
         if (km != null) set(mosqueKm, km);
         destViews[2].setContentDescription(km == null ? "أقرب مسجد" : "مسجد بعد " + km);
     }
@@ -281,9 +295,11 @@ final class Drive extends LinearLayout {
     void showQuote(String[] q, boolean movingNow) {
         if (movingNow != moving) {
             moving = movingNow;
-            qText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px(3.8f));   // the same text moving or not: the hour's
             qText.setMaxLines(4);
         }
+        int n = q[1].length();   // a short text in a bigger letter: it fills the card instead of floating in it
+        float size = px(n <= 70 ? 4.8f : n <= 130 ? 4.2f : 3.8f);
+        if (qText.getTextSize() != size) qText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, size);
         set(qTitle, q[0]); set(qText, q[1]); set(qSrc, q[2]);
     }
 
