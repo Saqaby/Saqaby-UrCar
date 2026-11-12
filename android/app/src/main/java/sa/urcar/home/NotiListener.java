@@ -30,6 +30,16 @@ public class NotiListener extends NotificationListenerService {
      */
     static volatile String navDist = "", navStep = "", navEta = "";
     static volatile android.graphics.drawable.Drawable navIcon;
+    /** What a tap on the navigation notification opens: the app on its guidance screen. */
+    static volatile android.app.PendingIntent navTap;
+
+    /** Back to the navigation app on its guidance (the notification's own tap), else the app's front door. */
+    static void openNav(Context c) {
+        android.app.PendingIntent pi = navTap;
+        if (pi != null) try { pi.send(); return; } catch (Exception ignored) { }
+        android.content.Intent i = navPkg.isEmpty() ? null : c.getPackageManager().getLaunchIntentForPackage(navPkg);
+        if (i != null) try { c.startActivity(i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)); } catch (Exception ignored) { }
+    }
     static volatile String navPkg = "";
     static final String[] NAV_APPS = {"com.google.android.apps.maps", "com.waze", "com.here.app.maps", "net.osmand", "net.osmand.plus", "com.sygic.aura"};
     static boolean navigating() { return !navPkg.isEmpty() && !(navDist.isEmpty() && navStep.isEmpty()); }
@@ -74,6 +84,7 @@ public class NotiListener extends NotificationListenerService {
         navStep = s == null ? "" : s.toString().trim();
         navEta = sub == null ? "" : sub.toString().trim();
         try { navIcon = n.getLargeIcon() != null ? n.getLargeIcon().loadDrawable(this) : null; } catch (Exception e) { navIcon = null; }
+        navTap = n.contentIntent;
         navPkg = sbn.getPackageName();
     }
     @Override public void onListenerConnected() {   // a navigation already running when the screen starts
@@ -92,7 +103,7 @@ public class NotiListener extends NotificationListenerService {
     }
     @Override public void onNotificationRemoved(android.service.notification.StatusBarNotification sbn) {
         if (sbn.getPackageName().startsWith("com.vialsoft.radarbot")) radarAt = 0;
-        if (sbn.getPackageName().equals(navPkg) && sbn.isOngoing()) { navPkg = ""; navDist = navStep = navEta = ""; navIcon = null; }
+        if (sbn.getPackageName().equals(navPkg) && sbn.isOngoing()) { navPkg = ""; navDist = navStep = navEta = ""; navIcon = null; navTap = null; }
     }
 
 

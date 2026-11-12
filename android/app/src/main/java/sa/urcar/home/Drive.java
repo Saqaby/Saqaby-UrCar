@@ -101,6 +101,7 @@ final class Drive extends LinearLayout {
         navEta.setEllipsize(android.text.TextUtils.TruncateAt.END);
         navBox.addView(navEta, lp(px(0.6f)));
         navBox.setVisibility(GONE);
+        navBox.setOnClickListener(v -> NotiListener.openNav(getContext()));   // the next step opens the navigation
         top.addView(navBox, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1.4f));
         // the card: speed and compass side by side, the trip across the bottom (it had no room under the speed)
         speedCard = new LinearLayout(c);

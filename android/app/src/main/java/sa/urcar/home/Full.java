@@ -101,6 +101,7 @@ final class Full extends FrameLayout {
         navBox.setOrientation(LinearLayout.VERTICAL);
         navBox.setPadding(22, 16, 22, 16);
         navBox.setBackground(Ui.box(th.panel2, th.line, 18));
+        navBox.setOnClickListener(v -> NotiListener.openNav(getContext()));
         LinearLayout nrow = new LinearLayout(c);
         nrow.setGravity(Gravity.CENTER_VERTICAL);
         nrow.setLayoutDirection(LAYOUT_DIRECTION_RTL);
