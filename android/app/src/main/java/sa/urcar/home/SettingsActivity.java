@@ -61,7 +61,7 @@ public class SettingsActivity extends Activity {
     }
 
     /** The sections, each a tab of the side list: what the driver sees, the road, the Quran and the sounds, the screen, about. */
-    private static final String[][] TABS = {{"screen", "الشاشة"}, {"road", "الملاحة والطريق"}, {"quran", "القرآن والأذكار"}, {"device", "الجهاز والتطبيقات"}, {"about", "عن التطبيق"}};
+    private static final String[][] TABS = {{"screen", "الشاشة"}, {"road", "الملاحة والطريق"}, {"quran", "القرآن والأذكار"}, {"smart", "المزايا الذكية"}, {"device", "الجهاز والتطبيقات"}, {"about", "عن التطبيق"}};
 
     private void build() {
         String tab = Prefs.of(this).getString("set_tab", "screen");
@@ -87,6 +87,7 @@ public class SettingsActivity extends Activity {
         switch (tab) {
             case "road": road(); break;
             case "quran": quran(); break;
+            case "smart": smart(); break;
             case "device": device(); break;
             case "about": about(); break;
             default: screen();
@@ -248,6 +249,72 @@ public class SettingsActivity extends Activity {
         if (du3.getChildCount() > 0) list.addView(du3, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
         list.addView(note("في التطبيق صوتان أساسيان. ولك أن تستبدل أيًّا منهما بتسجيل على الشاشة، فيُحفظ داخل التطبيق ولا يُرفع إلى أي مكان. الصوت بمستوى صوت الأذان."));
 
+    }
+
+    /** يعمل / متوقف for one of the five extras. */
+    private void toggle(String key, boolean def, Runnable after) {
+        boolean on = Smart.on(this, key, def);
+        LinearLayout g = grid();
+        g.addView(chip("يعمل", on, () -> { Smart.set(this, key, true); if (after != null) after.run(); build(); }));
+        g.addView(chip("متوقف", !on, () -> { Smart.set(this, key, false); if (after != null) after.run(); build(); }));
+        list.addView(g);
+    }
+
+    private void smart() {
+        head("توقّع الوجهة");
+        toggle("predict", true, null);
+        list.addView(note("عند بدء الرحلة يظهر سطر ذهبي تحت السرعة: «إلى العمل؟»، وضغطة واحدة تبدأ المسار في تطبيق الملاحة. التوقع من رحلاتك السابقة من المكان نفسه في مثل هذا اليوم والساعة، ويحتاج رحلتين متشابهتين على الأقل. قبل ذلك: من البيت صباح أيام العمل إلى العمل، ومن العمل بعد الظهر إلى البيت. يختفي السطر بعد ٤٥ ثانية."));
+
+        head("أماكني المتكررة");
+        toggle("places", true, null);
+        java.util.List<Object[]> ps = Smart.places(this);
+        if (!ps.isEmpty()) {
+            LinearLayout g = grid();
+            for (Object[] pl : ps) {
+                final int idx = (Integer) pl[0];
+                g.addView(chip(Smart.placeLabel(pl) + " (" + Ui.ar(pl[2]) + ")", !((String) pl[1]).isEmpty(), () -> {
+                    EditText in = new EditText(this);
+                    in.setText((String) pl[1]);
+                    in.setHint("مثل: النادي، بيت الوالد");
+                    in.setTextSize(26);
+                    new android.app.AlertDialog.Builder(this).setTitle("اسم المكان").setView(in)
+                            .setPositiveButton("حفظ", (d, w) -> { Smart.edit(this, idx, in.getText().toString(), false, false); build(); })
+                            .setNegativeButton("احذفه", (d, w) -> { Smart.edit(this, idx, null, true, false); build(); }).show();
+                }));
+            }
+            list.addView(g, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 12; }});
+        }
+        list.addView(note("المكان الذي تقف عنده ٣ مرات أو أكثر (غير البيت والعمل) يصير وجهة: تظهر نجمة بجانب الوجهات تفتح قائمتها، وتسألك الشاشة عن اسمه مرة واحدة وأنت واقف عنده. اضغط مكانًا هنا لتسميته أو حذفه. الأماكن والرحلات تبقى على الشاشة فقط."
+                + (ps.isEmpty() ? " لا أماكن بعد." : "")));
+
+        head("اللحاق بالصلاة");
+        toggle("iqama", true, null);
+        LinearLayout iq = grid();
+        for (int i = 0; i < 5; i++) {
+            final int k = Day.FIVE[i];
+            final int m = Smart.iqama(this, k);
+            iq.addView(chip(Day.NAMES[k] + " " + Ui.ar(m), false, () -> { Prefs.of(this).edit().putInt("iqama_" + k, m >= 30 ? 5 : m + 5).apply(); build(); }));
+        }
+        list.addView(iq, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 12; }});
+        list.addView(note("بعد الأذان يصير الشريط: «العصر: الإقامة بعد ٨ دقائق». وإن كنت تسير وأمامك مسجد يظهر: «الإقامة بعد ٨ دقائق، والمسجد على ٤ دقائق: تلحق». الأرقام أعلاه دقائق الانتظار بين الأذان والإقامة: اضغط الصلاة لتغييرها بحسب مسجدك (من ٥ إلى ٣٠). التقدير تقريبي، ولا يُحسب للجمعة."));
+
+        head("إيماءات الصوت");
+        toggle("gestures", true, null);
+        list.addView(note("في الشاشة الرئيسية بإصبعين معًا في أي مكان: لمسة توقف الصوت أو تعيده (الختمة، الإذاعة، التلاوة، أو تطبيق الصوت)، وسحبة إلى اليسار للمقطع التالي وإلى اليمين للسابق. لا تحتاج النظر إلى الشاشة."));
+
+        head("الشريط العائم فوق الملاحة");
+        boolean may = Settings.canDrawOverlays(this);
+        toggle("strip", false, () -> {
+            if (PanelService.live != null) PanelService.live.stripReset();
+            if (Smart.on(this, "strip", false) && !Settings.canDrawOverlays(this))
+                try { startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:" + getPackageName()))); }
+                catch (Exception e) { Toast.makeText(this, "فعّل «العرض فوق التطبيقات» لسيارتك من إعدادات أندرويد", Toast.LENGTH_LONG).show(); }
+        });
+        LinearLayout sg = grid();
+        sg.addView(chip("أعده إلى مكانه الأول", false, () -> { Strip.resetPlace(this); if (PanelService.live != null) PanelService.live.stripReset(); Toast.makeText(this, "أُعيد", Toast.LENGTH_SHORT).show(); }));
+        list.addView(sg, new LinearLayout.LayoutParams(-1, -2) {{ topMargin = 12; }});
+        list.addView(note((Smart.on(this, "strip", false) && !may ? "ينقصه إذن «العرض فوق التطبيقات»: اضغط «يعمل» مرة أخرى لفتح صفحته. " : "")
+                + "حين تفتح تطبيق الملاحة من الشاشة الرئيسية يبقى فوقه شريط صغير: السرعة وحدّها، والصلاة القادمة، وزر الصوت. لمسه يرجع إلى الشاشة الرئيسية، وسحبه ينقله إلى حيث لا يغطي شيئًا."));
     }
 
     private void device() {

@@ -61,6 +61,7 @@ public class AppsActivity extends Activity {
             final String pkg = ri.activityInfo.packageName, cls = ri.activityInfo.name;
             cell.setOnClickListener(v -> {
                 if (pick != null) { Prefs.put(this, pick, pkg); finish(); return; }   // chosen as the screen's Bluetooth or radio app
+                PanelService.front = pkg;
                 startActivity(new Intent(Intent.ACTION_MAIN).setClassName(pkg, cls).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 finish();
             });

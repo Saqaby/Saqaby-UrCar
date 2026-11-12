@@ -116,6 +116,7 @@ public class PanelService extends Service implements Panel.Actions {
     @Override public void onDestroy() {
         h.removeCallbacksAndMessages(null);
         sound.release();
+        if (strip != null) strip.show(false);
         khatma.stop();
         library.stop();
         if (lm != null) try { lm.removeUpdates(gps); } catch (Exception ignored) { }
@@ -146,6 +147,7 @@ public class PanelService extends Service implements Panel.Actions {
             glare(now);
             askCity(now);
             if (panel != null && HomeActivity.resumed) draw(now);
+            strip(now);
             background(now);
             h.postDelayed(this, 1000);
         }
@@ -165,7 +167,8 @@ public class PanelService extends Service implements Panel.Actions {
             int icon = Ui.wxIcon((int) wx[1], day.night(now));
             panel.showWeather(Ui.ar(Math.round(wx[0])) + "°", icon, now - wxAt > 3 * 3600_000L);
         } else panel.showWeather("", Ui.Icon.SUN, false);
-        panel.showBar(day.bar(now));
+        String iq = iqamaBar(now);
+        panel.showBar(iq != null ? iq : day.bar(now));
         int cur = day.current(now);
         if (cur >= 0) {
             int since = (int) ((now - day.at(cur)) / 60_000L);
@@ -206,7 +209,10 @@ public class PanelService extends Service implements Panel.Actions {
             if (alert == null && now < restUntil) { alert = "قدت " + Ui.hours((int) ((now - tripStart) / 3600_000L)) + "، قف للراحة. اضغط لأقرب محطة"; rest = true; }
             drive.setAlertAction(rest ? this::station : null);
             if (alert == null && dustNow(now)) alert = wx[2] < 1000 ? "غبار كثيف في موقعك: خفّف السرعة وأشعل الأنوار" : "غبار في موقعك";
+            if (alert == null) { alert = catchPrayer(now); if (alert != null) drive.setAlertAction(this::mosque); }
             drive.showAlert(alert);
+            suggestLine(now);
+            drive.showPlaces(Smart.on(this, "places", true) && !Smart.places(this).isEmpty());
             drive.setMosqueHot(day.bar(now) != null);
             drive.setMosqueAhead(mosqueAhead(now));
             drive.showTrip(join(tripNow(), homeNow()));
@@ -379,6 +385,9 @@ public class PanelService extends Service implements Panel.Actions {
             if (now - lastMoveAt >= STOP_MS) {
                 logTrip();
                 tripStart = now; tripKm = 0; prevLat = 999; restFor = 0;
+                Smart.tripStarts(this, l.getLatitude(), l.getLongitude(), now);
+                suggest = Smart.on(this, "predict", true) ? Smart.predict(this, l.getLatitude(), l.getLongitude(), now) : null;
+                suggestUntil = suggest == null ? 0 : now + 45_000;
                 if (Prefs.of(this).getBoolean("khatma_auto", true) && !khatma.on && !sound.radioOn) {
                     h.postDelayed(() -> {   // after the dhikr, and only if nothing else is playing
                         MediaController mc = NotiListener.session(this);
@@ -469,7 +478,10 @@ public class PanelService extends Service implements Panel.Actions {
     }
 
     // ---------------------------------------------------------------- the buttons
+    /** The app last opened from the home screen (the strip shows over the navigation app only). */
+    static volatile String front = "";
     private void launch(Intent i) {
+        front = i.getPackage() != null ? i.getPackage() : i.getComponent() != null ? i.getComponent().getPackageName() : "";
         try { startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
         catch (Exception e) { Toast.makeText(this, "لم يُفتح", Toast.LENGTH_SHORT).show(); }
     }
@@ -490,7 +502,12 @@ public class PanelService extends Service implements Panel.Actions {
     void goPlace(String key, String label) {
         float la = Prefs.of(this).getFloat(key + "_lat", 999), lo = Prefs.of(this).getFloat(key + "_lon", 999);
         if (la > 90) { Toast.makeText(this, "احفظ موقع " + label + " من الإعدادات أولًا", Toast.LENGTH_LONG).show(); return; }
+        goTo(la, lo, label);
+    }
+    /** A point, in the chosen navigation app: the home, the work, a place of the owner's, the guessed destination. */
+    void goTo(double la, double lo, String label) {
         String nav = Prefs.nav(this);
+        front = nav;
         Intent i;
         if (nav.equals("com.waze")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://waze.com/ul?ll=" + la + "," + lo + "&navigate=yes"));
         else if (nav.equals("com.google.android.apps.maps")) i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("google.navigation:q=" + la + "," + lo));
@@ -673,12 +690,111 @@ public class PanelService extends Service implements Panel.Actions {
     /** The nearest stations (the rest reminder). */
     /** The navigation arrow beside the destinations: the chosen navigation app, on its guidance if one runs. */
     void navApp() {
-        if (NotiListener.navigating()) { NotiListener.openNav(this); return; }
+        if (NotiListener.navigating()) { front = NotiListener.navPkg; NotiListener.openNav(this); return; }
         String nav = Prefs.nav(this);
         if (nav.isEmpty()) { Toast.makeText(this, "اختر تطبيق الملاحة من الإعدادات", Toast.LENGTH_LONG).show(); launch(new Intent(this, SettingsActivity.class)); return; }
         launchPkg(nav);
     }
     void station() { searchNearby("محطة وقود", "أقرب محطة"); }
+
+    // ---------------------------------------------------------------- the five extras (Smart), each with its switch
+    private Object[] suggest;   // the guessed destination {label, lat, lon}, for 45 seconds from the trip's start
+    private long suggestUntil, nameAskedAt;
+    private int nameIndex = -1;
+    /** The gold line under the speed: «إلى العمل؟» when a trip starts, or, standing at a place of the owner's with no name, an offer to name it. */
+    private void suggestLine(long now) {
+        if (suggest != null && now < suggestUntil) {
+            final Object[] g = suggest;
+            drive.showSuggest("إلى " + g[0] + "؟ اضغط لبدء المسار", () -> { suggestUntil = 0; goTo((Double) g[1], (Double) g[2], (String) g[0]); });
+            return;
+        }
+        boolean still = now - fixAt > 6000 || kmh < 3;
+        if (now - nameAskedAt > 10_000) {
+            nameAskedAt = now;
+            nameIndex = still && Smart.on(this, "places", true) ? Smart.toName(this, day.lat, day.lon) : -1;
+        }
+        if (nameIndex >= 0 && still) {
+            final int i = nameIndex;
+            drive.showSuggest("تقف هنا كثيرًا: اضغط لتسميته وجهة", () -> { nameIndex = -1; if (HomeActivity.live != null) HomeActivity.live.namePlace(i); });
+        } else drive.showSuggest(null, null);
+    }
+
+    /** The prayer whose adhan has been called and whose iqama has not: {prayer, minutes left}, or null. Not Friday's. */
+    private int[] awaitingIqama(long now) {
+        if (!Smart.on(this, "iqama", true)) return null;
+        for (int k : Day.FIVE) {
+            long t = day.at(k), iq = t + Smart.iqama(this, k) * 60_000L;
+            if (now >= t && now < iq && !day.name(k, now).equals("الجمعة")) return new int[]{k, (int) Math.ceil((iq - now) / 60_000.0)};
+        }
+        return null;
+    }
+    /** The adhan bar while the iqama is awaited: «العصر: الإقامة بعد ٨ دقائق». */
+    private String iqamaBar(long now) {
+        int[] a = awaitingIqama(now);
+        return a == null || now - day.at(a[0]) < 60_000 ? null : day.name(a[0], now) + ": الإقامة بعد " + Ui.minutes(a[1]);
+    }
+    /**
+     * «هل ألحق الصلاة؟»: while moving with a mosque ahead (the one beside the mosque's symbol), the minutes to it against
+     * the minutes to the iqama. The road is taken as a third longer than the straight line, at the car's speed (30 km/h at
+     * least); two minutes are kept for parking and walking in.
+     */
+    private String catchPrayer(long now) {
+        int[] a = awaitingIqama(now);
+        if (a == null || ahead == null || mosques == null || now - fixAt > 6000 || kmh < 10) return null;
+        double k = Day.km(day.lat, day.lon, mosques.lat((int) ahead[0]), mosques.lon((int) ahead[0]));
+        int eta = (int) Math.ceil(k * 1.3 / Math.max(kmh, 30) * 60);
+        return "الإقامة بعد " + Ui.minutes(a[1]) + "، والمسجد على " + Ui.minutes(Math.max(1, eta)) + (eta + 2 <= a[1] ? ": تلحق" : ": قد لا تلحق");
+    }
+
+    /** Two fingers on the home screen: what plays stops, and what was stopped this way plays again. */
+    private String pausedByTap = "";
+    void soundToggle() {
+        MediaController mc = NotiListener.session(this);
+        String say;
+        if (khatma.on) { khatma.stop(); khatmaPausedByStop = false; pausedByTap = "khatma"; say = "أُوقفت الختمة"; }
+        else if (sound.radioOn) { sound.stopRadio(); pausedByTap = "radio"; say = "أُوقفت الإذاعة"; }
+        else if (library.on()) { library.stop(); pausedByTap = "library"; say = "أُوقفت التلاوة"; }
+        else if (mc != null && NotiListener.playing(mc)) { mc.getTransportControls().pause(); pausedByTap = "mc"; say = "أُوقف الصوت"; }
+        else if (pausedByTap.equals("khatma")) { khatma(); say = "الختمة"; }
+        else if (pausedByTap.equals("radio")) { radio(); say = "الإذاعة"; }
+        else if (pausedByTap.equals("library")) { listenOn(); say = "التلاوة"; }
+        else if (mc != null) { mc.getTransportControls().play(); say = "تشغيل"; }
+        else say = "لا صوت لتشغيله";
+        Toast.makeText(this, say, Toast.LENGTH_SHORT).show();
+    }
+    void soundSkip(boolean next) {
+        MediaController mc = NotiListener.session(this);
+        if (mc == null) { Toast.makeText(this, "لا مقطع للتنقل", Toast.LENGTH_SHORT).show(); return; }
+        if (next) mc.getTransportControls().skipToNext(); else mc.getTransportControls().skipToPrevious();
+        Toast.makeText(this, next ? "التالي" : "السابق", Toast.LENGTH_SHORT).show();
+    }
+    private boolean soundPlaying() {
+        MediaController mc = NotiListener.session(this);
+        return khatma.on || sound.radioOn || library.on() || (mc != null && NotiListener.playing(mc));
+    }
+
+    /** The strip over the navigation app: while that app is the one opened from here and the home screen is not in front. */
+    private Strip strip;
+    private void strip(long now) {
+        boolean want = Smart.on(this, "strip", false) && android.provider.Settings.canDrawOverlays(this) && !HomeActivity.resumed
+                && !front.isEmpty() && (front.equals(Prefs.nav(this)) || front.equals(NotiListener.navPkg));
+        if (!want) { if (strip != null) strip.show(false); return; }
+        if (strip == null) strip = new Strip(this, () -> { front = ""; launch(new Intent(this, HomeActivity.class)); front = ""; }, this::soundToggle);
+        boolean fresh = now - fixAt < 6000;
+        day.ensure(now);
+        long[] n = day.next(now);
+        int[] a = awaitingIqama(now);
+        long left = (n[1] - now) / 60_000L;
+        String p = a != null ? day.name(a[0], now) + ": الإقامة بعد " + Ui.ar(a[1]) + " د"
+                : left <= 60 ? day.name((int) n[0], now) + " بعد " + Ui.ar(Math.max(1, left)) + " د"
+                : day.name((int) n[0], now) + " " + Day.clockOf(n[1]);
+        strip.update(themeDay(now), fresh ? Math.round(kmh) : (fixAt == 0 ? -1 : 0), limitNow(), p, soundPlaying());
+        strip.show(true);
+    }
+    /** The settings: the strip's switch or its place changed. */
+    void stripReset() { if (strip != null) { strip.show(false); strip = null; } }
+    /** «أماكني»: the owner's places, to choose one and go. */
+    void places() { if (HomeActivity.live != null) HomeActivity.live.pickPlace(); }
     Khatma khatmaPlayer() { return khatma; }
 
     /** FM near: the screen's radio opens and the frequency is shown (probe: com.tw.radio takes no command). Else the stream. */

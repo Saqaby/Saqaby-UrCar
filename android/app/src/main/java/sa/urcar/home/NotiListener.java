@@ -36,6 +36,7 @@ public class NotiListener extends NotificationListenerService {
     /** Back to the navigation app on its guidance (the notification's own tap), else the app's front door. */
     static void openNav(Context c) {
         android.app.PendingIntent pi = navTap;
+        PanelService.front = navPkg;
         if (pi != null) try { pi.send(); return; } catch (Exception ignored) { }
         android.content.Intent i = navPkg.isEmpty() ? null : c.getPackageManager().getLaunchIntentForPackage(navPkg);
         if (i != null) try { c.startActivity(i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)); } catch (Exception ignored) { }

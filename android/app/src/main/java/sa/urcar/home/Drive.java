@@ -30,11 +30,14 @@ final class Drive extends LinearLayout {
     private final LinearLayout[] destViews = new LinearLayout[4];
     private final Ui.Icon[] destIcons = new Ui.Icon[4];
     private TextView mosqueKm;
-    private LinearLayout navCell;
+    private LinearLayout navCell, placesCell, suggestBox;
+    private TextView suggestText;
+    private Ui.Icon placesIcon, suggestIcon;
+    private Runnable suggestRun;
     private Ui.Icon navIcon;
 
     /** openGauge / openQuote: the speed card and the quote card open to the whole screen (Full). */
-    Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque, Runnable fuel, Runnable navApp) {
+    Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque, Runnable fuel, Runnable navApp, Runnable places) {
         super(c);
         H = height / 100f;
         setOrientation(VERTICAL);
@@ -116,6 +119,21 @@ final class Drive extends LinearLayout {
         top.setOnClickListener(v -> openGauge.run());
         addView(speedCard, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1.25f));
 
+        // ---- the guessed destination when a trip starts («إلى العمل؟»), or an offer to name a place: one tap
+        suggestBox = new LinearLayout(c);
+        suggestBox.setGravity(Gravity.CENTER_VERTICAL);
+        suggestBox.setPadding(px(2.4f), 0, px(2.4f), 0);
+        suggestIcon = new Ui.Icon(c, Ui.Icon.NAVI, 0);
+        suggestBox.addView(suggestIcon, new LayoutParams(px(4.4f), px(4.4f)));
+        suggestText = Ui.text(c, px(3.8f), Ui.medium(c), 0);
+        suggestText.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LayoutParams stl = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
+        stl.setMarginStart(px(1.6f));
+        suggestBox.addView(suggestText, stl);
+        suggestBox.setVisibility(GONE);
+        suggestBox.setOnClickListener(v -> { Runnable r = suggestRun; showSuggest(null, null); if (r != null) r.run(); });
+        addView(suggestBox, new LayoutParams(LayoutParams.MATCH_PARENT, px(9)) {{ topMargin = px(1.6f); }});
+
         // ---- Radarbot
         alertBox = new LinearLayout(c);
         alertBox.setGravity(Gravity.CENTER_VERTICAL);
@@ -162,6 +180,17 @@ final class Drive extends LinearLayout {
         LayoutParams nl = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
         nl.setMarginStart(px(1.4f));
         dests.addView(navCell, nl);
+        // the owner's own places (learned from the trips), when there are any: a star that lists them
+        placesCell = new LinearLayout(c);
+        placesCell.setGravity(Gravity.CENTER);
+        placesCell.setContentDescription("أماكني");
+        placesIcon = new Ui.Icon(c, Ui.Icon.STAR, 0);
+        placesCell.addView(placesIcon, new LayoutParams(px(5.6f), px(5.6f)));
+        placesCell.setOnClickListener(v -> places.run());
+        placesCell.setVisibility(GONE);
+        LayoutParams sl2 = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+        sl2.setMarginStart(px(1.4f));
+        dests.addView(placesCell, 4, sl2);
         addView(dests, new LayoutParams(LayoutParams.MATCH_PARENT, px(9)) {{ topMargin = px(1.6f); }});
 
         // ---- the quote of the hour
@@ -221,6 +250,11 @@ final class Drive extends LinearLayout {
         mosqueKm.setTextColor(mosqueHot ? th.sandInk : th.fg);
         navCell.setBackground(Ui.box(Ui.alpha(th.sand, .16f), Ui.alpha(th.sand, .55f), px(2)));
         navIcon.set(Ui.Icon.NAVI, th.sand);
+        placesCell.setBackground(Ui.box(th.panel, th.line, px(2)));
+        placesIcon.set(Ui.Icon.STAR, th.sand);
+        suggestBox.setBackground(Ui.box(th.sand, 0, px(1.6f)));
+        suggestText.setTextColor(th.sandInk);
+        suggestIcon.set(Ui.Icon.NAVI, th.sandInk);
     }
     /**
      * While a navigation runs: the speed, a smaller compass (no words under it) and the next step: the turn's arrow,
@@ -230,12 +264,8 @@ final class Drive extends LinearLayout {
         if (on != navOn) {
             navOn = on;
             navBox.setVisibility(on ? VISIBLE : GONE);
-            heading.setVisibility(on ? GONE : VISIBLE);
-            qibla.setVisibility(on ? GONE : VISIBLE);
-            LayoutParams cl = (LayoutParams) compass.getLayoutParams();
-            cl.width = cl.height = px(on ? 14 : 22);
             speed.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px(on ? 13 : 17));   // three share the card
-            compass.setLayoutParams(cl);
+            fit();
             ((LayoutParams) cp.getLayoutParams()).weight = on ? 0.6f : 1f;
             cp.requestLayout();
         }
@@ -257,6 +287,28 @@ final class Drive extends LinearLayout {
         if (km != null) set(mosqueKm, km);
         destViews[2].setContentDescription(km == null ? "أقرب مسجد" : "مسجد بعد " + km);
     }
+
+    /**
+     * The speed card gives its height to the lines under it (the gold one, the orange one): with one of them the words
+     * under the compass go (they ran into the trip's line), with both the compass shrinks; in a navigation as before.
+     */
+    private void fit() {
+        int bars = (suggestBox.getVisibility() == VISIBLE ? 1 : 0) + (alertBox.getVisibility() == VISIBLE ? 1 : 0);
+        heading.setVisibility(navOn || bars >= 2 ? GONE : VISIBLE);
+        qibla.setVisibility(navOn || bars >= 1 ? GONE : VISIBLE);
+        int size = px(navOn ? 14 : bars >= 2 ? 17 : 22);
+        LayoutParams cl = (LayoutParams) compass.getLayoutParams();
+        if (cl.width != size) { cl.width = cl.height = size; compass.setLayoutParams(cl); }
+    }
+    /** The gold line: a text and what its tap does; null: gone. */
+    void showSuggest(String text, Runnable r) {
+        suggestRun = r;
+        boolean was = suggestBox.getVisibility() == VISIBLE;
+        suggestBox.setVisibility(text == null ? GONE : VISIBLE);
+        if (text != null) set(suggestText, text);
+        if (was != (text != null)) fit();
+    }
+    void showPlaces(boolean any) { placesCell.setVisibility(any ? VISIBLE : GONE); }
 
     void showTrip(String s) { set(trip, s); trip.setVisibility(s.isEmpty() ? GONE : VISIBLE); }
 
@@ -293,8 +345,10 @@ final class Drive extends LinearLayout {
     void setAlertAction(Runnable r) { alertBox.setOnClickListener(r == null ? null : v -> r.run()); alertBox.setClickable(r != null); }
 
     void showAlert(String text) {
+        boolean was = alertBox.getVisibility() == VISIBLE;
         alertBox.setVisibility(text == null ? GONE : VISIBLE);
         if (text != null) set(alert, text);
+        if (was != (text != null)) fit();
     }
     /** Moving: one short text in a bigger letter, two lines at most; stopped: up to three lines. */
     void showQuote(String[] q, boolean movingNow) {

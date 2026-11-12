@@ -38,6 +38,7 @@ public class HomeActivity extends Activity {
         super.onResume();
         resumed = true;
         live = this;
+        PanelService.front = "";
         PanelService.start(this);
         root.post(this::build);
     }
@@ -70,7 +71,7 @@ public class HomeActivity extends Activity {
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         Panel panel = new Panel(this, PanelService.live, h);
         PanelService s = PanelService.live;
-        Drive drive = new Drive(this, h, () -> showFull("gauge"), () -> showFull("quote"), () -> s.goPlace("home", "البيت"), () -> s.goPlace("work", "العمل"), s::mosque, s::station, s::navApp);
+        Drive drive = new Drive(this, h, () -> showFull("gauge"), () -> showFull("quote"), () -> s.goPlace("home", "البيت"), () -> s.goPlace("work", "العمل"), s::mosque, s::station, s::navApp, s::places);
         LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(w * 2 / 5, ViewGroup.LayoutParams.MATCH_PARENT);
         LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
         if (Prefs.side(this).equals("right")) { row.addView(drive, dl); row.addView(panel, pl); }
@@ -191,6 +192,65 @@ public class HomeActivity extends Activity {
                 .setInterpolator(new android.view.animation.OvershootInterpolator(1.2f))
                 .withEndAction(() -> card.animate().alpha(0f).translationY(-40).setStartDelay(4000).setDuration(900)
                         .withEndAction(() -> root.removeView(card)).start()).start();
+    }
+
+    // ---------------------------------------------------------------- two fingers: the sound, without looking
+    private boolean two;
+    private float gx, gy;
+    private long gAt;
+    /**
+     * Two fingers anywhere on the home screen: a tap stops the sound or plays it again, a sweep to the right or the left
+     * goes to the next or the previous track. From the second finger on, what is under the fingers is not pressed.
+     */
+    @Override public boolean dispatchTouchEvent(android.view.MotionEvent e) {
+        if (!Smart.on(this, "gestures", true) || full != null) return super.dispatchTouchEvent(e);
+        int a = e.getActionMasked();
+        if (!two && a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 2) {
+            two = true;
+            gx = (e.getX(0) + e.getX(1)) / 2; gy = (e.getY(0) + e.getY(1)) / 2; gAt = e.getEventTime();
+            android.view.MotionEvent cancel = android.view.MotionEvent.obtain(e);
+            cancel.setAction(android.view.MotionEvent.ACTION_CANCEL);
+            super.dispatchTouchEvent(cancel);
+            cancel.recycle();
+            return true;
+        }
+        if (!two) return super.dispatchTouchEvent(e);
+        if (a == android.view.MotionEvent.ACTION_POINTER_UP && e.getPointerCount() == 2 && gAt > 0) {
+            float dx = (e.getX(0) + e.getX(1)) / 2 - gx, dy = (e.getY(0) + e.getY(1)) / 2 - gy;
+            long ms = e.getEventTime() - gAt;
+            gAt = 0;
+            PanelService s = PanelService.live;
+            if (s != null) {
+                if (Math.abs(dx) > 140 && Math.abs(dx) > 2 * Math.abs(dy)) s.soundSkip(dx < 0);   // to the left: the next, as a page turns in Arabic
+                else if (ms < 600 && Math.abs(dx) < 40 && Math.abs(dy) < 40) s.soundToggle();
+            }
+        }
+        if (a == android.view.MotionEvent.ACTION_UP || a == android.view.MotionEvent.ACTION_CANCEL) two = false;
+        return true;
+    }
+
+    // ---------------------------------------------------------------- the owner's places
+    /** A place the car keeps stopping at: its name makes it a destination; «ليس وجهة» drops it for good. */
+    void namePlace(int index) {
+        Smart.edit(this, index, null, false, true);   // asked once, whatever the answer
+        android.widget.EditText in = new android.widget.EditText(this);
+        in.setHint("مثل: النادي، بيت الوالد");
+        in.setTextSize(26);
+        new android.app.AlertDialog.Builder(this).setTitle("اسم هذا المكان").setView(in)
+                .setPositiveButton("حفظ", (d, w) -> { if (in.getText().toString().trim().length() > 0) Smart.edit(this, index, in.getText().toString(), false, false); })
+                .setNeutralButton("لاحقًا", null)
+                .setNegativeButton("ليس وجهة", (d, w) -> Smart.edit(this, index, null, true, false)).show();
+    }
+    /** «أماكني»: the list, the most visited first; one tap starts the way to it. */
+    void pickPlace() {
+        java.util.List<Object[]> ps = Smart.places(this);
+        if (ps.isEmpty() || PanelService.live == null) return;
+        String[] names = new String[ps.size()];
+        for (int i = 0; i < names.length; i++) names[i] = Smart.placeLabel(ps.get(i)) + "  (" + Ui.ar(ps.get(i)[2]) + " زيارة)";
+        new android.app.AlertDialog.Builder(this).setTitle("أماكني").setItems(names, (d, i) -> {
+            Object[] p = ps.get(i);
+            PanelService.live.goTo((Double) p[3], (Double) p[4], Smart.placeLabel(p));
+        }).setNegativeButton("إغلاق", null).show();
     }
 
     @Override public void onBackPressed() { closeFull(); /* the home screen stays */ }
