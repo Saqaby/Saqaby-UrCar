@@ -23,6 +23,14 @@ import java.io.OutputStream;
  */
 final class Updater {
     private Updater() {}
+    /**
+     * While Android's installer asks «تثبيت», nothing of ours may be drawn over it: Android ignores a tap on a button
+     * that another app's window covers (the strip over the navigation, version 70), and the update cannot be accepted.
+     */
+    static volatile long installingAt;
+    static boolean installing() { return System.currentTimeMillis() - installingAt < 3 * 60_000L; }
+    /** The last check's outcome, for the settings: «الإصدار ٧٣ نُزّل», «لم أصل إلى التحديث: …». */
+    private static void said(Context c, String s) { Prefs.put(c, "upd_last", new java.text.SimpleDateFormat("d/M HH:mm", java.util.Locale.US).format(new java.util.Date()) + " " + s); }
     static final String REPO = "https://github.com/Saqaby/Saqaby-UrCar/releases/download/";
     /**
      * Two channels: «test» follows every build (app-latest: the owner's screen, where a change is tried first),
@@ -52,7 +60,7 @@ final class Updater {
                 if (theirs >= 0) break;
             }
             if (theirs < 0) throw last;
-            if (theirs <= ours) { if (manual) toast(c, "سيارتك محدّثة (الإصدار " + Ui.ar(ours) + ")"); return; }
+            if (theirs <= ours) { said(c, "محدّثة: الإصدار " + Ui.ar(ours)); if (manual) toast(c, "سيارتك محدّثة (الإصدار " + Ui.ar(ours) + ")"); return; }
             if (manual) toast(c, "يُنزَّل الإصدار " + Ui.ar(theirs) + "…");
             File apk = new File(c.getCacheDir(), "urcar.apk");
             boolean got = false;
@@ -68,8 +76,12 @@ final class Updater {
                 if (got) break;
             }
             if (!got) throw last;
+            said(c, "نُزّل الإصدار " + Ui.ar(theirs) + "، وينتظر «تثبيت»");
+            installingAt = System.currentTimeMillis();
+            if (PanelService.live != null) PanelService.live.stripReset();
             install(c, apk);
         } catch (Exception e) {
+            said(c, "لم أصل إلى التحديث: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " (" + e.getMessage() + ")"));
             if (manual) toast(c, e instanceof java.net.UnknownHostException ? "لا إنترنت في الشاشة الآن: وصّلها بشبكة الجوال ثم أعد المحاولة"
                     : "لم أصل إلى التحديث: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " (" + e.getMessage() + ")"));
         }
@@ -107,9 +119,13 @@ final class Updater {
         @Override public void onReceive(Context c, Intent i) {
             int st = i.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
             if (st == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+                installingAt = System.currentTimeMillis();
                 Intent confirm = i.getParcelableExtra(Intent.EXTRA_INTENT);
                 if (confirm != null) c.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             } else if (st != PackageInstaller.STATUS_SUCCESS) {
+                installingAt = 0;
+                String why = i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                said(c, "لم يكتمل التثبيت (" + st + (why == null ? "" : ": " + why) + ")");
                 Toast.makeText(c, "لم يكتمل التحديث", Toast.LENGTH_LONG).show();
             }
         }

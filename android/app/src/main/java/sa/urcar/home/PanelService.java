@@ -802,7 +802,7 @@ public class PanelService extends Service implements Panel.Actions {
     /** The strip over the navigation app: while that app is the one opened from here and the home screen is not in front. */
     private Strip strip;
     private void strip(long now) {
-        boolean want = Smart.on(this, "strip", false) && android.provider.Settings.canDrawOverlays(this) && !HomeActivity.resumed
+        boolean want = Smart.on(this, "strip", false) && android.provider.Settings.canDrawOverlays(this) && !HomeActivity.resumed && !Updater.installing()
                 && !front.isEmpty() && (front.equals(Prefs.nav(this)) || front.equals(NotiListener.navPkg));
         if (!want) { if (strip != null) strip.show(false); return; }
         if (strip == null) strip = new Strip(this, () -> { front = ""; launch(new Intent(this, HomeActivity.class)); front = ""; }, this::soundToggle);
