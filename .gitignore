@@ -4,3 +4,4 @@ android/.gradle/
 *.keystore
 !android/probe/probe.keystore
 *.jks
+.netlify/
