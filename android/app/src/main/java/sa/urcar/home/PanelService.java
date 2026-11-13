@@ -395,7 +395,7 @@ public class PanelService extends Service implements Panel.Actions {
                     }, 20_000);
                 }
                 duaUntil = now + 60_000;
-                duaKind = travelDuaFor(l) ? "travel" : "riding";   // far from home: the travel du'a
+                duaKind = "riding";   // the travel du'a has its own moment: travelTick
                 final String kind = duaKind;
                 if (Prefs.of(this).getBoolean("dua_sound", true))
                     h.postDelayed(() -> sound.playDua(kind, Prefs.of(this).getFloat("adhan_vol", 1f)), 1500);
@@ -404,6 +404,7 @@ public class PanelService extends Service implements Panel.Actions {
         }
         if (kmh >= 3 && prevLat < 90) tripKm += Day.km(prevLat, prevLon, l.getLatitude(), l.getLongitude());
         arrivedHome(l, now);
+        travelTick(l, now);
         prevLat = l.getLatitude(); prevLon = l.getLongitude();
         // kept on the screen every 30 seconds, so a restart of the screen goes on with the same trip
         if (tripStart > 0 && now - savedMoveAt > 30_000) {
@@ -459,9 +460,24 @@ public class PanelService extends Service implements Panel.Actions {
     }
     void testDua(String which) { sound.playDua(which, Prefs.of(this).getFloat("adhan_vol", 1f)); }
 
-    private boolean travelDuaFor(Location l) {
+    /**
+     * The travel du'a, once a journey: when the car, moving, gets 40 km from the saved home. It is not said again (the
+     * owner heard it at every start while away) until the car has come back within 40 km of the home and gone out again:
+     * a new journey. Kept on the screen, so turning the car off and on while away changes nothing. A screen that is
+     * already away when this version arrives is taken as travelling, without the du'a.
+     */
+    private void travelTick(Location l, long now) {
         float hl = Prefs.of(this).getFloat("home_lat", 999), ho = Prefs.of(this).getFloat("home_lon", 999);
-        return hl < 90 && Day.km(hl, ho, l.getLatitude(), l.getLongitude()) > 80;
+        if (hl > 90) return;
+        boolean far = Day.km(hl, ho, l.getLatitude(), l.getLongitude()) >= 40;
+        android.content.SharedPreferences pr = Prefs.of(this);
+        if (!pr.contains("travelling")) { pr.edit().putBoolean("travelling", far).apply(); return; }
+        if (far == pr.getBoolean("travelling", false)) return;
+        pr.edit().putBoolean("travelling", far).apply();
+        if (!far || kmh < 10 || duas.get("travel") == null) return;
+        duaKind = "travel";
+        duaUntil = now + 60_000;
+        if (pr.getBoolean("dua_sound", true)) sound.playDua("travel", pr.getFloat("adhan_vol", 1f));
     }
 
     void startLocation() {

@@ -224,7 +224,7 @@ public class SettingsActivity extends Activity {
         list.addView(vol, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
 
         head("أصوات الأذكار");
-        list.addView(note("ذكر الركوب ودعاء السفر عند بدء الرحلة، ودعاء دخول المنزل عند الوصول إليه."));
+        list.addView(note("ذكر الركوب عند بدء الرحلة، ودعاء السفر مرة واحدة حين تبتعد ٤٠ كم عن البيت (ولا يُعاد حتى ترجع دون ٤٠ كم ثم تبتعد من جديد)، ودعاء دخول المنزل عند الوصول إليه."));
         LinearLayout du = grid();
         for (String[] d : new String[][]{{"riding", "ذكر الركوب"}, {"travel", "دعاء السفر"}, {"home", "دعاء دخول المنزل"}}) {
             boolean have = Sound.duaFile(this, d[0]).exists();
