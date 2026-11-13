@@ -104,7 +104,7 @@ final class Ui {
     /** The icons of the panel, drawn on a 24-unit grid like the preview's SVGs. */
     static final class Icon extends View {
         static final int PLAY = 1, PAUSE = 2, PREV = 3, NEXT = 4, YOUTUBE = 5, BT = 6, GEAR = 7, APPS = 8, RADIO = 9,
-                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21, RAIN = 22, STORM = 23, FOG = 24, NAVI = 25, STAR = 26, SLEEP = 27;
+                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21, RAIN = 22, STORM = 23, FOG = 24, NAVI = 25, STAR = 26;
         int kind;
         final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Icon(Context c, int kind, int color) {
@@ -176,10 +176,6 @@ final class Ui {
                     path.moveTo(13, 14); path.lineTo(10, 18); path.lineTo(14, 18); path.lineTo(11, 22.5f); c.drawPath(path, p); break;
                 case FOG: stroke(); c.drawLine(4, 8, 20, 8, p); c.drawLine(3, 12, 21, 12, p); c.drawLine(5, 16, 19, 16, p); break;
                 case NAVI: fill(); path.moveTo(12, 2.5f); path.lineTo(20.5f, 21); path.lineTo(12, 16.6f); path.lineTo(3.5f, 21); path.close(); c.drawPath(path, p); break;   // the navigation arrow
-                case SLEEP: fill(); path.addCircle(11, 12.5f, 8.5f, Path.Direction.CW);   // a crescent: the full moon less a moon beside it
-                    { Path cut = new Path(); cut.addCircle(16, 8.5f, 7.5f, Path.Direction.CW); path.op(cut, Path.Op.DIFFERENCE); }
-                    c.drawPath(path, p);
-                    c.drawCircle(19.5f, 15.5f, 1f, p); c.drawCircle(16.5f, 19.8f, 0.7f, p); break;
                 case STAR: fill(); path.moveTo(12, 3); path.lineTo(14.35f, 9.26f); path.lineTo(21.03f, 9.56f); path.lineTo(15.8f, 13.74f);
                     path.lineTo(17.58f, 20.19f); path.lineTo(12, 16.5f); path.lineTo(6.42f, 20.19f); path.lineTo(8.2f, 13.74f);
                     path.lineTo(2.97f, 9.56f); path.lineTo(9.65f, 9.26f); path.close(); c.drawPath(path, p); break;

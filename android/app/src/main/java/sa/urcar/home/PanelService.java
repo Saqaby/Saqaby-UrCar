@@ -513,7 +513,6 @@ public class PanelService extends Service implements Panel.Actions {
         launch(i != null ? i : new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
     }
     @Override public void settings() { launch(new Intent(this, SettingsActivity.class)); }
-    @Override public void sleep() { if (HomeActivity.live != null) HomeActivity.live.sleep(); }
     @Override public void apps() { launch(new Intent(this, AppsActivity.class)); }
     /** «البيت» / «العمل»: the place saved in the settings, in the chosen navigation app. */
     void goPlace(String key, String label) {
@@ -645,8 +644,20 @@ public class PanelService extends Service implements Panel.Actions {
     /**
      * «مرحبًا بك في الخبر»: the city from the app's own list (Cities: GeoNames, offline, no server shared by all the
      * app's users) every 30 seconds while moving; a new name found twice in a row is the new city, and is welcomed
-     * unless it was welcomed in the last half hour (the edges of Dammam, Khobar and Dhahran touch).
+     * unless it was welcomed in the last three hours (the edges of Dammam, Khobar and Dhahran touch, and the daily
+     * drive between them welcomed the owner each time). The home screen not in front (the navigation, YouTube …): the
+     * welcome waits, and shows when it comes back within 20 minutes with the car still in that city (before, it was
+     * lost, and the city counted as welcomed).
      */
+    static volatile String welcomeCity = "";
+    static volatile long welcomeAt;
+    /** The welcome that waited, once, for the home screen. */
+    String takeWelcome() {
+        String c = welcomeCity;
+        if (c.isEmpty() || System.currentTimeMillis() - welcomeAt > 20 * 60_000L || !c.equals(Prefs.of(this).getString("city", ""))) { welcomeCity = ""; return null; }
+        welcomeCity = "";
+        return c;
+    }
     private String cityPending = "";
     private long cityAskedAt;
     private Cities cities;
@@ -663,9 +674,10 @@ public class PanelService extends Service implements Panel.Actions {
         cityPending = "";
         Prefs.put(this, "city", c);
         long last = Prefs.of(this).getLong("welcomed_" + c, 0), now = System.currentTimeMillis();
-        if (cur.isEmpty() || now - last < 30 * 60_000L) return;   // the first city ever is not «new»
+        if (cur.isEmpty() || now - last < 3 * 3600_000L) return;   // the first city ever is not «new»
         Prefs.of(this).edit().putLong("welcomed_" + c, now).apply();
-        if (HomeActivity.live != null) HomeActivity.live.welcome(c);
+        if (HomeActivity.live != null && HomeActivity.resumed) { welcomeCity = ""; HomeActivity.live.welcome(c); }
+        else { welcomeCity = c; welcomeAt = now; }
     }
 
     /** The trip line: «📄 ١٢٫٤ كم، ٣٥ دقيقة» (a report sheet, not the word), or empty before the first trip. */
@@ -804,7 +816,7 @@ public class PanelService extends Service implements Panel.Actions {
     private Strip strip;
     private void strip(long now) {
         boolean may = Smart.on(this, "strip", false) && android.provider.Settings.canDrawOverlays(this) && !HomeActivity.resumed && !Updater.installing()
-                && !front.equals(getPackageName()) && !HomeActivity.sleeping;
+                && !front.equals(getPackageName());
         boolean inNav = !front.isEmpty() && (front.equals(Prefs.nav(this)) || front.equals(NotiListener.navPkg));
         // another app in front (opened from the home screen) while a guidance runs: the next step across the top
         boolean step = !inNav && !front.isEmpty() && NotiListener.navigating() && (NotiListener.navDist.length() + NotiListener.navStep.length() > 0);

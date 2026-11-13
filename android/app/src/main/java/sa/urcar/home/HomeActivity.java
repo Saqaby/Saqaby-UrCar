@@ -22,10 +22,7 @@ import android.widget.TextView;
  */
 public class HomeActivity extends Activity {
     static boolean resumed;
-    static HomeActivity live;
-    /** The screen dark (the moon on the panel): the sound goes on; a tap anywhere lights it again. */
-    static volatile boolean sleeping;
-    private View dark;   // while the home screen is in front: the welcome to a city shows on it
+    static HomeActivity live;   // while the home screen is in front: the welcome to a city shows on it
     private FrameLayout root;
     private String builtFor = "";
 
@@ -46,7 +43,6 @@ public class HomeActivity extends Activity {
         root.post(this::build);
     }
     @Override protected void onPause() {
-        wake();
         resumed = false;
         live = null;
         closeFull();
@@ -60,6 +56,8 @@ public class HomeActivity extends Activity {
         if (!resumed) return;
         if (PanelService.live == null) { root.postDelayed(this::build, 300); return; }
         if (!located() || !Prefs.of(this).getBoolean("setup_done", true)) { builtFor = ""; setup(); return; }
+        String wc = PanelService.live.takeWelcome();   // a city entered while another app was in front
+        if (wc != null) root.postDelayed(() -> { if (resumed) welcome(wc); }, 600);
         String key = Prefs.side(this) + root.getWidth() + "x" + root.getHeight();
         if (key.equals(builtFor) && !PanelService.prefsChanged && root.getChildCount() > 0 && root.getChildAt(0) instanceof LinearLayout) {
             attach();
@@ -177,7 +175,6 @@ public class HomeActivity extends Activity {
 
     /** «مرحبًا بك في الخبر»: a card that grows in over the middle, stays four seconds and fades away. */
     void welcome(String city) {
-        if (sleeping) return;   // the dark screen stays dark
         Ui.Theme th = new Ui.Theme(PanelService.live != null && PanelService.live.dayNow());
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
@@ -193,10 +190,13 @@ public class HomeActivity extends Activity {
         card.addView(b);
         root.addView(card, new FrameLayout.LayoutParams(-2, -2, android.view.Gravity.CENTER));
         card.setAlpha(0f); card.setScaleX(.85f); card.setScaleY(.85f);
+        card.setOnClickListener(v -> root.removeView(card));   // a tap closes it at once
         card.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(700)
-                .setInterpolator(new android.view.animation.OvershootInterpolator(1.2f))
-                .withEndAction(() -> card.animate().alpha(0f).translationY(-40).setStartDelay(4000).setDuration(900)
-                        .withEndAction(() -> root.removeView(card)).start()).start();
+                .setInterpolator(new android.view.animation.OvershootInterpolator(1.2f)).start();
+        // the fade as its own step, not from inside the first animation's end (a rebuilt screen or a second
+        // welcome could leave a card standing)
+        root.postDelayed(() -> card.animate().alpha(0f).translationY(-40).setDuration(900)
+                .withEndAction(() -> { if (card.getParent() != null) root.removeView(card); }).start(), 4700);
     }
 
     // ---------------------------------------------------------------- two fingers: the sound, without looking
@@ -208,7 +208,6 @@ public class HomeActivity extends Activity {
      * goes to the next or the previous track. From the second finger on, what is under the fingers is not pressed.
      */
     @Override public boolean dispatchTouchEvent(android.view.MotionEvent e) {
-        if (sleeping) { if (e.getActionMasked() == android.view.MotionEvent.ACTION_UP) wake(); return true; }   // the tap that wakes presses nothing
         if (!Smart.on(this, "gestures", true) || full != null) return super.dispatchTouchEvent(e);
         int a = e.getActionMasked();
         if (!two && a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 2) {
@@ -235,34 +234,6 @@ public class HomeActivity extends Activity {
         return true;
     }
 
-    // ---------------------------------------------------------------- the screen dark
-    /**
-     * Black over everything, the backlight as low as this window may set it (the screen's own setting is not
-     * touched), the system bars hidden. The sound (the khatma, YouTube, …) goes on. A tap wakes it.
-     */
-    void sleep() {
-        if (sleeping) return;
-        sleeping = true;
-        closeFull();
-        dark = new View(this);
-        dark.setBackgroundColor(0xff000000);
-        root.addView(dark, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        android.view.WindowManager.LayoutParams w = getWindow().getAttributes();
-        w.screenBrightness = 0.01f;
-        getWindow().setAttributes(w);
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-    }
-    void wake() {
-        if (!sleeping) return;
-        sleeping = false;
-        if (dark != null) { root.removeView(dark); dark = null; }
-        android.view.WindowManager.LayoutParams w = getWindow().getAttributes();
-        w.screenBrightness = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
-        getWindow().setAttributes(w);
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-    }
-
     // ---------------------------------------------------------------- the owner's places
     /** A place the car keeps stopping at: its name makes it a destination; «ليس وجهة» drops it for good. */
     void namePlace(int index) {
@@ -287,5 +258,5 @@ public class HomeActivity extends Activity {
         }).setNegativeButton("إغلاق", null).show();
     }
 
-    @Override public void onBackPressed() { wake(); closeFull(); /* the home screen stays */ }
+    @Override public void onBackPressed() { closeFull(); /* the home screen stays */ }
 }
