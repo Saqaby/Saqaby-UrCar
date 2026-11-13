@@ -513,6 +513,7 @@ public class PanelService extends Service implements Panel.Actions {
         launch(i != null ? i : new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
     }
     @Override public void settings() { launch(new Intent(this, SettingsActivity.class)); }
+    @Override public void sleep() { if (HomeActivity.live != null) HomeActivity.live.sleep(); }
     @Override public void apps() { launch(new Intent(this, AppsActivity.class)); }
     /** «البيت» / «العمل»: the place saved in the settings, in the chosen navigation app. */
     void goPlace(String key, String label) {
@@ -802,10 +803,20 @@ public class PanelService extends Service implements Panel.Actions {
     /** The strip over the navigation app: while that app is the one opened from here and the home screen is not in front. */
     private Strip strip;
     private void strip(long now) {
-        boolean want = Smart.on(this, "strip", false) && android.provider.Settings.canDrawOverlays(this) && !HomeActivity.resumed && !Updater.installing()
-                && !front.isEmpty() && (front.equals(Prefs.nav(this)) || front.equals(NotiListener.navPkg));
-        if (!want) { if (strip != null) strip.show(false); return; }
-        if (strip == null) strip = new Strip(this, () -> { front = ""; launch(new Intent(this, HomeActivity.class)); front = ""; }, this::soundToggle);
+        boolean may = Smart.on(this, "strip", false) && android.provider.Settings.canDrawOverlays(this) && !HomeActivity.resumed && !Updater.installing()
+                && !front.equals(getPackageName()) && !HomeActivity.sleeping;
+        boolean inNav = !front.isEmpty() && (front.equals(Prefs.nav(this)) || front.equals(NotiListener.navPkg));
+        // another app in front (opened from the home screen) while a guidance runs: the next step across the top
+        boolean step = !inNav && !front.isEmpty() && NotiListener.navigating() && (NotiListener.navDist.length() + NotiListener.navStep.length() > 0);
+        if (!may || !(inNav || step)) { if (strip != null) strip.show(false); return; }
+        if (strip == null) strip = new Strip(this, () -> { front = ""; launch(new Intent(this, HomeActivity.class)); front = ""; },
+                () -> NotiListener.openNav(this), this::soundToggle);
+        if (step) {
+            strip.updateNav(themeDay(now), NotiListener.navIcon, NotiListener.navStep.isEmpty() ? NotiListener.navEta : NotiListener.navStep,
+                    NotiListener.navDist, soundPlaying());
+            strip.show(true);
+            return;
+        }
         day.ensure(now);
         long[] n = day.next(now);
         int[] a = awaitingIqama(now);

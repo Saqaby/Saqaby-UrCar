@@ -16,7 +16,7 @@ import android.widget.TextView;
  * the screen is 1280×720 at density 1.0, so sizes are pixels of a 720-high panel (H = 1% of it, the preview's cqh).
  */
 final class Panel extends LinearLayout {
-    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); void library(); }
+    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); void library(); void sleep(); }
 
     private final Actions act;
     private final float H;
@@ -35,7 +35,8 @@ final class Panel extends LinearLayout {
     private int dayHot = -2;
     private Ui.Icon kIcon;
     private boolean kOn, libOn;
-    private LinearLayout libBtn;
+    private LinearLayout libBtn, sleepBtn;
+    private Ui.Icon sleepIcon;
     private Ui.Icon libIcon;
     private final LinearLayout[] keys = new LinearLayout[4];
     private final Ui.Icon[] keyIcons = new Ui.Icon[4];
@@ -80,7 +81,15 @@ final class Panel extends LinearLayout {
         place = Ui.text(c, px(2.7f), reg, 0);
         plr.addView(pinIcon, new LayoutParams(px(2.9f), px(2.9f))); plr.addView(place);
         side.addView(wr, lp(0)); side.addView(plr, lp(px(0.6f)));
-        r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(side);
+        sleepBtn = row();   // the screen dark, the sound on: a crescent, at the card's far end
+        sleepBtn.setGravity(Gravity.CENTER);
+        sleepIcon = new Ui.Icon(c, Ui.Icon.SLEEP, 0);
+        sleepBtn.addView(sleepIcon, new LayoutParams(px(4.4f), px(4.4f)));
+        sleepBtn.setContentDescription("إطفاء الشاشة");
+        sleepBtn.setOnClickListener(v -> act.sleep());
+        LayoutParams zl = new LayoutParams(px(8.4f), px(8.4f));
+        zl.setMarginStart(px(2));
+        r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(side); r1.addView(sleepBtn, zl);
         head.addView(r1);
         LinearLayout r3 = row();
         hijri = Ui.text(c, px(3), med, 0);
@@ -211,6 +220,7 @@ final class Panel extends LinearLayout {
         LayoutParams ll = new LayoutParams(px(10), LayoutParams.MATCH_PARENT);
         ll.setMarginStart(px(1.4f));
         quran.addView(libBtn, ll);
+
         addView(quran, new LayoutParams(LayoutParams.MATCH_PARENT, px(10)) {{ topMargin = px(1.6f); }});
 
         // ---- the four buttons
@@ -331,6 +341,8 @@ final class Panel extends LinearLayout {
         kF.setTextColor(kOn ? th.sandInk : th.muted);
         libBtn.setBackground(libOn ? Ui.box(th.sand, 0, px(2)) : Ui.box(th.panel, th.line, px(2)));
         libIcon.set(Ui.Icon.PHONES, libOn ? th.sandInk : th.sand);
+        sleepBtn.setBackground(Ui.box(th.panel2, th.line, px(2)));
+        sleepIcon.set(Ui.Icon.SLEEP, th.sand);
     }
     /** The library's button turns gold while one of its surahs plays. */
     void showLibrary(boolean on) { if (on != libOn) { libOn = on; paintRadio(radioOn); } }
