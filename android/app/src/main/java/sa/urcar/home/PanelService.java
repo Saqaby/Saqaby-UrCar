@@ -806,15 +806,12 @@ public class PanelService extends Service implements Panel.Actions {
                 && !front.isEmpty() && (front.equals(Prefs.nav(this)) || front.equals(NotiListener.navPkg));
         if (!want) { if (strip != null) strip.show(false); return; }
         if (strip == null) strip = new Strip(this, () -> { front = ""; launch(new Intent(this, HomeActivity.class)); front = ""; }, this::soundToggle);
-        boolean fresh = now - fixAt < 6000;
         day.ensure(now);
         long[] n = day.next(now);
         int[] a = awaitingIqama(now);
-        long left = (n[1] - now) / 60_000L;
-        String p = a != null ? day.name(a[0], now) + ": الإقامة بعد " + Ui.ar(a[1]) + " د"
-                : left <= 60 ? day.name((int) n[0], now) + " بعد " + Ui.ar(Math.max(1, left)) + " د"
-                : day.name((int) n[0], now) + " " + Day.clockOf(n[1]);
-        strip.update(themeDay(now), fresh ? Math.round(kmh) : (fixAt == 0 ? -1 : 0), limitNow(), p, soundPlaying());
+        long m = a != null ? a[1] : Math.max(1, (n[1] - now + 59_999) / 60_000L);
+        String left = m >= 60 ? Ui.ar(m / 60) + " س" + (m % 60 == 0 ? "" : " " + Ui.ar(m % 60) + " د") : Ui.ar(m) + " د";
+        strip.update(themeDay(now), a != null ? "إقامة " + day.name(a[0], now) : day.name((int) n[0], now), left, soundPlaying());
         strip.show(true);
     }
     /** The settings: the strip's switch or its place changed. */

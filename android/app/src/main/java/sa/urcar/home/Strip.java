@@ -10,8 +10,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * A narrow strip over the navigation app: the speed and the road's limit, the next prayer, and the sound's button, so
- * the map need not be left for them. A tap on it comes back to the home screen; it is dragged to where it hides
+ * A narrow strip over the navigation app: the next prayer and the time left to it, and the sound's button, so the map
+ * need not be left for them (the speed and the limit were on it at first: the navigation app shows them itself). A tap on it comes back to the home screen; it is dragged to where it hides
  * nothing, and stays there. Needs «العرض فوق التطبيقات».
  */
 final class Strip {
@@ -19,8 +19,7 @@ final class Strip {
     private final WindowManager wm;
     private final WindowManager.LayoutParams lp;
     private final LinearLayout box;
-    private final TextView speed, prayer;
-    private final Drive.Sign sign;
+    private final TextView left, prayer;
     private final Ui.Icon play;
     private boolean shown, day;
 
@@ -39,20 +38,16 @@ final class Strip {
         box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         box.setGravity(Gravity.CENTER_VERTICAL);
         box.setPadding(22, 0, 10, 0);
-        speed = Ui.text(c, 44, Ui.display(c), 0);
-        sign = new Drive.Sign(c);
-        prayer = Ui.text(c, 26, Ui.medium(c), 0);
-        prayer.setPadding(22, 0, 14, 0);
+        prayer = Ui.text(c, 28, Ui.medium(c), 0);
+        left = Ui.text(c, 36, Ui.display(c), 0);
+        left.setPadding(16, 0, 14, 0);
         play = new Ui.Icon(c, Ui.Icon.PLAY, 0);
         LinearLayout pb = new LinearLayout(c);
         pb.setGravity(Gravity.CENTER);
         pb.addView(play, new LinearLayout.LayoutParams(30, 30));
         pb.setOnClickListener(v -> toggle.run());
-        box.addView(speed);
-        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams(52, 52);
-        sl.setMarginStart(12);
-        box.addView(sign, sl);
         box.addView(prayer);
+        box.addView(left);
         box.addView(pb, new LinearLayout.LayoutParams(64, 64));
         box.setOnTouchListener(new View.OnTouchListener() {
             float x0, y0; int px, py; boolean moved;
@@ -81,6 +76,7 @@ final class Strip {
         Ui.Theme th = new Ui.Theme(d);
         box.setBackground(Ui.box(th.panel, th.sand, 22));
         prayer.setTextColor(th.sand);
+        left.setTextColor(th.fg);
         play.set(play.kind, th.sand);
     }
 
@@ -91,17 +87,13 @@ final class Strip {
     }
     boolean shown() { return shown; }
 
-    void update(boolean d, int kmh, int limit, String prayerText, boolean playing) {
+    /** «العصر» and «١ س ٢٠ د» (or «إقامة العصر» and «٨ د» while it is awaited). */
+    void update(boolean d, String prayerText, String leftText, boolean playing) {
         if (d != day) paint(d);
-        Ui.Theme th = new Ui.Theme(d);
-        String s = kmh < 0 ? "—" : Ui.ar(kmh);
-        if (!s.contentEquals(speed.getText())) speed.setText(s);
-        speed.setTextColor(limit > 0 && kmh > limit ? 0xffe0533d : th.fg);
-        if (sign.limit != limit) { sign.limit = limit; sign.invalidate(); }
-        sign.setVisibility(limit > 0 ? View.VISIBLE : View.GONE);
         if (!prayerText.contentEquals(prayer.getText())) prayer.setText(prayerText);
+        if (!leftText.contentEquals(left.getText())) left.setText(leftText);
         int k = playing ? Ui.Icon.PAUSE : Ui.Icon.PLAY;
-        if (play.kind != k) play.set(k, th.sand);
+        if (play.kind != k) play.set(k, new Ui.Theme(d).sand);
     }
 
     /** Back to its first place (the settings), for a strip dragged out of sight. */
