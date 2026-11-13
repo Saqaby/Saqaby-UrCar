@@ -46,7 +46,13 @@ final class Updater {
      * The release first, then its copy in the repository; each tried twice. The owner's screen got 404s and 504s from
      * the release downloads (which redirect to another host) and stopped updating at version 50.
      */
+    /** One check at a time: «تحديث الآن» pressed twice, or pressed while the 6-hourly check runs, wrote the same file twice. */
+    private static final java.util.concurrent.atomic.AtomicBoolean busy = new java.util.concurrent.atomic.AtomicBoolean();
     static void check(Context c, boolean manual) {
+        if (!busy.compareAndSet(false, true)) { if (manual) toast(c, "التحديث جارٍ، انتظر قليلًا"); return; }
+        try { run(c, manual); } finally { busy.set(false); }
+    }
+    private static void run(Context c, boolean manual) {
         String[] bases = {base(c), mirror(c)};
         Exception last = null;
         try {
@@ -62,13 +68,20 @@ final class Updater {
             if (theirs < 0) throw last;
             if (theirs <= ours) { said(c, "محدّثة: الإصدار " + Ui.ar(ours)); if (manual) toast(c, "سيارتك محدّثة (الإصدار " + Ui.ar(ours) + ")"); return; }
             if (manual) toast(c, "يُنزَّل الإصدار " + Ui.ar(theirs) + "…");
-            File apk = new File(c.getCacheDir(), "urcar.apk");
+            File dir = new File(c.getFilesDir(), "update");   // not the cache, which Android may empty while it is written
+            dir.mkdirs();
+            File apk = new File(dir, "urcar-" + theirs + ".apk");
+            File[] old = dir.listFiles();
+            if (old != null) for (File f : old) if (!f.equals(apk)) f.delete();
+            new File(c.getCacheDir(), "urcar.apk").delete();
+            new File(c.getCacheDir(), "urcar.apk.part").delete();
             boolean got = false;
             for (String b : bases) {
                 for (int i = 0; i < 2 && !got; i++) {
                     try {
                         apk.delete();
-                        Net.download(b + "urcar.apk", apk);
+                        try { Net.download(b + "urcar.apk", apk); }
+                        catch (java.io.IOException e) { throw new java.io.IOException("التنزيل: " + e.getMessage(), e); }
                         got = isApk(apk);
                         if (!got) last = new Exception("الملف المنزَّل ليس تطبيقًا");
                     } catch (Exception e) { last = e; sleep(3000); }
@@ -79,7 +92,8 @@ final class Updater {
             said(c, "نُزّل الإصدار " + Ui.ar(theirs) + "، وينتظر «تثبيت»");
             installingAt = System.currentTimeMillis();
             if (PanelService.live != null) PanelService.live.stripReset();
-            install(c, apk);
+            try { install(c, apk); }
+            catch (Exception e) { sleep(2000); install(c, apk); }   // once more, in a new session
         } catch (Exception e) {
             said(c, "لم أصل إلى التحديث: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " (" + e.getMessage() + ")"));
             if (manual) toast(c, e instanceof java.net.UnknownHostException ? "لا إنترنت في الشاشة الآن: وصّلها بشبكة الجوال ثم أعد المحاولة"
@@ -95,18 +109,25 @@ final class Updater {
 
     private static void install(Context c, File apk) throws Exception {
         PackageInstaller pi = c.getPackageManager().getPackageInstaller();
+        // the sessions of earlier tries (an «تثبيت» not pressed, a write that failed) are let go first
+        for (PackageInstaller.SessionInfo si : pi.getMySessions()) try { pi.abandonSession(si.getSessionId()); } catch (Exception ignored) { }
         PackageInstaller.SessionParams sp = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
         sp.setAppPackageName(c.getPackageName());
+        sp.setSize(apk.length());
         int id = pi.createSession(sp);
-        try (PackageInstaller.Session s = pi.openSession(id);
-             InputStream in = new FileInputStream(apk);
-             OutputStream out = s.openWrite("urcar", 0, apk.length())) {
-            byte[] buf = new byte[65536];
-            for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
-            s.fsync(out);
-            out.close();
+        PackageInstaller.Session s = pi.openSession(id);
+        try {
+            try (InputStream in = new FileInputStream(apk); OutputStream out = s.openWrite("urcar.apk", 0, apk.length())) {
+                byte[] buf = new byte[65536];
+                for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
+                s.fsync(out);
+            }
             Intent done = new Intent(c, Done.class);
             s.commit(PendingIntent.getBroadcast(c, id, done, PendingIntent.FLAG_UPDATE_CURRENT).getIntentSender());
+            s.close();
+        } catch (Exception e) {
+            try { s.abandon(); } catch (Exception ignored) { }
+            throw new Exception("التثبيت: " + e.getMessage(), e);
         }
     }
 
