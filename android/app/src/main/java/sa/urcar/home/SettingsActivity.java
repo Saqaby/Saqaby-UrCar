@@ -208,6 +208,15 @@ public class SettingsActivity extends Activity {
         if (!kerr.isEmpty()) list.addView(note("آخر ما أوقف الختمة: " + kerr));
         list.addView(note("تبدأ مع الرحلة إن لم يكن صوت آخر يعمل، وتتوقف بعد ٣ دقائق من الوقوف، وتكمل حين تتحرك. تقف مع المكالمة أو أي صوت آخر (مقطع، موسيقى الجوال، إشعار) وتكمل وحدها بعد انتهائه، راجعةً ٣ ثوانٍ. وإن بقيت تنتظر فزرها يكملها. التلاوات من mp3quran.net وتحتاج إنترنت."));
 
+        head("طريقة حساب المواقيت");
+        LinearLayout calc = grid();
+        String cm = Prefs.of(this).getString("calc", "isna");
+        calc.addView(chip("الجمعية الإسلامية لأمريكا الشمالية (ISNA)", cm.equals("isna"), () -> { Prefs.put(this, "calc", "isna"); changed(); }));
+        calc.addView(chip("تقويم أم القرى", cm.equals("umm"), () -> { Prefs.put(this, "calc", "umm"); changed(); }));
+        list.addView(calc);
+        list.addView(note(cm.equals("umm") ? "أم القرى: الفجر والشمس ١٨٫٥° تحت الأفق، والعشاء بعد المغرب بـ٩٠ دقيقة (وفي رمضان ١٢٠). المعتمد في السعودية."
+                : "ISNA: الفجر والعشاء والشمس ١٥° تحت الأفق. الظهر والعصر والمغرب واحدة في الطريقتين."));
+
         head("الأذان في السيارة");
         LinearLayout ad = grid();
         String am = Prefs.of(this).getString("adhan", "full");

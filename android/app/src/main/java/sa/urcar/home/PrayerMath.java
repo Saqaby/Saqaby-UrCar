@@ -21,6 +21,10 @@ final class PrayerMath {
 
     /** ISNA: Fajr and Isha with the sun this far below the horizon (Aladhan's method 2). */
     static final double ISNA_ANGLE = 15;
+    /** Umm al-Qura (Aladhan's method 4): Fajr at 18.5°, Isha 90 minutes after Maghrib (120 in Ramadan). */
+    static final double UMM_AL_QURA_FAJR = 18.5;
+    /** The owner's choice in the settings: "isna" (the default) or "umm". */
+    static volatile String method = "isna";
 
     /** Isha is never before Maghrib: past midnight (a high latitude) it is the next day's clock time, not one already gone. */
     static long afterMaghrib(long maghrib, long isha) { return isha < maghrib ? isha + 86_400_000L : isha; }
@@ -52,8 +56,9 @@ final class PrayerMath {
         double noon = solarNoon(base, lng);
         double sunrise = event(base, lat, lng, -0.833, false, noon);
         double maghrib = event(base, lat, lng, -0.833, true, noon);
-        double fajr = event(base, lat, lng, -ISNA_ANGLE, false, noon);
-        double isha = event(base, lat, lng, -ISNA_ANGLE, true, noon);
+        boolean umm = "umm".equals(method);
+        double fajr = event(base, lat, lng, umm ? -UMM_AL_QURA_FAJR : -ISNA_ANGLE, false, noon);
+        double isha = umm ? maghrib + (ramadan ? 120 : 90) : event(base, lat, lng, -ISNA_ANGLE, true, noon);
         if (Double.isNaN(fajr)) fajr = sunrise - 90;
         if (Double.isNaN(isha)) isha = maghrib + 90;
         double asr = asr(base, lat, lng, noon);

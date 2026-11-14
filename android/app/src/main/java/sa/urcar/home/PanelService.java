@@ -104,6 +104,7 @@ public class PanelService extends Service implements Panel.Actions {
         khatma.changed = () -> h.post(this::drawRadio);
         library = new Listen(this);
         library.changed = () -> h.post(this::drawRadio);
+        PrayerMath.method = Prefs.of(this).getString("calc", "isna");
         day.lat = Prefs.of(this).getFloat("lat", (float) day.lat);
         day.lon = Prefs.of(this).getFloat("lon", (float) day.lon);
         startLocation();
@@ -134,7 +135,7 @@ public class PanelService extends Service implements Panel.Actions {
     /** HomeActivity hands its two halves over while it is open; the service fills them every second. */
     void attach(Panel p, Drive d) { panel = p; drive = d; if (p != null) draw(System.currentTimeMillis()); }
     /** After «الإعدادات»: the home screen builds itself again (the driver's side may have changed). */
-    void applyPrefs() { prefsChanged = true; }
+    void applyPrefs() { prefsChanged = true; PrayerMath.method = Prefs.of(this).getString("calc", "isna"); }
 
     private final Runnable tick = new Runnable() {
         @Override public void run() {

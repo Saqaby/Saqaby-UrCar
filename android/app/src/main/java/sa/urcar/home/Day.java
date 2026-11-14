@@ -25,12 +25,18 @@ final class Day {
         String tz = TimeZone.getDefault().getID();
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(now);
-        String key = c.get(Calendar.YEAR) + "-" + c.get(Calendar.DAY_OF_YEAR) + "@" + Math.round(lat * 10) + "," + Math.round(lon * 10) + tz;
+        String key = c.get(Calendar.YEAR) + "-" + c.get(Calendar.DAY_OF_YEAR) + "@" + Math.round(lat * 10) + "," + Math.round(lon * 10) + tz + PrayerMath.method;
         if (key.equals(timesKey)) return;
         timesKey = key;
-        times = PrayerMath.compute(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH), lat, lon, tz, false);
+        // Ramadan matters to Umm al-Qura's Isha (two hours after Maghrib): the Hijri month at that day's noon
+        times = PrayerMath.compute(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH), lat, lon, tz, ramadanOn(c));
         c.add(Calendar.DAY_OF_MONTH, 1);
-        tomorrow = PrayerMath.compute(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH), lat, lon, tz, false);
+        tomorrow = PrayerMath.compute(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH), lat, lon, tz, ramadanOn(c));
+    }
+    private static boolean ramadanOn(Calendar day) {
+        Calendar n = (Calendar) day.clone();
+        n.set(Calendar.HOUR_OF_DAY, 12); n.set(Calendar.MINUTE, 0);
+        return hijri(n.getTimeInMillis()).get(IslamicCalendar.MONTH) == 8;   // 0-based: Ramadan
     }
     long at(int k) { return times[k]; }
     String name(int k, long now) {
