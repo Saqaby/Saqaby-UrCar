@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Read-only inspection of the head unit over adb. Changes nothing on the screen.
 #   tools/probe.sh            the connected device (adb devices)
-#   tools/probe.sh 192.168.1.20   connects over Wi-Fi first (port 5555)
+#   tools/probe.sh 192.168.1.20        connects over Wi-Fi first (port 5555, «adb tcpip»)
+#   tools/probe.sh 192.168.1.20:41235  the port «التصحيح اللاسلكي» shows (after adb pair)
 # Writes:
 #   device/raw/<time>/   everything as read (not committed: may hold serial numbers)
 #   device/profile.json  the summary the preview and the app are built from (committed, no identifiers)
@@ -9,7 +10,7 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 command -v adb >/dev/null || { echo "adb غير موجود. ثبّت Android platform-tools أولًا."; exit 1; }
-[ $# -ge 1 ] && adb connect "$1:5555" >/dev/null
+if [ $# -ge 1 ]; then case "$1" in *:*) adb connect "$1" >/dev/null;; *) adb connect "$1:5555" >/dev/null;; esac; fi
 [ "$(adb get-state 2>/dev/null)" = "device" ] || { echo "لا توجد شاشة متصلة. فعّل تصحيح USB ثم: tools/probe.sh <IP الشاشة>"; exit 2; }
 
 TS=$(date +%Y%m%d-%H%M%S); RAW="$ROOT/device/raw/$TS"; mkdir -p "$RAW"

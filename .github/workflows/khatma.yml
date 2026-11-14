@@ -1,0 +1,28 @@
+# Builds android/app/src/main/assets/khatma.json from mp3quran.net and fawazahmed0/quran-api (src/khatma_for_app.py) and commits it.
+name: khatma
+on:
+  workflow_dispatch:
+  push:
+    paths: ["src/khatma_for_app.py", "src/reciters_wanted.json", ".github/workflows/khatma.yml"]
+concurrency: khatma
+permissions:
+  contents: write
+  actions: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 src/khatma_for_app.py
+      - run: |
+          cp android/app/src/main/assets/khatma.json /tmp/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch -q origin "$GITHUB_REF_NAME" && git reset -q --hard "origin/$GITHUB_REF_NAME"
+          cp /tmp/khatma.json android/app/src/main/assets/
+          git add android/app/src/main/assets/khatma.json
+          if git commit -m "assets/khatma.json from mp3quran.net and quran-api (src/khatma_for_app.py)"; then
+            git push && gh workflow run app-apk.yml --ref "$GITHUB_REF_NAME"   # a push by this token starts no workflow
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}

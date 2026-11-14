@@ -1,0 +1,23 @@
+name: check-audio
+# Checks that the khatma's and the radio's audio answer, and where they redirect (a redirect to http breaks Android's player).
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/check-audio.yml']
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 - <<'PY'
+          import json
+          k = json.load(open('android/app/src/main/assets/khatma.json'))
+          urls = ['https://cdn.mp3quran.net/audio/khalifa-tunaiji/r1/001.mp3', 'https://cdn.mp3quran.net/audio/khalifa-tunaiji/r1/114.mp3']
+          open('urls.txt', 'w').write('\n'.join(urls))
+          PY
+          while read -r u; do
+            echo "== $u"
+            curl -sS -o /dev/null -r 0-1023 -L --max-time 25 -w "final=%{url_effective} code=%{http_code} type=%{content_type} redirects=%{num_redirects}\n" "$u" || echo "curl failed"
+            curl -sSI --max-time 15 "$u" | grep -iE "^(HTTP|location|content-type)" | head -4
+          done < urls.txt

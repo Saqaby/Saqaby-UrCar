@@ -1,0 +1,43 @@
+# Builds the app's offline maps from Geofabrik's GCC extract of OpenStreetMap: assets/limits.bin (the speed limits,
+# src/limits_for_app.py) and assets/mosques.bin (src/mosques_for_app.py); commits them and builds the app with them:
+# on the 3rd of every month, and when a script changes.
+name: limits
+on:
+  schedule:
+    - cron: "17 2 3 * *"
+  workflow_dispatch:
+  push:
+    paths: ["src/limits_for_app.py", "src/mosques_for_app.py", ".github/workflows/limits.yml"]
+concurrency: limits   # one at a time, each on top of the last
+permissions:
+  contents: write
+  actions: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get install -y -qq osmium-tool >/dev/null
+          curl -sSfL -o gcc.pbf https://download.geofabrik.de/asia/gcc-states-latest.osm.pbf
+          osmium tags-filter gcc.pbf w/highway=motorway,trunk,primary,secondary,tertiary,motorway_link,trunk_link,primary_link,secondary_link,tertiary_link -o h.pbf
+          osmium tags-filter h.pbf w/maxspeed -o ms.pbf
+          osmium export ms.pbf -f geojsonseq -o ms.geojsonseq --geometry-types=linestring
+          python3 src/limits_for_app.py ms.geojsonseq
+          gzip -9 -c android/app/src/main/assets/limits.bin | wc -c
+          osmium tags-filter gcc.pbf nwr/amenity=place_of_worship -o pow.pbf
+          osmium export pow.pbf -f geojsonseq -o pow.geojsonseq
+          python3 src/mosques_for_app.py pow.geojsonseq
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp android/app/src/main/assets/limits.bin android/app/src/main/assets/mosques.bin /tmp/   # the new files on top of the branch as it is now
+          git fetch -q origin "$GITHUB_REF_NAME" && git reset -q --hard "origin/$GITHUB_REF_NAME"
+          cp /tmp/limits.bin /tmp/mosques.bin android/app/src/main/assets/
+          git add android/app/src/main/assets/limits.bin android/app/src/main/assets/mosques.bin
+          if git commit -m "assets/limits.bin and mosques.bin from OpenStreetMap (src/limits_for_app.py, src/mosques_for_app.py)"; then
+            git push
+            gh workflow run app-apk.yml --ref "$GITHUB_REF_NAME"   # a push by this token starts no workflow
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}

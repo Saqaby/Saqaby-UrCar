@@ -1,0 +1,19 @@
+{
+ "probed": "2026-11-05",
+ "android_sdk": "29",
+ "android_release": "10",
+ "model": "A133",
+ "board": "exdroid",
+ "hardware": "sun50iw10p1",
+ "screen": "1280x720",
+ "density": "160",
+ "ram_mb": 3972,
+ "freeform": {"feature": false, "setting": "unset"},
+ "picture_in_picture": true,
+ "home": "com.dofun.variety/com.dofun.overseasvariety.Launcher",
+ "cameras_android": 7,
+ "video_devices": 4,
+ "nav_apps": ["com.google.android.apps.maps", "com.waze", "com.nng.igo.primong.igoworld"],
+ "google_play": true,
+ "youtube": true
+}
