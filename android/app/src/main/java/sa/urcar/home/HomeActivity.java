@@ -199,8 +199,8 @@ public class HomeActivity extends Activity {
                 getPaint().setShader(new android.graphics.LinearGradient(0, h * .2f, 0, h * .85f, gold, new float[]{0, .55f, 1}, android.graphics.Shader.TileMode.CLAMP));
             }
         };
-        t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, 220);
-        t.setTypeface(Ui.amiri(this));
+        t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, 200);
+        t.setTypeface(Ui.tajawal(this));
         t.setTextColor(gold[1]);
         t.setText("مرحبًا بك");
         t.setGravity(android.view.Gravity.CENTER);

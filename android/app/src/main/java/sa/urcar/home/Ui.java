@@ -41,9 +41,9 @@ final class Ui {
     private static Typeface regular, medium, display;
     static Typeface regular(Context c) { if (regular == null) regular = load(c, "IBMPlexSansArabic-Regular.otf"); return regular; }
     static Typeface medium(Context c) { if (medium == null) medium = load(c, "IBMPlexSansArabic-Medium.otf"); return medium; }
-    private static Typeface amiri;
-    /** Amiri, a classical Naskh after the Bulaq press: the welcome when the screen starts. */
-    static Typeface amiri(Context c) { if (amiri == null) amiri = load(c, "Amiri-Bold.ttf"); return amiri; }
+    private static Typeface tajawal;
+    /** Tajawal ExtraBold, a modern geometric face: the welcome when the screen starts. */
+    static Typeface tajawal(Context c) { if (tajawal == null) tajawal = load(c, "Tajawal-ExtraBold.ttf"); return tajawal; }
     static Typeface display(Context c) { if (display == null) display = load(c, "IBMPlexSansArabic-Bold.otf"); return display; }
     private static Typeface load(Context c, String f) {
         try { return Typeface.createFromAsset(c.getAssets(), "fonts/" + f); } catch (Exception e) { return Typeface.DEFAULT; }
