@@ -137,9 +137,19 @@ public class PanelService extends Service implements Panel.Actions {
     /** After «الإعدادات»: the home screen builds itself again (the driver's side may have changed). */
     void applyPrefs() { prefsChanged = true; PrayerMath.method = Prefs.of(this).getString("calc", "isna"); }
 
+    /**
+     * «مرحبًا بك» when the screen starts: a new boot (the service starts afresh), or the screen waking after sleeping
+     * ten minutes or more (a car screen often sleeps with the car rather than turning off; the tick then stops). Shown
+     * by the home screen, now or when it next comes to the front.
+     */
+    static volatile boolean greetDue = true;
+    private long lastTickAt;
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             long now = System.currentTimeMillis();
+            if (lastTickAt > 0 && now - lastTickAt > 10 * 60_000L) greetDue = true;
+            lastTickAt = now;
+            if (greetDue && HomeActivity.live != null && HomeActivity.resumed) HomeActivity.live.greet();
             adhan(now);
             restAndStop(now);
             guardKhatma();

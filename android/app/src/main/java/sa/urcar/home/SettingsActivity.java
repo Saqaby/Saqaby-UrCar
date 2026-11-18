@@ -102,6 +102,15 @@ public class SettingsActivity extends Activity {
         side.addView(chip("يمين", s.equals("right"), () -> { Prefs.put(this, "side", "right"); changed(); }));
         list.addView(side);
 
+        head("الترحيب عند التشغيل");
+        boolean gr = Prefs.of(this).getBoolean("greet", true);
+        LinearLayout gg = grid();
+        gg.addView(chip("يظهر", gr, () -> { Prefs.of(this).edit().putBoolean("greet", true).apply(); build(); }));
+        gg.addView(chip("لا يظهر", !gr, () -> { Prefs.of(this).edit().putBoolean("greet", false).apply(); build(); }));
+        gg.addView(chip("اعرضه الآن", false, () -> { PanelService.greetDue = true; finish(); }));
+        list.addView(gg);
+        list.addView(note("«مرحبًا بك» بخط الرقعة على الشاشة كلها ثانيتين، حين تعمل الشاشة أو تستيقظ بعد ١٠ دقائق من السكون. لمسها يتخطاها."));
+
         head("المظهر");
         LinearLayout look = grid();
         String t = Prefs.theme(this);

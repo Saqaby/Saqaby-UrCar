@@ -56,6 +56,7 @@ public class HomeActivity extends Activity {
         if (!resumed) return;
         if (PanelService.live == null) { root.postDelayed(this::build, 300); return; }
         if (!located() || !Prefs.of(this).getBoolean("setup_done", true)) { builtFor = ""; setup(); return; }
+        if (PanelService.greetDue) root.post(() -> { if (resumed && PanelService.greetDue) greet(); });   // the screen just started: over what is built
         String wc = PanelService.live.takeWelcome();   // a city entered while another app was in front
         if (wc != null) root.postDelayed(() -> { if (resumed) welcome(wc); }, 600);
         String key = Prefs.side(this) + root.getWidth() + "x" + root.getHeight();
@@ -79,6 +80,8 @@ public class HomeActivity extends Activity {
         if (Prefs.side(this).equals("right")) { row.addView(drive, dl); row.addView(panel, pl); }
         else { row.addView(panel, pl); row.addView(drive, dl); }
         root.addView(row, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (greeting != null && greeting.getParent() == null)   // the greeting came first: it stays over the screen just built
+            root.addView(greeting, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         attach();
     }
     private void attach() {
@@ -172,6 +175,48 @@ public class HomeActivity extends Activity {
         root.addView(full, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
     private void closeFull() { if (full != null) { root.removeView(full); full = null; } }
+
+    /**
+     * «مرحبًا بك» over the whole screen, in a large Ruqaa hand, when the screen starts: it comes in, stays about two
+     * seconds and opens onto the home screen. A tap skips it. Off in the settings («الشاشة»).
+     */
+    private View greeting;
+    void greet() {
+        PanelService.greetDue = false;
+        if (greeting != null || !Prefs.of(this).getBoolean("greet", true)) return;
+        boolean day = PanelService.live != null && PanelService.live.dayNow();
+        Ui.Theme th = new Ui.Theme(day);
+        LinearLayout g = new LinearLayout(this);
+        g.setOrientation(LinearLayout.VERTICAL);
+        g.setGravity(android.view.Gravity.CENTER);
+        g.setBackground(new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{day ? 0xfff6f8fb : 0xff15292b, th.bg}));
+        TextView t = Ui.text(this, 210, Ui.ruqaa(this), th.sand);
+        t.setText("مرحبًا بك");
+        t.setIncludeFontPadding(true);
+        TextView s = Ui.text(this, 34, Ui.medium(this), th.muted);
+        s.setText("في سيارتك");
+        t.setGravity(android.view.Gravity.CENTER);
+        s.setGravity(android.view.Gravity.CENTER);
+        g.addView(t, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        g.addView(s, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        g.setOnClickListener(v -> endGreet());
+        greeting = g;
+        root.addView(g, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        t.setAlpha(0f); t.setScaleX(.9f); t.setScaleY(.9f); t.setTranslationY(30);
+        s.setAlpha(0f);
+        t.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setDuration(1000)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+        s.animate().alpha(1f).setStartDelay(600).setDuration(700).start();
+        root.postDelayed(this::endGreet, 3200);
+    }
+    private void endGreet() {
+        View g = greeting;
+        if (g == null) return;
+        greeting = null;
+        g.setOnClickListener(null);
+        g.animate().alpha(0f).setDuration(700).withEndAction(() -> root.removeView(g)).start();
+    }
 
     /** «مرحبًا بك في الخبر»: a card that grows in over the middle, stays four seconds and fades away. */
     void welcome(String city) {
