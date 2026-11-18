@@ -848,6 +848,15 @@ public class PanelService extends Service implements Panel.Actions {
         strip.update(themeDay(now), a != null ? "إقامة " + day.name(a[0], now) : day.name((int) n[0], now), left, soundPlaying());
         strip.show(true);
     }
+    /** For the welcome: {«صباح الخير» from an hour before Fajr until Dhuhr, else «مساء الخير»; the day and the Hijri date; the next prayer; the place}. */
+    String[] greetInfo() {
+        long now = System.currentTimeMillis();
+        day.ensure(now);
+        String hi = now >= day.at(PrayerMath.FAJR) - 3600_000L && now < day.at(PrayerMath.DHUHR) ? "صباح الخير" : "مساء الخير";
+        long[] n = day.next(now);
+        String pr = day.name((int) n[0], now) + " " + Day.clockOf(n[1]) + "، باقٍ " + Ui.remaining(Math.max(60, Math.round((n[1] - now) / 1000.0)));
+        return new String[]{hi, Day.weekday(now) + "، " + Day.hijriText(now), pr, day.placeName()};
+    }
     /** The settings: the strip's switch or its place changed. */
     void stripReset() { if (strip != null) { strip.show(false); strip = null; } }
     /** «أماكني»: the owner's places, to choose one and go. */

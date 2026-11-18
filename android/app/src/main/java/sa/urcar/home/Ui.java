@@ -41,9 +41,9 @@ final class Ui {
     private static Typeface regular, medium, display;
     static Typeface regular(Context c) { if (regular == null) regular = load(c, "IBMPlexSansArabic-Regular.otf"); return regular; }
     static Typeface medium(Context c) { if (medium == null) medium = load(c, "IBMPlexSansArabic-Medium.otf"); return medium; }
-    private static Typeface tajawal;
-    /** Tajawal ExtraBold, a modern geometric face: the welcome when the screen starts. */
-    static Typeface tajawal(Context c) { if (tajawal == null) tajawal = load(c, "Tajawal-ExtraBold.ttf"); return tajawal; }
+    private static Typeface quran;
+    /** Amiri Quran: the verses on the welcome when the screen starts. */
+    static Typeface quran(Context c) { if (quran == null) quran = load(c, "AmiriQuran-Regular.ttf"); return quran; }
     static Typeface display(Context c) { if (display == null) display = load(c, "IBMPlexSansArabic-Bold.otf"); return display; }
     private static Typeface load(Context c, String f) {
         try { return Typeface.createFromAsset(c.getAssets(), "fonts/" + f); } catch (Exception e) { return Typeface.DEFAULT; }
@@ -107,7 +107,7 @@ final class Ui {
     /** The icons of the panel, drawn on a 24-unit grid like the preview's SVGs. */
     static final class Icon extends View {
         static final int PLAY = 1, PAUSE = 2, PREV = 3, NEXT = 4, YOUTUBE = 5, BT = 6, GEAR = 7, APPS = 8, RADIO = 9,
-                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21, RAIN = 22, STORM = 23, FOG = 24, NAVI = 25, STAR = 26;
+                PIN = 10, SUN = 11, MOON = 12, CLOUD = 13, PHONES = 14, HOUSE = 15, BRIEFCASE = 16, MOSQUE = 17, FUEL = 18, DOWNLOAD = 19, TRASH = 20, DONE = 21, RAIN = 22, STORM = 23, FOG = 24, NAVI = 25, STAR = 26, CAR = 27, CLOCK = 28;
         int kind;
         final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Icon(Context c, int kind, int color) {
@@ -179,6 +179,13 @@ final class Ui {
                     path.moveTo(13, 14); path.lineTo(10, 18); path.lineTo(14, 18); path.lineTo(11, 22.5f); c.drawPath(path, p); break;
                 case FOG: stroke(); c.drawLine(4, 8, 20, 8, p); c.drawLine(3, 12, 21, 12, p); c.drawLine(5, 16, 19, 16, p); break;
                 case NAVI: fill(); path.moveTo(12, 2.5f); path.lineTo(20.5f, 21); path.lineTo(12, 16.6f); path.lineTo(3.5f, 21); path.close(); c.drawPath(path, p); break;   // the navigation arrow
+                case CAR: stroke(); p.setStrokeWidth(1.9f);   // the welcome's mark: a car from the front
+                    path.moveTo(5, 16.5f); path.lineTo(5, 12); path.lineTo(6.8f, 7.4f); path.quadTo(7.3f, 6, 8.7f, 6); path.lineTo(15.3f, 6);
+                    path.quadTo(16.7f, 6, 17.2f, 7.4f); path.lineTo(19, 12); path.lineTo(19, 16.5f); c.drawPath(path, p);
+                    c.drawRoundRect(new RectF(4, 12, 20, 17.5f), 1, 1, p);
+                    c.drawLine(6.5f, 17.5f, 6.5f, 19, p); c.drawLine(17.5f, 17.5f, 17.5f, 19, p);
+                    fill(); c.drawCircle(7.8f, 14.7f, .9f, p); c.drawCircle(16.2f, 14.7f, .9f, p); break;
+                case CLOCK: stroke(); p.setStrokeWidth(2); c.drawCircle(12, 12, 9, p); path.moveTo(12, 7); path.lineTo(12, 12); path.lineTo(15, 14); c.drawPath(path, p); break;
                 case STAR: fill(); path.moveTo(12, 3); path.lineTo(14.35f, 9.26f); path.lineTo(21.03f, 9.56f); path.lineTo(15.8f, 13.74f);
                     path.lineTo(17.58f, 20.19f); path.lineTo(12, 16.5f); path.lineTo(6.42f, 20.19f); path.lineTo(8.2f, 13.74f);
                     path.lineTo(2.97f, 9.56f); path.lineTo(9.65f, 9.26f); path.close(); c.drawPath(path, p); break;

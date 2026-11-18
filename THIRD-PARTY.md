@@ -5,7 +5,7 @@
 | الجزء | أين هو | لمن | الرخصة أو الحال |
 |---|---|---|---|
 | الخط IBM Plex Sans Arabic | `android/app/src/main/assets/fonts/` | IBM | SIL Open Font License 1.1 (`IBMPlexSansArabic-OFL.txt`) |
-| خط تجوال Tajawal (ترحيب التشغيل) | `android/app/src/main/assets/fonts/Tajawal-ExtraBold.ttf` | The Tajawal Project Authors | SIL Open Font License 1.1 (`Tajawal-OFL.txt`) |
+| خط أميري قرآن Amiri Quran (آية ترحيب التشغيل) | `android/app/src/main/assets/fonts/AmiriQuran-Regular.ttf` | The Amiri Project Authors | SIL Open Font License 1.1 (`AmiriQuran-OFL.txt`) |
 | الآيات | `android/app/src/main/assets/quotes.json` (`src/quotes/verses.txt`) | نص Tanzil البسيط عبر fawazahmed0/quran-api | شروط Tanzil: النقل حرفيًا مع ذكر المصدر tanzil.net |
 | الأحاديث | `quotes.json` (`src/quotes/hadith.txt`) | صحيح البخاري وصحيح مسلم عبر fawazahmed0/hadith-api | ملكية عامة (Unlicense) |
 | أقوال السلف | `quotes.json` (`src/quotes/salaf.json`) | الكتب المذكورة مع كل قول (بالجزء والصفحة)، وُجدت في turath.io | نصوص تراثية؛ المصدر مذكور مع كل قول |

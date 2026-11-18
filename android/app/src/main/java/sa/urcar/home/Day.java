@@ -90,6 +90,8 @@ final class Day {
             "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"};
     private static final String[] WEEKDAYS = {"الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"};
 
+    /** «الخميس» */
+    static String weekday(long at) { Calendar c = Calendar.getInstance(); c.setTimeInMillis(at); return WEEKDAYS[c.get(Calendar.DAY_OF_WEEK) - 1]; }
     /** «٢٥ جمادى الأولى ١٤٤٨ هـ» */
     static String hijriText(long at) {
         IslamicCalendar h = hijri(at);
