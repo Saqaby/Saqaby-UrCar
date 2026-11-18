@@ -52,13 +52,16 @@ final class Welcome extends FrameLayout {
         word.setGravity(Gravity.START);
         TextView name = Ui.text(c, px(10), Ui.display(c), th.fg);
         name.setText("سيارتك");
-        name.setMinWidth(Math.round(name.getPaint().measureText("سيارتك") * 1.15f));   // the bold face's measure fell short of its drawing
         TextView en = Ui.text(c, px(2.6f), Ui.regular(c), th.muted);
         en.setText("URCAR");
         en.setLetterSpacing(.3f);
         en.setTextDirection(TEXT_DIRECTION_LTR);
-        word.addView(name);
-        word.addView(en, lp(px(1)));
+        // its own width: a column's default is the column's width, which «URCAR» set, and the name was cut to «سيا»
+        word.addView(name, new LinearLayout.LayoutParams(-2, -2));
+        LinearLayout.LayoutParams el = new LinearLayout.LayoutParams(-2, -2);
+        el.topMargin = px(1);
+        el.gravity = Gravity.START;   // under the name's beginning, as in the design
+        word.addView(en, el);
         LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(-2, -2);
         wl.setMarginStart(px(2.4f));
         mark.addView(word, wl);
