@@ -190,25 +190,52 @@ public class HomeActivity extends Activity {
         g.setOrientation(LinearLayout.VERTICAL);
         g.setGravity(android.view.Gravity.CENTER);
         g.setBackground(new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{day ? 0xfff6f8fb : 0xff15292b, th.bg}));
-        TextView t = Ui.text(this, 210, Ui.ruqaa(this), th.sand);
+                day ? new int[]{0xfffbf8f1, 0xffefe7d6} : new int[]{0xff10201f, 0xff070d0e}));
+        // the words in gold leaf: a gradient from pale to deep gold and back, a soft glow behind
+        final int[] gold = day ? new int[]{0xffb8862b, 0xff7a5414, 0xffb8862b} : new int[]{0xfff6e2a8, 0xffc9973f, 0xfff0d08a};
+        TextView t = new TextView(this) {
+            @Override protected void onSizeChanged(int w, int h, int ow, int oh) {
+                super.onSizeChanged(w, h, ow, oh);
+                getPaint().setShader(new android.graphics.LinearGradient(0, h * .2f, 0, h * .85f, gold, new float[]{0, .55f, 1}, android.graphics.Shader.TileMode.CLAMP));
+            }
+        };
+        t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, 220);
+        t.setTypeface(Ui.amiri(this));
+        t.setTextColor(gold[1]);
         t.setText("مرحبًا بك");
-        t.setIncludeFontPadding(true);
+        t.setGravity(android.view.Gravity.CENTER);
+        t.setShadowLayer(28, 0, 6, day ? 0x33000000 : 0x55c9973f);
+        t.setLayerType(View.LAYER_TYPE_SOFTWARE, null);   // the glow needs it
+        // an ornament: two fine lines with a diamond between
+        View orn = new View(this) {
+            final android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+            @Override protected void onDraw(android.graphics.Canvas c) {
+                float w = getWidth(), h = getHeight(), cx = w / 2, cy = h / 2;
+                p.setColor(gold[1]); p.setStrokeWidth(2);
+                c.drawLine(cx - 260, cy, cx - 26, cy, p); c.drawLine(cx + 26, cy, cx + 260, cy, p);
+                android.graphics.Path d = new android.graphics.Path();
+                d.moveTo(cx, cy - 11); d.lineTo(cx + 11, cy); d.lineTo(cx, cy + 11); d.lineTo(cx - 11, cy); d.close();
+                c.drawPath(d, p);
+                c.drawCircle(cx - 270, cy, 4, p); c.drawCircle(cx + 270, cy, 4, p);
+            }
+        };
         TextView s = Ui.text(this, 34, Ui.medium(this), th.muted);
         s.setText("في سيارتك");
-        t.setGravity(android.view.Gravity.CENTER);
         s.setGravity(android.view.Gravity.CENTER);
         g.addView(t, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        g.addView(s, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        g.addView(orn, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 30));
+        g.addView(s, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) {{ topMargin = 14; }});
         g.setOnClickListener(v -> endGreet());
         greeting = g;
         root.addView(g, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        t.setAlpha(0f); t.setScaleX(.9f); t.setScaleY(.9f); t.setTranslationY(30);
+        t.setAlpha(0f); t.setScaleX(.92f); t.setScaleY(.92f); t.setTranslationY(24);
+        orn.setAlpha(0f); orn.setScaleX(.2f);
         s.setAlpha(0f);
-        t.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setDuration(1000)
+        t.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setDuration(1100)
                 .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
-        s.animate().alpha(1f).setStartDelay(600).setDuration(700).start();
-        root.postDelayed(this::endGreet, 3200);
+        orn.animate().alpha(1f).scaleX(1f).setStartDelay(500).setDuration(900).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+        s.animate().alpha(1f).setStartDelay(900).setDuration(700).start();
+        root.postDelayed(this::endGreet, 3400);
     }
     private void endGreet() {
         View g = greeting;

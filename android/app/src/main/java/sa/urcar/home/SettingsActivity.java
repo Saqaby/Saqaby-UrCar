@@ -109,7 +109,7 @@ public class SettingsActivity extends Activity {
         gg.addView(chip("لا يظهر", !gr, () -> { Prefs.of(this).edit().putBoolean("greet", false).apply(); build(); }));
         gg.addView(chip("اعرضه الآن", false, () -> { PanelService.greetDue = true; finish(); }));
         list.addView(gg);
-        list.addView(note("«مرحبًا بك» بخط الرقعة على الشاشة كلها ثانيتين، حين تعمل الشاشة أو تستيقظ بعد ١٠ دقائق من السكون. لمسها يتخطاها."));
+        list.addView(note("«مرحبًا بك» بالخط الأميري المذهّب على الشاشة كلها ثانيتين، حين تعمل الشاشة أو تستيقظ بعد ١٠ دقائق من السكون. لمسها يتخطاها."));
 
         head("المظهر");
         LinearLayout look = grid();

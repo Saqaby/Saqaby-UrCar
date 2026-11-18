@@ -2,5 +2,5 @@ IBMPlexSansArabic-Regular.otf, -Medium.otf and -Bold.otf are IBM Plex Sans Arabi
 SIL Open Font License 1.1 (IBMPlexSansArabic-OFL.txt).
 Source: https://github.com/google/fonts/tree/main/ofl/ibmplexsansarabic
 
-ArefRuqaa-Bold.ttf is Aref Ruqaa (the welcome when the screen starts), unmodified, released under the SIL Open Font
-License 1.1 (ArefRuqaa-OFL.txt). Source: https://github.com/google/fonts/tree/main/ofl/arefruqaa
+Amiri-Bold.ttf is Amiri (the welcome when the screen starts), unmodified, released under the SIL Open Font License 1.1
+(Amiri-OFL.txt). Source: https://github.com/google/fonts/tree/main/ofl/amiri
