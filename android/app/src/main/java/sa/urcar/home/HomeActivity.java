@@ -204,6 +204,8 @@ public class HomeActivity extends Activity {
         t.setTextColor(gold[1]);
         t.setText("مرحبًا بك");
         t.setGravity(android.view.Gravity.CENTER);
+        // Tajawal's tanween and the alef's top stand above the line's ascent: room above, or they are cut off
+        t.setPadding(0, 120, 0, 24);   // its glyphs reach 1.12 em, the ascent 0.64: at 200 px, 96 px above the line, and the glow
         t.setShadowLayer(28, 0, 6, day ? 0x33000000 : 0x55c9973f);
         t.setLayerType(View.LAYER_TYPE_SOFTWARE, null);   // the glow needs it
         // an ornament: two fine lines with a diamond between
