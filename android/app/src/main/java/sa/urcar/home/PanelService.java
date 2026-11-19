@@ -159,7 +159,6 @@ public class PanelService extends Service implements Panel.Actions {
             askCity(now);
             if (panel != null && HomeActivity.resumed) draw(now);
             strip(now);
-            seriesWatch(now);
             background(now);
             h.postDelayed(this, 1000);
         }
@@ -858,29 +857,6 @@ public class PanelService extends Service implements Panel.Actions {
         long[] n = day.next(now);
         String pr = day.name((int) n[0], now) + " " + Day.clockOf(n[1]) + "، باقٍ " + Ui.remaining(Math.max(60, Math.round((n[1] - now) / 1000.0)));
         return new String[]{hi, Day.weekday(now) + "، " + Day.hijriText(now), pr, day.placeName()};
-    }
-    /**
-     * «السلاسل»: YouTube playing an episode of a series (its title, from its media session) makes it the last one,
-     * so «تابع» goes on from what YouTube moved on to by itself. Every 10 seconds.
-     */
-    private org.json.JSONArray seriesList;
-    private long seriesAt;
-    private void seriesWatch(long now) {
-        if (now - seriesAt < 10_000) return;
-        seriesAt = now;
-        MediaController mc = NotiListener.session(this);
-        if (mc == null || !"com.google.android.youtube".equals(mc.getPackageName()) || !NotiListener.playing(mc)) return;
-        String t = NotiListener.title(mc).trim();
-        if (t.isEmpty()) return;
-        if (seriesList == null) seriesList = SeriesActivity.load(this);
-        for (int s = 0; s < seriesList.length(); s++) {
-            org.json.JSONArray parts = seriesList.optJSONObject(s).optJSONArray("parts");
-            for (int p = 0; p < parts.length(); p++) {
-                org.json.JSONArray eps = parts.optJSONObject(p).optJSONArray("episodes");
-                for (int e = 0; e < eps.length(); e++)
-                    if (eps.optJSONObject(e).optString("title").trim().equals(t)) { Prefs.put(this, "series_last", eps.optJSONObject(e).optString("id")); return; }
-            }
-        }
     }
     /** The settings: the strip's switch or its place changed. */
     void stripReset() { if (strip != null) { strip.show(false); strip = null; } }

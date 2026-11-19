@@ -56,7 +56,6 @@ public class LibraryActivity extends Activity {
         nl.setMarginStart(28);
         top.addView(now, nl);
         pause = chip("إيقاف مؤقت", false, () -> { Listen l = listen(); if (l != null) l.toggle(); refresh(); });
-        top.addView(chip("السلاسل", false, () -> startActivity(new android.content.Intent(this, SeriesActivity.class))));
         top.addView(pause);
         top.addView(chip("إيقاف", false, () -> { Listen l = listen(); if (l != null) l.stop(); refresh(); }));
         top.addView(chip("رجوع", false, this::finish));
