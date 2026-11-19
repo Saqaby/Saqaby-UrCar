@@ -643,13 +643,18 @@ public class PanelService extends Service implements Panel.Actions {
         return Day.bearing(day.lat, day.lon, hl, ho);
     }
 
-    /** The sun low (under 15°) and within 25° of the way the car goes: a line for 20 seconds, then not for 20 minutes. */
+    /**
+     * The sun in the driver's eyes: under 30° (the visor no longer covers it) and within 45° of the way the car goes,
+     * a line for 20 seconds, then not for 20 minutes. It was 15° and 25°, which in Dammam in November meant only the
+     * last hour before Maghrib: at 3 in the afternoon the sun is 20° up in the south-west (234°), 36° off a car heading
+     * west, and the owner had it in his eyes without a word from the screen.
+     */
     private long glareUntil, glareAt;
     private void glare(long now) {
         if (now - fixAt > 6000 || kmh < 20 || bearing < 0 || now - glareAt < 20 * 60_000L) return;
         double[] sn = Day.sun(day.lat, day.lon, now);
         double diff = Math.abs(((sn[1] - bearing) % 360 + 540) % 360 - 180);
-        if (sn[0] > 0 && sn[0] < 15 && diff < 25) { glareAt = now; glareUntil = now + 20_000; }
+        if (sn[0] > 0 && sn[0] < 30 && diff < 45) { glareAt = now; glareUntil = now + 20_000; }
     }
 
     /**
