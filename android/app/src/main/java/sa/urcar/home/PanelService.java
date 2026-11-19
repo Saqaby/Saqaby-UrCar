@@ -657,8 +657,8 @@ public class PanelService extends Service implements Panel.Actions {
      * app's users) every 30 seconds while moving; a new name found twice in a row is the new city, and is welcomed
      * unless it was welcomed in the last three hours (the edges of Dammam, Khobar and Dhahran touch, and the daily
      * drive between them welcomed the owner each time). The home screen not in front (the navigation, YouTube …): the
-     * welcome waits, and shows when it comes back within 20 minutes with the car still in that city (before, it was
-     * lost, and the city counted as welcomed).
+     * card shows over that app (CityCard) when Android allows it; else it waits, and shows when the home screen comes
+     * back within 20 minutes with the car still in that city.
      */
     static volatile String welcomeCity = "";
     static volatile long welcomeAt;
@@ -688,6 +688,7 @@ public class PanelService extends Service implements Panel.Actions {
         if (cur.isEmpty() || now - last < 3 * 3600_000L) return;   // the first city ever is not «new»
         Prefs.of(this).edit().putLong("welcomed_" + c, now).apply();
         if (HomeActivity.live != null && HomeActivity.resumed) { welcomeCity = ""; HomeActivity.live.welcome(c); }
+        else if (!Updater.installing() && CityCard.show(this, c, themeDay(now))) welcomeCity = "";   // over the app in front
         else { welcomeCity = c; welcomeAt = now; }
     }
 
