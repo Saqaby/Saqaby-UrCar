@@ -40,6 +40,15 @@ public class SeriesActivity extends Activity {
         String s = t.replaceAll("\\s*[|│ـ-]*\\s*(لل?شيخ|الشيخ)\\s*:?.*$", "").trim();
         return s.isEmpty() ? t : s;
     }
+    /**
+     * What to call an episode: its own name when it has one («تشويقة»، «اللقاء السادس والعشرون والأخير»), else
+     * «الحلقة ٨» (most are «قصة النور(3) |8| الشيخ فهد الجريوي»: the series, the part and the speaker, said already).
+     */
+    static String label(String title, int index) {
+        String t = shortTitle(title).replaceAll("قصة\\s*الن\\S*ور\\s*(\\([^)]*\\))?", " ").replaceAll("[|│]", " ")
+                .replaceAll("^\\s*\\d+\\s+", "").replaceAll("\\s+", " ").trim();
+        return t.isEmpty() || t.matches("\\d+") ? "الحلقة " + Ui.ar(index + 1) : t;
+    }
     /** {series, part, episode} of a video id, or null. */
     static int[] find(JSONArray series, String id) {
         for (int s = 0; s < series.length(); s++) {
@@ -102,7 +111,7 @@ public class SeriesActivity extends Activity {
             go.setBackground(Ui.box(th.sand, 0, 16));
             go.addView(new Ui.Icon(this, Ui.Icon.PLAY, th.sandInk), new LinearLayout.LayoutParams(34, 34));
             TextView t = Ui.text(this, 25, Ui.medium(this), th.sandInk);
-            t.setText("تابع: " + parts.optJSONObject(at[1]).optString("name") + "، " + shortTitle(e.optString("title")));
+            t.setText("تابع: " + parts.optJSONObject(at[1]).optString("name") + "، " + label(e.optString("title"), at[2]));
             t.setEllipsize(android.text.TextUtils.TruncateAt.END);
             LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(0, -2, 1);
             tl.setMarginStart(16);
@@ -138,7 +147,7 @@ public class SeriesActivity extends Activity {
             n.setGravity(Gravity.CENTER);
             row.addView(n, new LinearLayout.LayoutParams(52, -2));
             TextView t = Ui.text(this, 22, Ui.regular(this), th.fg);
-            t.setText(shortTitle(ep.optString("title")));
+            t.setText(label(ep.optString("title"), e));
             t.setEllipsize(android.text.TextUtils.TruncateAt.END);
             LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(0, -2, 1);
             tl.setMarginStart(12);
