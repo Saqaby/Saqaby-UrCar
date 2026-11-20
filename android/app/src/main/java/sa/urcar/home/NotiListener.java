@@ -135,15 +135,18 @@ public class NotiListener extends NotificationListenerService {
             List<MediaController> all = m.getActiveSessions(new ComponentName(c, NotiListener.class));
             // nothing playing: the app that played last (the owner's log: the phone's paused Bluetooth session came
             // first in the list, so the card showed it and two fingers played the phone instead of YouTube)
-            MediaController first = null, last = null;
+            MediaController first = null, last = null, bt = null;
             for (MediaController mc : all) {
                 if (mc.getPackageName().equals(c.getPackageName())) continue;
                 PlaybackState st = mc.getPlaybackState();
-                if (st != null && st.getState() == PlaybackState.STATE_PLAYING) { keep(mc); lastPlayer = mc.getPackageName(); return mc; }
+                boolean on = st != null && st.getState() == PlaybackState.STATE_PLAYING;
+                if (on && mc.getPackageName().equals("com.tw.bt")) bt = mc;   // it may stay «playing»: after the others
+                else if (on) { keep(mc); lastPlayer = mc.getPackageName(); return mc; }
                 if (first == null && mc.getMetadata() != null) first = mc;
                 if (last == null && mc.getPackageName().equals(lastPlayer)) last = mc;
             }
             if (last != null) { keep(last); return last; }
+            if (bt != null) { keep(bt); return bt; }
             if (kept != null && kept.getPackageName().equals(lastPlayer) && System.currentTimeMillis() - keptAt < 2 * 3600_000L && kept.getPlaybackState() != null) return kept;
             if (first != null) { keep(first); return first; }
             if (kept != null && System.currentTimeMillis() - keptAt < 2 * 3600_000L && kept.getPlaybackState() != null) return kept;
@@ -200,6 +203,25 @@ public class NotiListener extends NotificationListenerService {
             }
         } catch (Exception ignored) { }
         return out;
+    }
+    /** An app's session, or null. */
+    static MediaController of(Context c, String pkg) {
+        if (!allowed(c) || pkg.isEmpty()) return null;
+        try {
+            MediaSessionManager m = (MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : m.getActiveSessions(new ComponentName(c, NotiListener.class))) if (mc.getPackageName().equals(pkg)) return mc;
+        } catch (Exception ignored) { }
+        return null;
+    }
+    /** A session playing that is not the phone's Bluetooth one (which can stay «playing» after the phone stops). */
+    static MediaController playingNotBt(Context c) {
+        if (!allowed(c)) return null;
+        try {
+            MediaSessionManager m = (MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : m.getActiveSessions(new ComponentName(c, NotiListener.class)))
+                if (!mc.getPackageName().equals(c.getPackageName()) && !mc.getPackageName().equals("com.tw.bt") && playing(mc)) return mc;
+        } catch (Exception ignored) { }
+        return null;
     }
     /** Pauses that app's session (the phone over Bluetooth: its pause goes to the phone). */
     static void pausePkg(Context c, String pkg) {

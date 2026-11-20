@@ -306,9 +306,12 @@ public class PanelService extends Service implements Panel.Actions {
             // YouTube (or another app) played again while the phone plays: the phone pauses, the newer one wins
             // (the owner's log, 20:02:59: YouTube on again over the phone, both heard)
             if (e.getValue() == PLAY && was != null && was != PLAY && !e.getKey().equals("com.tw.bt")) { started = true; starter = e.getKey(); }
-            if (e.getValue() == android.media.session.PlaybackState.STATE_PLAYING) NotiListener.lastPlayer = e.getKey();
+            // the last to play: the phone's session only when it begins (it can stay «playing» after the phone stops)
+            if (e.getValue() == PLAY && (!e.getKey().equals("com.tw.bt") || was == null || was != PLAY)) NotiListener.lastPlayer = e.getKey();
         }
         for (String k : soundState.keySet()) if (!now.containsKey(k)) log(k, -1);
+        soundBefore.clear();
+        for (java.util.Map.Entry<String, Integer> e : soundState.entrySet()) if (e.getValue() == PLAY && !e.getKey().equals("com.tw.bt")) soundBefore.add(e.getKey());
         soundState.clear();
         soundState.putAll(now);
         if (started && btOn && btDone) { NotiListener.pausePkg(this, "com.tw.bt"); NotiListener.lastPlayer = starter; return; }
@@ -316,15 +319,18 @@ public class PanelService extends Service implements Panel.Actions {
         // once each time it starts. The screen's Bluetooth app takes no audio focus, so YouTube kept on over it.
         Integer bt = now.get("com.tw.bt");
         if (bt == null || bt != android.media.session.PlaybackState.STATE_PLAYING) { btSince = 0; btDone = false; return; }
-        if (btSince == 0) btSince = t;
+        if (btSince == 0) { btSince = t; btBefore.clear(); btBefore.addAll(soundBefore); }
         if (!btDone && t - btSince >= 2000) {
             btDone = true;
-            NotiListener.pauseAllBut(this, java.util.Collections.singleton("com.tw.bt"));
+            // only what was playing before the phone began: YouTube started after it is the newer one (the owner's
+            // log, 20:22:12: YouTube began a second after the phone's session and was paused at once)
+            for (String pkg : btBefore) NotiListener.pausePkg(this, pkg);
             NotiListener.lastPlayer = "com.tw.bt";
             if (sound.radioOn) sound.stopRadio();
         }
     }
     private long btSince;
+    private final java.util.Set<String> btBefore = new java.util.HashSet<>(), soundBefore = new java.util.HashSet<>();
     private boolean btDone;
     private void log(String pkg, int st) {
         String[] names = {"بلا حالة", "متوقف", "متوقف مؤقتًا", "يعمل", "تقديم", "ترجيع", "تحميل", "خطأ", "يتصل", "السابق", "التالي", "التالي"};
@@ -850,16 +856,21 @@ public class PanelService extends Service implements Panel.Actions {
 
     /** Two fingers on the home screen: what plays stops, and what was stopped this way plays again. */
     private String pausedByTap = "";
+    /** The app two fingers paused, played again by the next two fingers whatever else Android lists (version 100: the
+     *  phone's Bluetooth session stays «playing» after the phone stops, so it was taken instead of YouTube). */
+    private String tapPkg = "";
     void soundToggle() {
-        MediaController mc = NotiListener.session(this);
+        MediaController mc = NotiListener.playingNotBt(this);
+        if (mc == null) mc = NotiListener.session(this);
         String say;
         if (khatma.on) { khatma.stop(); khatmaPausedByStop = false; pausedByTap = "khatma"; say = "أُوقفت الختمة"; }
         else if (sound.radioOn) { sound.stopRadio(); pausedByTap = "radio"; say = "أُوقفت الإذاعة"; }
         else if (library.on()) { library.stop(); pausedByTap = "library"; say = "أُوقفت التلاوة"; }
-        else if (mc != null && NotiListener.playing(mc)) { mc.getTransportControls().pause(); pausedByTap = "mc"; say = "أُوقف الصوت"; }
+        else if (mc != null && NotiListener.playing(mc)) { mc.getTransportControls().pause(); pausedByTap = "mc"; tapPkg = mc.getPackageName(); NotiListener.lastPlayer = tapPkg; say = "أُوقف الصوت"; }
         else if (pausedByTap.equals("khatma")) { khatma(); say = "الختمة"; }
         else if (pausedByTap.equals("radio")) { radio(); say = "الإذاعة"; }
         else if (pausedByTap.equals("library")) { listenOn(); say = "التلاوة"; }
+        else if (pausedByTap.equals("mc") && NotiListener.of(this, tapPkg) != null) { NotiListener.resume(this, NotiListener.of(this, tapPkg)); say = "تشغيل"; }
         else if (mc != null) { NotiListener.resume(this, mc); say = "تشغيل"; }
         else if (pausedByTap.equals("mc")) { NotiListener.mediaKey(this, android.view.KeyEvent.KEYCODE_MEDIA_PLAY); say = "تشغيل"; }   // YouTube left Android's list when paused: the media key finds it
         else say = "لا صوت لتشغيله";
