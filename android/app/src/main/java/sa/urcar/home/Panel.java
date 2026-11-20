@@ -358,6 +358,8 @@ final class Panel extends LinearLayout {
     void showBar(String text) {
         bar.setVisibility(text == null ? GONE : VISIBLE);
         if (text != null) set(bar, text);
+        // the bar says the count already: the gold line under the prayer's name gives its room to the day's adhans
+        cd.setVisibility(text == null ? VISIBLE : GONE);
     }
     private boolean nowState;
     void showPrayer(String label, String name, String time, String count, String ramadan, int ramadanDays, boolean now) {
