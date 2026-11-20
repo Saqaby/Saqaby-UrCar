@@ -366,9 +366,6 @@ public class SettingsActivity extends Activity {
         ch.addView(chip("التحديثات: التجريبية", test, () -> { Prefs.put(this, "channel", "test"); build(); }));
         list.addView(ch, new LinearLayout.LayoutParams(-2, -2) {{ topMargin = 12; }});
         list.addView(note(test ? "التجريبية: كل تعديل يصل فور بنائه، للتجربة قبل الجميع." : "المستقرة: لا يصل إلا ما جُرِّب واعتُمد."));
-        String snd;
-        synchronized (PanelService.soundSeen) { snd = String.join("\n", PanelService.soundSeen); }
-        list.addView(note("سجل الأصوات (آخر ما تغيّر في تطبيقات الصوت):\n" + (snd.isEmpty() ? "لا شيء بعد." : snd)));
         String upd = Prefs.of(this).getString("upd_last", "");
         if (!upd.isEmpty()) list.addView(note("آخر محاولة تحديث: " + upd));
         String crash = Crash.last(this);

@@ -288,8 +288,8 @@ public class PanelService extends Service implements Panel.Actions {
     private int quiet;
     private String heldWhy = "";
     /**
-     * «سجل الأصوات» (the settings): each other app's media session as it changes state, the last 20, to see what the
-     * screen's Bluetooth app and YouTube really report. Version 95 paused whatever played before a newcomer, and YouTube
+     * Each other app's media session as it changes state, the last 20 (shown in the settings while the sound rules
+     * were worked out with the owner, hidden since; kept for a next time). Version 95 paused whatever played before a newcomer, and YouTube
      * stopped a moment after it began, with nothing else playing: what turned up as «new» is to be seen here first.
      */
     static final java.util.LinkedList<String> soundSeen = new java.util.LinkedList<>();
