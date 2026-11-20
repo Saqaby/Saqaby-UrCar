@@ -124,6 +124,8 @@ public class NotiListener extends NotificationListenerService {
      * (two hours) until another app's session takes its place.
      */
     private static MediaController kept;
+    /** The app whose session played last. */
+    static volatile String lastPlayer = "";
     private static long keptAt;
     /** The session to show: the one playing, else the first, else the last one shown; never our own. */
     static MediaController session(Context c) {
@@ -131,13 +133,18 @@ public class NotiListener extends NotificationListenerService {
         try {
             MediaSessionManager m = (MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
             List<MediaController> all = m.getActiveSessions(new ComponentName(c, NotiListener.class));
-            MediaController first = null;
+            // nothing playing: the app that played last (the owner's log: the phone's paused Bluetooth session came
+            // first in the list, so the card showed it and two fingers played the phone instead of YouTube)
+            MediaController first = null, last = null;
             for (MediaController mc : all) {
                 if (mc.getPackageName().equals(c.getPackageName())) continue;
                 PlaybackState st = mc.getPlaybackState();
-                if (st != null && st.getState() == PlaybackState.STATE_PLAYING) { keep(mc); return mc; }
+                if (st != null && st.getState() == PlaybackState.STATE_PLAYING) { keep(mc); lastPlayer = mc.getPackageName(); return mc; }
                 if (first == null && mc.getMetadata() != null) first = mc;
+                if (last == null && mc.getPackageName().equals(lastPlayer)) last = mc;
             }
+            if (last != null) { keep(last); return last; }
+            if (kept != null && kept.getPackageName().equals(lastPlayer) && System.currentTimeMillis() - keptAt < 2 * 3600_000L && kept.getPlaybackState() != null) return kept;
             if (first != null) { keep(first); return first; }
             if (kept != null && System.currentTimeMillis() - keptAt < 2 * 3600_000L && kept.getPlaybackState() != null) return kept;
             return null;

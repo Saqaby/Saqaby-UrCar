@@ -295,18 +295,33 @@ public class PanelService extends Service implements Panel.Actions {
     static final java.util.LinkedList<String> soundSeen = new java.util.LinkedList<>();
     private final java.util.Map<String, Integer> soundState = new java.util.HashMap<>();
     private void oneSound() {
+        long t = System.currentTimeMillis();
         java.util.Map<String, Integer> now = NotiListener.states(this);
         for (java.util.Map.Entry<String, Integer> e : now.entrySet()) {
             Integer was = soundState.get(e.getKey());
             if (was == null || !was.equals(e.getValue())) log(e.getKey(), e.getValue());
+            if (e.getValue() == android.media.session.PlaybackState.STATE_PLAYING) NotiListener.lastPlayer = e.getKey();
         }
         for (String k : soundState.keySet()) if (!now.containsKey(k)) log(k, -1);
         soundState.clear();
         soundState.putAll(now);
+        // the phone over Bluetooth playing for two seconds (a moment's «playing» is not taken): what else plays pauses,
+        // once each time it starts. The screen's Bluetooth app takes no audio focus, so YouTube kept on over it.
+        Integer bt = now.get("com.tw.bt");
+        if (bt == null || bt != android.media.session.PlaybackState.STATE_PLAYING) { btSince = 0; btDone = false; return; }
+        if (btSince == 0) btSince = t;
+        if (!btDone && t - btSince >= 2000) {
+            btDone = true;
+            NotiListener.pauseAllBut(this, java.util.Collections.singleton("com.tw.bt"));
+            NotiListener.lastPlayer = "com.tw.bt";
+            if (sound.radioOn) sound.stopRadio();
+        }
     }
+    private long btSince;
+    private boolean btDone;
     private void log(String pkg, int st) {
         String[] names = {"بلا حالة", "متوقف", "متوقف مؤقتًا", "يعمل", "تقديم", "ترجيع", "تحميل", "خطأ", "يتصل", "السابق", "التالي", "التالي"};
-        String s = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + NotiListener.appName(this, pkg) + ": "
+        String s = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  \u2068" + NotiListener.appName(this, pkg) + "\u2069: "
                 + (st < 0 ? "خرج من القائمة" : st < names.length ? names[st] : String.valueOf(st));
         synchronized (soundSeen) { soundSeen.addFirst(s); while (soundSeen.size() > 20) soundSeen.removeLast(); }
     }    /** The khatma's button while it waits: it goes on now, and what is playing now is let be. */
