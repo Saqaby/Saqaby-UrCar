@@ -146,10 +146,30 @@ public class NotiListener extends NotificationListenerService {
     private static void keep(MediaController mc) { kept = mc; keptAt = System.currentTimeMillis(); }
     /** «play» for the kept session; Android's media key when its controller no longer answers (the last app to play takes it). */
     static void resume(Context c, MediaController mc) {
-        try { mc.getTransportControls().play(); keptAt = System.currentTimeMillis(); return; } catch (Exception ignored) { }
+        boolean listed = false;   // still in Android's list: its own «play»; dropped from it: the media key
+        try {
+            MediaSessionManager m = (MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController x : m.getActiveSessions(new ComponentName(c, NotiListener.class)))
+                if (x.getSessionToken().equals(mc.getSessionToken())) listed = true;
+        } catch (Exception ignored) { }
+        if (listed) try { mc.getTransportControls().play(); keptAt = System.currentTimeMillis(); return; } catch (Exception ignored) { }
         android.media.AudioManager am = (android.media.AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
         am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY));
         am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY));
+    }
+    /** Every other app's session and its playback state (the first of each app). */
+    static java.util.Map<String, Integer> states(Context c) {
+        java.util.Map<String, Integer> out = new java.util.HashMap<>();
+        if (!allowed(c)) return out;
+        try {
+            MediaSessionManager m = (MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : m.getActiveSessions(new ComponentName(c, NotiListener.class))) {
+                if (mc.getPackageName().equals(c.getPackageName()) || out.containsKey(mc.getPackageName())) continue;
+                PlaybackState st = mc.getPlaybackState();
+                out.put(mc.getPackageName(), st == null ? 0 : st.getState());
+            }
+        } catch (Exception ignored) { }
+        return out;
     }
     /** Pauses every other app's session that plays, but those of the packages given. */
     static void pauseAllBut(Context c, java.util.Set<String> keep) {

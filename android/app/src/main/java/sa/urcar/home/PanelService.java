@@ -288,20 +288,28 @@ public class PanelService extends Service implements Panel.Actions {
     private int quiet;
     private String heldWhy = "";
     /**
-     * One app's sound at a time: an app that begins to play (the phone's music over Bluetooth, «com.tw.bt») pauses the
-     * one that was playing (YouTube), which kept on over it, the screen's Bluetooth app taking no audio focus. The one
-     * paused stays on the music card, to play again from there.
+     * «سجل الأصوات» (the settings): each other app's media session as it changes state, the last 20, to see what the
+     * screen's Bluetooth app and YouTube really report. Version 95 paused whatever played before a newcomer, and YouTube
+     * stopped a moment after it began, with nothing else playing: what turned up as «new» is to be seen here first.
      */
-    private final java.util.Set<String> playedBefore = new java.util.HashSet<>();
+    static final java.util.LinkedList<String> soundSeen = new java.util.LinkedList<>();
+    private final java.util.Map<String, Integer> soundState = new java.util.HashMap<>();
     private void oneSound() {
-        java.util.Set<String> now = NotiListener.playingPackages(this);
-        java.util.Set<String> fresh = new java.util.HashSet<>(now);
-        fresh.removeAll(playedBefore);
-        if (!fresh.isEmpty() && now.size() > fresh.size()) { NotiListener.pauseAllBut(this, fresh); now.retainAll(fresh); }
-        playedBefore.clear();
-        playedBefore.addAll(now);
+        java.util.Map<String, Integer> now = NotiListener.states(this);
+        for (java.util.Map.Entry<String, Integer> e : now.entrySet()) {
+            Integer was = soundState.get(e.getKey());
+            if (was == null || !was.equals(e.getValue())) log(e.getKey(), e.getValue());
+        }
+        for (String k : soundState.keySet()) if (!now.containsKey(k)) log(k, -1);
+        soundState.clear();
+        soundState.putAll(now);
     }
-    /** The khatma's button while it waits: it goes on now, and what is playing now is let be. */
+    private void log(String pkg, int st) {
+        String[] names = {"بلا حالة", "متوقف", "متوقف مؤقتًا", "يعمل", "تقديم", "ترجيع", "تحميل", "خطأ", "يتصل", "السابق", "التالي", "التالي"};
+        String s = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + NotiListener.appName(this, pkg) + ": "
+                + (st < 0 ? "خرج من القائمة" : st < names.length ? names[st] : String.valueOf(st));
+        synchronized (soundSeen) { soundSeen.addFirst(s); while (soundSeen.size() > 20) soundSeen.removeLast(); }
+    }    /** The khatma's button while it waits: it goes on now, and what is playing now is let be. */
     private void khatmaGoOn() {
         playingBefore.addAll(NotiListener.playingPackages(this));
         heldWhy = "";
