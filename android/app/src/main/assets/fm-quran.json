@@ -1,0 +1,10 @@
+{
+ "note": "ترددات إذاعة القرآن الكريم السعودية على FM. لا توجد قائمة رسمية منشورة وجدناها؛ كل تردد هنا غير مؤكد حتى يُجرَّب في المدينة نفسها. صحّح أو أضف، ثم ادفع: الشاشات تأخذ الجدول كلما اتصلت بالإنترنت.",
+ "updated": "2026-11-05",
+ "stations": [
+  {"city": "الرياض", "lat": 24.7136, "lon": 46.6753, "mhz": 100.0, "alt": [104.6], "verified": false,
+   "src": ["https://streema.com/radios/Saudi_Quran", "https://radio.dubbeh.net/stations/athaaa-alkran-alkrym-1411"]},
+  {"city": "مكة المكرمة", "lat": 21.4225, "lon": 39.8262, "mhz": 91.5, "alt": [], "verified": false,
+   "src": ["https://radio.dubbeh.net/stations/athaaa-alkran-alkrym-1411"]}
+ ]
+}

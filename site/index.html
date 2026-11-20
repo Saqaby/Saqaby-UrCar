@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>سيارتك: واجهة عربية لشاشة السيارة</title>
+<meta name="description" content="نزّل تطبيق سيارتك مباشرة على شاشة سيارتك الأندرويد">
+<style>
+@font-face{font-family:P;src:url(r.otf);font-weight:400;font-display:swap}
+@font-face{font-family:P;src:url(b.otf);font-weight:700;font-display:swap}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:P,system-ui,sans-serif;background:#0b1314;color:#eef1ea;line-height:1.6}
+.w{max-width:980px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:clamp(34px,6vw,56px);line-height:1.2}
+.gold{color:#d9b46a}
+.sub{color:#93a39f;font-size:clamp(18px,2.6vw,24px);margin-top:6px}
+.dl{display:block;text-align:center;margin:26px 0 10px;background:#d9b46a;color:#1b1408;text-decoration:none;font-weight:700;font-size:clamp(26px,4.4vw,38px);border-radius:22px;padding:24px}
+.dl small{display:block;font-size:18px;font-weight:400}
+.alt{text-align:center;color:#93a39f;font-size:17px}
+.alt a{color:#d9b46a}
+.phone{display:none;margin-top:18px;border:2px solid #d9b46a;border-radius:18px;padding:16px 18px;font-size:19px}
+.phone b{color:#d9b46a;font-size:24px;direction:ltr;display:inline-block}
+h2{font-size:28px;margin:38px 0 14px;color:#d9b46a}
+ol{list-style:none;counter-reset:s}
+ol li{counter-increment:s;background:#121d1f;border:1px solid #24383b;border-radius:18px;padding:16px 18px 16px 18px;margin-bottom:12px;font-size:20px;display:flex;gap:14px;align-items:flex-start}
+ol li:before{content:counter(s);flex:none;width:40px;height:40px;border-radius:50%;background:#d9b46a;color:#1b1408;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:22px}
+ol li small{display:block;color:#93a39f;font-size:17px}
+img{width:100%;border-radius:18px;margin-top:8px;display:block}
+.foot{margin-top:40px;color:#93a39f;font-size:16px;text-align:center}
+</style></head><body><div class="w">
+<h1>تطبيق <span class="gold">سيارتك</span></h1>
+<div class="sub">واجهة عربية لشاشة سيارتك: المواقيت والأذان، ختمة القرآن، السرعة والقبلة، والملاحة بضغطة. مجاني.</div>
+
+<a class="dl" href="https://github.com/Saqaby/Saqaby-UrCar/releases/download/app-stable/urcar.apk">تنزيل التطبيق<small>افتح هذه الصفحة من متصفح شاشة السيارة نفسها</small></a>
+<div class="alt">لم يبدأ التنزيل؟ <a href="https://raw.githubusercontent.com/Saqaby/Saqaby-UrCar/claude/urcar-arabic-head-unit-2e7knc/apk/stable/urcar.apk">رابط بديل</a></div>
+<div class="phone" id="phone">أنت تتصفح من الجوال. التطبيق للشاشة لا للجوال: افتح متصفح Chrome في شاشة سيارتك واكتب فيه<br><b>sayaratak.netlify.app</b></div>
+
+<h2>طريقة التثبيت على الشاشة</h2>
+<ol>
+ <li><div>افتح Chrome في شاشة السيارة واكتب <b class="gold" dir="ltr">sayaratak.netlify.app</b><small>الشاشة متصلة بالإنترنت (شبكة الجوال أو واي فاي)</small></div></li>
+ <li><div>اضغط «تنزيل التطبيق»، ثم افتح الملف بعد اكتمال التنزيل</div></li>
+ <li><div>إن طلب الإذن، اختر «الإعدادات» وفعّل «السماح من هذا المصدر» لـ Chrome، ثم ارجع واضغط «تثبيت»</div></li>
+ <li><div>ظهرت «تم حظر التطبيق لحماية جهازك»؟<small>افتح Google Play ← صورة حسابك ← Play Protect ← الإعدادات ⚙ ← أوقف الفحص مؤقتًا، ثبّت التطبيق، ثم أعد تشغيل الحماية</small></div></li>
+ <li><div>افتح «سيارتك» واتبع خطوات البداية: إذن الموقع، والوصول إلى الإشعارات، وتثبيت التحديثات<small>بعدها يحدّث التطبيق نفسه وحده</small></div></li>
+</ol>
+
+<h2>الجديد</h2>
+<img src="new.jpg" alt="أبرز تحديثات سيارتك" loading="lazy">
+
+<div class="foot">© ٢٠٢٦ سلمان الصقعبي. جميع الحقوق محفوظة. الاستخدام الشخصي مجاني.</div>
+</div>
+<script>
+if (/iPhone|iPad|Mobi/i.test(navigator.userAgent) && Math.min(screen.width, screen.height) < 600) document.getElementById('phone').style.display = 'block';
+</script>
+</body></html>

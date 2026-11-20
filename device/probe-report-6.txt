@@ -1,0 +1,412 @@
+probe v5
+UrCar probe 2026-11-05 14:44
+
+[android]
+sdk_int=29  (29=Android 10, 30=11, 31=12, 33=13)
+release_reported=10
+manufacturer=Allwinner  model=A133
+board=exdroid  hardware=sun50iw10p1  device=ceres-b6
+security_patch=2021-01-05
+
+[screen]
+pixels=1280x720  dpi=160  density=1.0
+
+[memory]
+ram_mb=3972  free_mb=1230  low_ram=false
+
+[windows]
+freeform_feature=false
+picture_in_picture=true
+enable_freeform_support=unset
+force_resizable_activities=unset
+in_multiwindow_now=false
+
+[camera]
+android_cameras=7
+android_cameras=error CameraAccessException
+dev_video=4
+
+[home]
+current_home=com.dofun.variety/com.dofun.overseasvariety.Launcher
+
+[navigation apps]
+com.google.android.apps.maps=true
+com.waze=true
+com.here.app.maps=false
+com.sygic.aura=false
+net.osmand=false
+com.huawei.maps.app=false
+ru.yandex.yandexnavi=false
+google_play=true  youtube=true
+
+[the screen's own apps]
+== com.android.theme.icon_pack.circular.launcher
+== com.android.theme.icon_pack.filled.launcher
+== com.android.theme.icon_pack.rounded.launcher
+== com.tw.auxin
+  launch: com.tw.auxin/.AuxInActivity
+  activity: .AuxInActivity
+== com.tw.bootanimation
+  launch: com.tw.bootanimation/.BootAnimationActivity
+  activity: .BootAnimationActivity
+== com.tw.bt
+  launch: com.tw.bt/.ATBluetoothActivity
+  activity: .ATBluetoothActivity
+  receiver: .broadcast.ATBluetoothReceiver
+  service: .ATBluetoothService
+== com.tw.bt.theme
+== com.tw.bug.report
+  activity: .ReportActivity
+== com.tw.car
+  launch: com.tw.car/.XpNissanActivity
+  activity: .XpNissanActivity
+  activity: .MainActivity
+  receiver: .MyUpReceiver
+  receiver: .CarReceiver
+  service: .permission.PermissionService
+  service: .CarService
+== com.tw.carchoose
+  activity: .QueryCarActivity
+  activity: com.tw.mcudebug.MCUActivity
+  activity: com.tw.canboxupdate.CanUpdateMainActivity
+  service: com.tw.mcudebug.MCUService
+== com.tw.carinfoservice
+  activity: .permission.MainActivity
+  activity: .CarActivity
+  activity: .lrreverse.LRReverseActivity
+  receiver: .CarReceiver
+  service: .permission.PermissionService
+  service: .CarService
+== com.tw.core
+  activity: .main.MainActivity
+  receiver: .model.BootReceiver
+  service: .model.MainService
+  service: .messenger.server.MessengerService
+  service: .model.DameonService
+== com.tw.coreservice
+  activity: com.tw.tdservice.ui.MainActivity
+  receiver: com.tw.tdservice.service.MainReceiver
+  receiver: com.tw.tdservice.service.PackageReceiver
+  service: com.tw.tdservice.service.MainService
+== com.tw.dvr
+== com.tw.eq
+  launch: com.tw.eq/.EQChoiceActivity
+  activity: asp3702.activity.NormalActivity
+  activity: .EQActivity
+  activity: .EQChoiceActivity
+  activity: rohm.activity.RohmActivity
+  activity: rohm.activity.RohmActivity_TS10S
+  activity: ak7602.activity.AK7602Activity
+  activity: ak7604.activity.AK7604Activity
+  activity: pt2313.activity.PT2313Activity_Magic
+  activity: pt2313.activity.PT2313Activity
+  activity: pt2313.activity.PT2313Activity_Magic3
+  activity: asp3702.activity.ASP3702Activity
+  activity: asp3702.activity.ASP3702Activity_Magic
+  activity: asp3702.activity.ASP3702Activity_2313
+  activity: si47925.activity.SI47925Activity
+  activity: soft.activity.PT2313Activity_Soft
+  receiver: .EQReceiver
+  service: .EQService
+== com.tw.keypad
+  launch: com.tw.keypad/.SteeringWheelActivity
+  activity: .SteeringWheelActivity
+  activity: .PanelKeyActivity
+== com.tw.music
+  launch: com.tw.music/.MusicActivity
+  activity: .MusicActivity
+  activity: .AudioPreview
+  receiver: .view.MusicWidgetProvider
+  service: .MusicService
+== com.tw.music.theme
+== com.tw.net
+  service: .uiauthorize.AuthorizationService
+== com.tw.radio
+  launch: com.tw.radio/.RadioActivity
+  activity: .RadioActivity
+  activity: .activity.PTYActivity
+  service: .RadioService
+== com.tw.radio.theme
+== com.tw.reverse
+  activity: cn.cardoor.desktop.window.floating.e
+  service: .RadarService
+  service: cn.cardoor.desktop.window.floating.f
+== com.tw.rightview
+  activity: .LRReverseActivity
+== com.tw.service
+  activity: .ReverseActivity
+  activity: .ReverseNissanActivity
+  activity: .LRReverseActivity
+  activity: .ActiePark
+  activity: .SRActivity
+== com.tw.service.xt
+  service: .CommandService
+== com.tw.twfileexplore
+  launch: com.tw.twfileexplore/.ui.view.activity.ExploreActivity
+  activity: .ui.view.activity.ExploreActivity
+  activity: .ui.view.activity.PictureBrowseActivity
+  activity: .ui.view.activity.AudioDialogActivity
+  activity: .ui.view.activity.VideoActivity
+  activity: .ui.view.activity.TextActivity
+== com.tw.uart
+  service: .UartService
+== com.tw.video
+  launch: com.tw.video/.VideoActivity
+  activity: .VideoActivity
+  activity: .ThirdVideoActivity
+  activity: cn.cardoor.desktop.window.floating.e
+  service: cn.cardoor.desktop.window.floating.f
+== com.tw.video.theme
+
+[all packages] 185
+android
+android.auto_generated_rro_vendor__
+android.ext.services
+android.ext.shared
+android.overlay.sysbar_1024x600
+android.overlay.sysbar_1024x768
+android.overlay.sysbar_1024x820
+android.overlay.sysbar_1080x1920
+android.overlay.sysbar_1200x1600
+android.overlay.sysbar_1200x1920
+android.overlay.sysbar_1200x2000
+android.overlay.sysbar_1200x800
+android.overlay.sysbar_1250x1562
+android.overlay.sysbar_1280x480
+android.overlay.sysbar_1280x640
+android.overlay.sysbar_1280x720
+android.overlay.sysbar_1280x960
+android.overlay.sysbar_1440x1050
+android.overlay.sysbar_1440x540
+android.overlay.sysbar_1600x1200
+android.overlay.sysbar_1600x720
+android.overlay.sysbar_1920x1080
+android.overlay.sysbar_1920x1200
+android.overlay.sysbar_1920x720
+android.overlay.sysbar_1920x860
+android.overlay.sysbar_2000x1200
+android.overlay.sysbar_2400x900
+android.overlay.sysbar_600x1024
+android.overlay.sysbar_720x1280
+android.overlay.sysbar_720x1600
+android.overlay.sysbar_720x1920
+android.overlay.sysbar_768x1024
+android.overlay.sysbar_800x1280
+android.overlay.sysbar_800x480
+android.overlay.sysbar_800x600
+android.overlay.sysbar_960x1280
+cn.cardoor.zt360
+com.ab2update.fota_demo_iot
+com.abupdate.fota_demo_iot
+com.alensw.PicFolder
+com.allwinnertech.packageoverride
+com.android.apps.tag
+com.android.backupconfirm
+com.android.bluetooth
+com.android.bluetoothmidiservice
+com.android.bookmarkprovider
+com.android.captiveportallogin
+com.android.certinstaller
+com.android.chrome
+com.android.companiondevicemanager
+com.android.documentsui
+com.android.dreams.basic
+com.android.externalstorage
+com.android.htmlviewer
+com.android.inputdevices
+com.android.inputmethod.latin
+com.android.internal.display.cutout.emulation.corner
+com.android.internal.display.cutout.emulation.double
+com.android.internal.display.cutout.emulation.tall
+com.android.internal.systemui.navbar.gestural
+com.android.internal.systemui.navbar.gestural_extra_wide_back
+com.android.internal.systemui.navbar.gestural_narrow_back
+com.android.internal.systemui.navbar.gestural_wide_back
+com.android.internal.systemui.navbar.threebutton
+com.android.internal.systemui.navbar.twobutton
+com.android.keychain
+com.android.localtransport
+com.android.location.fused
+com.android.managedprovisioning
+com.android.modulemetadata
+com.android.networkstack.inprocess
+com.android.networkstack.permissionconfig
+com.android.nfc
+com.android.packageinstaller
+com.android.pacprocessor
+com.android.permissioncontroller
+com.android.phone
+com.android.printservice.recommendation
+com.android.printspooler
+com.android.providers.blockednumber
+com.android.providers.calendar
+com.android.providers.contacts
+com.android.providers.downloads
+com.android.providers.downloads.ui
+com.android.providers.media
+com.android.providers.partnerbookmarks
+com.android.providers.settings
+com.android.providers.telephony
+com.android.providers.userdictionary
+com.android.provision
+com.android.proxyhandler
+com.android.se
+com.android.server.telecom
+com.android.settings
+com.android.settings.intelligence
+com.android.sharedstoragebackup
+com.android.shell
+com.android.statementservice
+com.android.storagemanager
+com.android.systemui
+com.android.theme.color.black
+com.android.theme.color.cinnamon
+com.android.theme.color.green
+com.android.theme.color.ocean
+com.android.theme.color.orchid
+com.android.theme.color.purple
+com.android.theme.color.space
+com.android.theme.font.notoserifsource
+com.android.theme.icon.roundedrect
+com.android.theme.icon.square
+com.android.theme.icon.squircle
+com.android.theme.icon.teardrop
+com.android.theme.icon_pack.circular.android
+com.android.theme.icon_pack.circular.launcher
+com.android.theme.icon_pack.circular.settings
+com.android.theme.icon_pack.circular.systemui
+com.android.theme.icon_pack.circular.themepicker
+com.android.theme.icon_pack.filled.android
+com.android.theme.icon_pack.filled.launcher
+com.android.theme.icon_pack.filled.settings
+com.android.theme.icon_pack.filled.systemui
+com.android.theme.icon_pack.filled.themepicker
+com.android.theme.icon_pack.rounded.android
+com.android.theme.icon_pack.rounded.launcher
+com.android.theme.icon_pack.rounded.settings
+com.android.theme.icon_pack.rounded.systemui
+com.android.vending
+com.android.vpndialogs
+com.android.wallpapercropper
+com.android.webview
+com.androits.gps.test.pro
+com.dofun.carassistant.car
+com.dofun.carsetting
+com.dofun.dofunweather.main
+com.dofun.market
+com.dofun.variety
+com.google.android.apps.maps
+com.google.android.gms
+com.google.android.gsf
+com.google.android.ims
+com.google.android.overlay.gmsconfig
+com.google.android.overlay.gmsgoconfig
+com.google.android.packageinstaller.overlay
+com.google.android.partnersetup
+com.google.android.webview
+com.google.android.youtube
+com.huawei.dmsdpdevice
+com.huawei.hisight
+com.huawei.nearby
+com.incube.seen2
+com.microntek.worship
+com.ms.ms2160
+com.nng.igo.primong.igoworld
+com.sneig.livedrama
+com.tw.auxin
+com.tw.bootanimation
+com.tw.bt
+com.tw.bt.theme
+com.tw.bug.report
+com.tw.car
+com.tw.carchoose
+com.tw.carinfoservice
+com.tw.core
+com.tw.coreservice
+com.tw.dvr
+com.tw.eq
+com.tw.keypad
+com.tw.music
+com.tw.music.theme
+com.tw.net
+com.tw.radio
+com.tw.radio.theme
+com.tw.reverse
+com.tw.rightview
+com.tw.service
+com.tw.service.xt
+com.tw.twfileexplore
+com.tw.uart
+com.tw.video
+com.tw.video.theme
+com.vialsoft.radarbot_free
+com.waze
+com.zjinnova.zlink
+dje073.android.audiorecorder
+sa.urcar.probe
+
+[embedding]
+== com.dofun.variety
+  system_app=true  platform_signed=false  shared_uid=com.dofun.variety
+  ACTIVITY_EMBEDDING=false
+  MANAGE_ACTIVITY_STACKS=false
+  INJECT_EVENTS=false
+  CAPTURE_VIDEO_OUTPUT=false
+  INTERNAL_SYSTEM_WINDOW=false
+== sa.urcar.probe
+  system_app=false  platform_signed=false  shared_uid=sa.urcar.probe
+  ACTIVITY_EMBEDDING=false
+  MANAGE_ACTIVITY_STACKS=false
+  INJECT_EVENTS=false
+  CAPTURE_VIDEO_OUTPUT=false
+  INTERNAL_SYSTEM_WINDOW=false
+com.google.android.apps.maps allow_embedded=false
+com.waze allow_embedded=false
+com.nng.igo.primong.igoworld allow_embedded=false
+multi_display_feature=true
+
+[earlier tests]
+14:31:56 opened com.tw.carinfoservice/.permission.MainActivity
+14:31:59 opened com.tw.carinfoservice/.CarActivity
+14:32:01 opened com.tw.carinfoservice/.lrreverse.LRReverseActivity
+14:32:10 opened com.tw.carinfoservice/.lrreverse.LRReverseActivity
+14:33:02 opened com.tw.service/.ReverseActivity
+14:33:07 opened com.tw.service/.ReverseNissanActivity
+14:33:11 opened com.tw.service/.ReverseNissanActivity
+14:33:16 opened com.tw.service/.LRReverseActivity
+14:33:28 opened com.tw.reverse/cn.cardoor.desktop.window.floating.e
+14:33:32 opened com.tw.service/.ActiePark
+14:33:36 opened com.tw.reverse/cn.cardoor.desktop.window.floating.e
+14:33:40 opened com.tw.rightview/.LRReverseActivity
+    14:34:30 camera2 0 open CameraAccessException CAMERA_IN_USE (4): connectHelper:1489: Camera "0" is already open
+14:34:37 camera2 1 open CameraAccessException CAMERA_IN_USE (4): connectHelper:1489: Camera "1" is already open
+    14:37:37 virtual display flags=8 created id=1
+14:37:37 virtual display flags=8 com.google.android.apps.maps SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.google.android.apps.maps cmp=com.google.android.apps.maps/com.google.android.maps.MapsActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=1
+14:37:37 virtual display flags=9 created id=2
+14:37:37 virtual display flags=9 com.google.android.apps.maps SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.google.android.apps.maps cmp=com.google.android.apps.maps/com.google.android.maps.MapsActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=2
+14:37:58 virtual display flags=8 created id=3
+14:37:58 virtual display flags=8 com.google.android.apps.maps SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.google.android.apps.maps cmp=com.google.android.apps.maps/com.google.android.maps.MapsActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=3
+14:37:58 virtual display flags=9 created id=4
+14:37:58 virtual display flags=9 com.google.android.apps.maps SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.google.android.apps.maps cmp=com.google.android.apps.maps/com.google.android.maps.MapsActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=4
+14:38:03 ActivityView created
+14:38:05 ActivityView start com.google.android.apps.maps SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.google.android.apps.maps cmp=com.google.android.apps.maps/com.google.android.maps.MapsActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=5
+14:38:15 virtual display flags=8 created id=6
+14:38:15 virtual display flags=8 com.google.android.apps.maps SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.google.android.apps.maps cmp=com.google.android.apps.maps/com.google.android.maps.MapsActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=6
+14:38:16 virtual display flags=9 created id=7
+14:38:16 virtual display flags=9 com.google.android.apps.maps SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.google.android.apps.maps cmp=com.google.android.apps.maps/com.google.android.maps.MapsActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=7
+14:38:20 ActivityView created
+14:38:22 ActivityView start com.google.android.apps.maps SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.google.android.apps.maps cmp=com.google.android.apps.maps/com.google.android.maps.MapsActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=8
+14:38:25 virtual display flags=8 created id=9
+14:38:25 virtual display flags=8 com.waze SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.waze cmp=com.waze/.FreeMapAppActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=9
+14:38:25 virtual display flags=9 created id=10
+14:38:25 virtual display flags=9 com.waze SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.waze cmp=com.waze/.FreeMapAppActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=10
+14:38:33 ActivityView created
+14:38:34 ActivityView start com.waze SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.waze cmp=com.waze/.FreeMapAppActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=11
+14:38:38 virtual display flags=8 created id=12
+14:38:38 virtual display flags=8 com.nng.igo.primong.igoworld SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.nng.igo.primong.igoworld cmp=com.nng.igo.primong.igoworld/com.navngo.igo.javaclient.MainActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=12
+14:38:38 virtual display flags=9 created id=13
+14:38:39 virtual display flags=9 com.nng.igo.primong.igoworld SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.nng.igo.primong.igoworld cmp=com.nng.igo.primong.igoworld/com.navngo.igo.javaclient.MainActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=13
+14:38:47 ActivityView created
+14:38:49 ActivityView start com.nng.igo.primong.igoworld SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x18000000 pkg=com.nng.igo.primong.igoworld cmp=com.nng.igo.primong.igoworld/com.navngo.igo.javaclient.MainActivity } from ProcessRecord{e1eed95 4953:sa.urcar.probe/u0a145} (pid=4953, uid=10145) with launchDisplayId=14
+    [test] 14:44:19 overlay shown over com.google.android.apps.maps
+[test] 14:46:08 overlay closed by the owner
