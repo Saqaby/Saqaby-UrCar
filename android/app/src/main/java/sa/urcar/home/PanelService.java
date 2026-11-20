@@ -172,7 +172,7 @@ public class PanelService extends Service implements Panel.Actions {
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(now);
         int hh = c.get(Calendar.HOUR_OF_DAY), h12 = hh % 12 == 0 ? 12 : hh % 12;
-        panel.showTime(Ui.ar(h12 + ":" + Ui.pad(c.get(Calendar.MINUTE))), hh < 12 ? "ص" : "م", Day.hijriText(now), Day.gregText(now));
+        panel.showTime(Ui.ar(h12 + ":" + Ui.pad(c.get(Calendar.MINUTE))), Ui.ar(Ui.pad(c.get(Calendar.SECOND))), hh < 12 ? "ص" : "م", Day.hijriText(now), Day.gregText(now));
         panel.showPlace(day.placeName());
         if (wx != null) {
             int icon = Ui.wxIcon((int) wx[1], day.night(now));
@@ -524,6 +524,7 @@ public class PanelService extends Service implements Panel.Actions {
         launch(i != null ? i : new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
     }
     @Override public void settings() { launch(new Intent(this, SettingsActivity.class)); }
+    @Override public void clock() { if (HomeActivity.live != null) HomeActivity.live.showClock(); }
     @Override public void apps() { launch(new Intent(this, AppsActivity.class)); }
     /** «البيت» / «العمل»: the place saved in the settings, in the chosen navigation app. */
     void goPlace(String key, String label) {

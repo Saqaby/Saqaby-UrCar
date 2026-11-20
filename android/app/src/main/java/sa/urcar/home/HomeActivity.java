@@ -174,7 +174,17 @@ public class HomeActivity extends Activity {
         full = new Full(this, kind, s != null && s.dayNow(), this::closeFull, () -> { closeFull(); if (PanelService.live != null) PanelService.live.openNav(); });
         root.addView(full, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
-    private void closeFull() { if (full != null) { root.removeView(full); full = null; } }
+    private void closeFull() {
+        if (full != null) { root.removeView(full); full = null; }
+        if (clockFull != null) { root.removeView(clockFull); clockFull = null; }
+    }
+    /** The clock card to the whole screen: the dial with hands, and the dates. */
+    private ClockFull clockFull;
+    void showClock() {
+        closeFull();
+        clockFull = new ClockFull(this, PanelService.live != null && PanelService.live.dayNow(), this::closeFull);
+        root.addView(clockFull, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    }
 
     /** The welcome when the screen starts (Welcome, the owner's design): six seconds, then the home screen. A tap skips it. Off in the settings («الشاشة»). */
     private Welcome greeting;

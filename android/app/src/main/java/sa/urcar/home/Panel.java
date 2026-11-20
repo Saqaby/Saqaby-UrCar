@@ -16,7 +16,7 @@ import android.widget.TextView;
  * the screen is 1280×720 at density 1.0, so sizes are pixels of a 720-high panel (H = 1% of it, the preview's cqh).
  */
 final class Panel extends LinearLayout {
-    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); void library(); }
+    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); void library(); void clock(); }
 
     private final Actions act;
     private final float H;
@@ -25,7 +25,7 @@ final class Panel extends LinearLayout {
 
     private LinearLayout ramRow;
     private TextView ramL, ramN, ramU;
-    private TextView clock, ap, temp, hijri, greg, place, bar, tabP, tabM, nm, tm, cd, ram, mApp, mTitle, mArtist, mEmpty, rT, rF;
+    private TextView secs, clock, ap, temp, hijri, greg, place, bar, tabP, tabM, nm, tm, cd, ram, mApp, mTitle, mArtist, mEmpty, rT, rF;
     private Ui.Icon wxIcon, pinIcon, rIcon, playIcon, prevIcon, nextIcon;
     private LinearLayout card, prayerPage, musicPage, musicOn, radioBtn, kBtn, keysRow, tabs;
     private TextView kT, kF;
@@ -80,7 +80,8 @@ final class Panel extends LinearLayout {
         place = Ui.text(c, px(2.7f), reg, 0);
         plr.addView(pinIcon, new LayoutParams(px(2.9f), px(2.9f))); plr.addView(place);
         side.addView(wr, lp(0)); side.addView(plr, lp(px(0.6f)));
-        r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(side);
+        secs = Ui.text(c, px(3.6f), med, 0); secs.setPadding(px(.8f), px(1.6f), 0, 0);   // the seconds, small beside the minutes
+        r1.addView(clock); r1.addView(secs); r1.addView(ap); r1.addView(spacer()); r1.addView(side);
         head.addView(r1);
         LinearLayout r3 = row();
         hijri = Ui.text(c, px(3), med, 0);
@@ -88,6 +89,7 @@ final class Panel extends LinearLayout {
         greg.setEllipsize(android.text.TextUtils.TruncateAt.END);
         r3.addView(hijri); r3.addView(spacer()); r3.addView(greg);
         head.addView(r3, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        head.setOnClickListener(v -> act.clock());   // the clock to the whole screen
         addView(head);
 
         // ---- the adhan bar
@@ -278,7 +280,7 @@ final class Panel extends LinearLayout {
         day = d;
         th = new Ui.Theme(d);
         setBackgroundColor(th.bg);
-        clock.setTextColor(th.fg); ap.setTextColor(th.muted); temp.setTextColor(th.fg); wxIcon.set(wxIcon.kind, th.sand);
+        clock.setTextColor(th.fg); secs.setTextColor(th.sand); ap.setTextColor(th.muted); temp.setTextColor(th.fg); wxIcon.set(wxIcon.kind, th.sand);
         hijri.setTextColor(th.sand); greg.setTextColor(th.muted); place.setTextColor(th.muted); pinIcon.set(Ui.Icon.PIN, th.muted);
         bar.setBackground(Ui.box(th.sand, 0, px(1.6f))); bar.setTextColor(th.sandInk);
         head.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
@@ -342,7 +344,8 @@ final class Panel extends LinearLayout {
     }
 
     // ---------------------------------------------------------------- the content, every second
-    void showTime(String clockText, String apText, String hijriText, String gregText) {
+    void showTime(String clockText, String secText, String apText, String hijriText, String gregText) {
+        set(secs, secText);
         set(clock, clockText); set(ap, apText); set(hijri, hijriText); set(greg, gregText);
     }
     void showPlace(String name) { set(place, name); pinIcon.setVisibility(name.isEmpty() ? GONE : VISIBLE); }
