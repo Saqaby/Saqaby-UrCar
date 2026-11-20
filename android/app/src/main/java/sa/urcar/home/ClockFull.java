@@ -36,7 +36,7 @@ final class ClockFull extends FrameLayout {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(60, 40, 60, 40);
         dial = new Dial(c, th);
-        row.addView(dial, new LinearLayout.LayoutParams(620, 620));
+        row.addView(dial, new LinearLayout.LayoutParams(560, 560));
 
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);
@@ -65,6 +65,13 @@ final class ClockFull extends FrameLayout {
         back.setOnClickListener(v -> close.run());
         addView(back, new LayoutParams(-2, -2, Gravity.TOP | Gravity.LEFT) {{ leftMargin = 30; topMargin = 26; }});
         fill();
+    }
+    /** The dial three quarters of the screen's height, whatever the screen leaves to the app (it was cut at 620). */
+    @Override protected void onSizeChanged(int w, int h, int ow, int oh) {
+        super.onSizeChanged(w, h, ow, oh);
+        int d = Math.min(Math.round(h * .76f), Math.round(w * .46f));
+        LinearLayout.LayoutParams l = (LinearLayout.LayoutParams) dial.getLayoutParams();
+        if (l.width != d) { l.width = l.height = d; post(() -> dial.setLayoutParams(l)); }
     }
     private static LinearLayout.LayoutParams lp(int top) {
         LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(-2, -2);

@@ -80,8 +80,8 @@ final class Panel extends LinearLayout {
         place = Ui.text(c, px(2.7f), reg, 0);
         plr.addView(pinIcon, new LayoutParams(px(2.9f), px(2.9f))); plr.addView(place);
         side.addView(wr, lp(0)); side.addView(plr, lp(px(0.6f)));
-        secs = Ui.text(c, px(3.6f), med, 0); secs.setPadding(px(.8f), px(1.6f), 0, 0);   // the seconds, small beside the minutes
-        r1.addView(clock); r1.addView(secs); r1.addView(ap); r1.addView(spacer()); r1.addView(side);
+        secs = Ui.text(c, px(3.6f), med, 0); secs.setPadding(0, px(1.6f), px(.8f), 0);   // the seconds, small, right of the minutes
+        r1.addView(secs); r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(side);
         head.addView(r1);
         LinearLayout r3 = row();
         hijri = Ui.text(c, px(3), med, 0);
