@@ -153,6 +153,7 @@ public class PanelService extends Service implements Panel.Actions {
             adhan(now);
             restAndStop(now);
             guardKhatma();
+            oneSound();
             askLimit(now);
             homeTick(now);
             glare(now);
@@ -286,6 +287,20 @@ public class PanelService extends Service implements Panel.Actions {
     }
     private int quiet;
     private String heldWhy = "";
+    /**
+     * One app's sound at a time: an app that begins to play (the phone's music over Bluetooth, «com.tw.bt») pauses the
+     * one that was playing (YouTube), which kept on over it, the screen's Bluetooth app taking no audio focus. The one
+     * paused stays on the music card, to play again from there.
+     */
+    private final java.util.Set<String> playedBefore = new java.util.HashSet<>();
+    private void oneSound() {
+        java.util.Set<String> now = NotiListener.playingPackages(this);
+        java.util.Set<String> fresh = new java.util.HashSet<>(now);
+        fresh.removeAll(playedBefore);
+        if (!fresh.isEmpty() && now.size() > fresh.size()) { NotiListener.pauseAllBut(this, fresh); now.retainAll(fresh); }
+        playedBefore.clear();
+        playedBefore.addAll(now);
+    }
     /** The khatma's button while it waits: it goes on now, and what is playing now is let be. */
     private void khatmaGoOn() {
         playingBefore.addAll(NotiListener.playingPackages(this));
@@ -815,7 +830,7 @@ public class PanelService extends Service implements Panel.Actions {
         else if (pausedByTap.equals("khatma")) { khatma(); say = "الختمة"; }
         else if (pausedByTap.equals("radio")) { radio(); say = "الإذاعة"; }
         else if (pausedByTap.equals("library")) { listenOn(); say = "التلاوة"; }
-        else if (mc != null) { mc.getTransportControls().play(); say = "تشغيل"; }
+        else if (mc != null) { NotiListener.resume(this, mc); say = "تشغيل"; }
         else say = "لا صوت لتشغيله";
         Toast.makeText(this, say, Toast.LENGTH_SHORT).show();
     }

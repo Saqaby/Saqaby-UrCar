@@ -165,7 +165,7 @@ final class Panel extends LinearLayout {
         prevBtn.setOnClickListener(v -> { if (media != null) media.getTransportControls().skipToPrevious(); });
         nextBtn.setOnClickListener(v -> { if (media != null) media.getTransportControls().skipToNext(); });
         playBtn.setOnClickListener(v -> { if (media == null) return;
-            if (NotiListener.playing(media)) media.getTransportControls().pause(); else media.getTransportControls().play(); });
+            if (NotiListener.playing(media)) media.getTransportControls().pause(); else NotiListener.resume(getContext(), media); });
         ctl.addView(prevBtn); ctl.addView(playBtn); ctl.addView(nextBtn);
         musicOn.addView(ctl, lp(px(1.6f)));
         musicPage.addView(musicOn);

@@ -118,7 +118,14 @@ public class NotiListener extends NotificationListenerService {
         return on != null && on.contains(c.getPackageName());
     }
 
-    /** The session to show: the one playing, else the first; never our own. */
+    /**
+     * The last session shown. YouTube paused in the background drops its session from Android's list, and the music
+     * card lost it (and its «play»): the owner had to go back to YouTube. Its controller still answers, so it is kept
+     * (two hours) until another app's session takes its place.
+     */
+    private static MediaController kept;
+    private static long keptAt;
+    /** The session to show: the one playing, else the first, else the last one shown; never our own. */
     static MediaController session(Context c) {
         if (!allowed(c)) return null;
         try {
@@ -128,11 +135,33 @@ public class NotiListener extends NotificationListenerService {
             for (MediaController mc : all) {
                 if (mc.getPackageName().equals(c.getPackageName())) continue;
                 PlaybackState st = mc.getPlaybackState();
-                if (st != null && st.getState() == PlaybackState.STATE_PLAYING) return mc;
+                if (st != null && st.getState() == PlaybackState.STATE_PLAYING) { keep(mc); return mc; }
                 if (first == null && mc.getMetadata() != null) first = mc;
             }
-            return first;
+            if (first != null) { keep(first); return first; }
+            if (kept != null && System.currentTimeMillis() - keptAt < 2 * 3600_000L && kept.getPlaybackState() != null) return kept;
+            return null;
         } catch (Exception e) { return null; }
+    }
+    private static void keep(MediaController mc) { kept = mc; keptAt = System.currentTimeMillis(); }
+    /** «play» for the kept session; Android's media key when its controller no longer answers (the last app to play takes it). */
+    static void resume(Context c, MediaController mc) {
+        try { mc.getTransportControls().play(); keptAt = System.currentTimeMillis(); return; } catch (Exception ignored) { }
+        android.media.AudioManager am = (android.media.AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
+        am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY));
+        am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY));
+    }
+    /** Pauses every other app's session that plays, but those of the packages given. */
+    static void pauseAllBut(Context c, java.util.Set<String> keep) {
+        if (!allowed(c)) return;
+        try {
+            MediaSessionManager m = (MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : m.getActiveSessions(new ComponentName(c, NotiListener.class)))
+                if (!mc.getPackageName().equals(c.getPackageName()) && !keep.contains(mc.getPackageName()) && playing(mc)) {
+                    mc.getTransportControls().pause();
+                    keep(mc);   // the card keeps it, to play again
+                }
+        } catch (Exception ignored) { }
     }
 
     /** The other apps whose media session plays now. */
