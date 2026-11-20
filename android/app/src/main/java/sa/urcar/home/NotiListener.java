@@ -153,9 +153,13 @@ public class NotiListener extends NotificationListenerService {
                 if (x.getSessionToken().equals(mc.getSessionToken())) listed = true;
         } catch (Exception ignored) { }
         if (listed) try { mc.getTransportControls().play(); keptAt = System.currentTimeMillis(); return; } catch (Exception ignored) { }
+        mediaKey(c, android.view.KeyEvent.KEYCODE_MEDIA_PLAY);
+    }
+    /** A media key, as a steering-wheel button sends it: Android gives it to the last app that played. */
+    static void mediaKey(Context c, int code) {
         android.media.AudioManager am = (android.media.AudioManager) c.getSystemService(Context.AUDIO_SERVICE);
-        am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_MEDIA_PLAY));
-        am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_MEDIA_PLAY));
+        am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, code));
+        am.dispatchMediaKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, code));
     }
     /** Every other app's session and its playback state (the first of each app). */
     static java.util.Map<String, Integer> states(Context c) {

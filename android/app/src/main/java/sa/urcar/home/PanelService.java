@@ -839,6 +839,7 @@ public class PanelService extends Service implements Panel.Actions {
         else if (pausedByTap.equals("radio")) { radio(); say = "الإذاعة"; }
         else if (pausedByTap.equals("library")) { listenOn(); say = "التلاوة"; }
         else if (mc != null) { NotiListener.resume(this, mc); say = "تشغيل"; }
+        else if (pausedByTap.equals("mc")) { NotiListener.mediaKey(this, android.view.KeyEvent.KEYCODE_MEDIA_PLAY); say = "تشغيل"; }   // YouTube left Android's list when paused: the media key finds it
         else say = "لا صوت لتشغيله";
         Toast.makeText(this, say, Toast.LENGTH_SHORT).show();
     }
