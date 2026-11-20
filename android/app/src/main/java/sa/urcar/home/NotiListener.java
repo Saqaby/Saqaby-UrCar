@@ -159,8 +159,27 @@ public class NotiListener extends NotificationListenerService {
             for (MediaController x : m.getActiveSessions(new ComponentName(c, NotiListener.class)))
                 if (x.getSessionToken().equals(mc.getSessionToken())) listed = true;
         } catch (Exception ignored) { }
-        if (listed) try { mc.getTransportControls().play(); keptAt = System.currentTimeMillis(); return; } catch (Exception ignored) { }
-        mediaKey(c, android.view.KeyEvent.KEYCODE_MEDIA_PLAY);
+        if (listed) try { mc.getTransportControls().play(); keptAt = System.currentTimeMillis(); } catch (Exception ignored) { listed = false; }
+        if (!listed) mediaKey(c, android.view.KeyEvent.KEYCODE_MEDIA_PLAY);
+        // YouTube without Premium does not play in the background: its session takes «play» and stays paused (the
+        // owner's screen, three tries). If it is still not playing after a second and a half, it is brought to the
+        // front on its own video (its session's activity), and told to play once there.
+        final Context app = c.getApplicationContext();
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (playing(mc)) return;
+            try {
+                if (mc.getSessionActivity() != null) mc.getSessionActivity().send();
+                else {
+                    android.content.Intent i = app.getPackageManager().getLaunchIntentForPackage(mc.getPackageName());
+                    if (i == null) return;
+                    app.startActivity(i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+                }
+                PanelService.front = mc.getPackageName();
+            } catch (Exception e) { return; }
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (!playing(mc)) try { mc.getTransportControls().play(); } catch (Exception ignored) { }
+            }, 1200);
+        }, 1500);
     }
     /** A media key, as a steering-wheel button sends it: Android gives it to the last app that played. */
     static void mediaKey(Context c, int code) {
