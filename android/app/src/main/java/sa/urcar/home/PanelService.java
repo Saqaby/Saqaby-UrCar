@@ -297,14 +297,21 @@ public class PanelService extends Service implements Panel.Actions {
     private void oneSound() {
         long t = System.currentTimeMillis();
         java.util.Map<String, Integer> now = NotiListener.states(this);
+        final int PLAY = android.media.session.PlaybackState.STATE_PLAYING;
+        boolean btOn = Integer.valueOf(PLAY).equals(now.get("com.tw.bt")), started = false;
+        String starter = null;
         for (java.util.Map.Entry<String, Integer> e : now.entrySet()) {
             Integer was = soundState.get(e.getKey());
             if (was == null || !was.equals(e.getValue())) log(e.getKey(), e.getValue());
+            // YouTube (or another app) played again while the phone plays: the phone pauses, the newer one wins
+            // (the owner's log, 20:02:59: YouTube on again over the phone, both heard)
+            if (e.getValue() == PLAY && was != null && was != PLAY && !e.getKey().equals("com.tw.bt")) { started = true; starter = e.getKey(); }
             if (e.getValue() == android.media.session.PlaybackState.STATE_PLAYING) NotiListener.lastPlayer = e.getKey();
         }
         for (String k : soundState.keySet()) if (!now.containsKey(k)) log(k, -1);
         soundState.clear();
         soundState.putAll(now);
+        if (started && btOn && btDone) { NotiListener.pausePkg(this, "com.tw.bt"); NotiListener.lastPlayer = starter; return; }
         // the phone over Bluetooth playing for two seconds (a moment's «playing» is not taken): what else plays pauses,
         // once each time it starts. The screen's Bluetooth app takes no audio focus, so YouTube kept on over it.
         Integer bt = now.get("com.tw.bt");

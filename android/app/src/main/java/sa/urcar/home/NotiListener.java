@@ -182,6 +182,15 @@ public class NotiListener extends NotificationListenerService {
         } catch (Exception ignored) { }
         return out;
     }
+    /** Pauses that app's session (the phone over Bluetooth: its pause goes to the phone). */
+    static void pausePkg(Context c, String pkg) {
+        if (!allowed(c)) return;
+        try {
+            MediaSessionManager m = (MediaSessionManager) c.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            for (MediaController mc : m.getActiveSessions(new ComponentName(c, NotiListener.class)))
+                if (mc.getPackageName().equals(pkg) && playing(mc)) mc.getTransportControls().pause();
+        } catch (Exception ignored) { }
+    }
     /** Pauses every other app's session that plays, but those of the packages given. */
     static void pauseAllBut(Context c, java.util.Set<String> keep) {
         if (!allowed(c)) return;
