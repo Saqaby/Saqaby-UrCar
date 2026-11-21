@@ -16,7 +16,7 @@ import android.widget.TextView;
  * the screen is 1280×720 at density 1.0, so sizes are pixels of a 720-high panel (H = 1% of it, the preview's cqh).
  */
 final class Panel extends LinearLayout {
-    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); void library(); void clock(); }
+    interface Actions { void youtube(); void bluetooth(); void settings(); void apps(); void radio(); void khatma(); void openMusic(); void library(); void clock(); void voice(); }
 
     private final Actions act;
     private final float H;
@@ -35,7 +35,8 @@ final class Panel extends LinearLayout {
     private int dayHot = -2;
     private Ui.Icon kIcon;
     private boolean kOn, libOn;
-    private LinearLayout libBtn;
+    private LinearLayout libBtn, micBtn;
+    private Ui.Icon micIcon;
     private Ui.Icon libIcon;
     private final LinearLayout[] keys = new LinearLayout[4];
     private final Ui.Icon[] keyIcons = new Ui.Icon[4];
@@ -81,7 +82,15 @@ final class Panel extends LinearLayout {
         plr.addView(pinIcon, new LayoutParams(px(2.9f), px(2.9f))); plr.addView(place);
         side.addView(wr, lp(0)); side.addView(plr, lp(px(0.6f)));
         secs = Ui.text(c, px(3.6f), med, 0); secs.setPadding(0, px(1.6f), px(.8f), 0);   // the seconds, small, right of the minutes
-        r1.addView(secs); r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(side);
+        micBtn = row();   // the voice: ask for YouTube, a way, an app
+        micBtn.setGravity(Gravity.CENTER);
+        micIcon = new Ui.Icon(c, Ui.Icon.MIC, 0);
+        micBtn.addView(micIcon, new LayoutParams(px(4.6f), px(4.6f)));
+        micBtn.setContentDescription("المساعد الصوتي");
+        micBtn.setOnClickListener(v -> act.voice());
+        LayoutParams ml = new LayoutParams(px(8.6f), px(8.6f));
+        ml.setMarginStart(px(2));
+        r1.addView(secs); r1.addView(clock); r1.addView(ap); r1.addView(spacer()); r1.addView(side); r1.addView(micBtn, ml);
         head.addView(r1);
         LinearLayout r3 = row();
         hijri = Ui.text(c, px(3), med, 0);
@@ -284,6 +293,8 @@ final class Panel extends LinearLayout {
         hijri.setTextColor(th.sand); greg.setTextColor(th.muted); place.setTextColor(th.muted); pinIcon.set(Ui.Icon.PIN, th.muted);
         bar.setBackground(Ui.box(th.sand, 0, px(1.6f))); bar.setTextColor(th.sandInk);
         head.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
+        micBtn.setBackground(Ui.box(th.sand, 0, px(4.3f)));
+        micIcon.set(Ui.Icon.MIC, th.sandInk);
         card.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
         nm.setTextColor(th.fg); tm.setTextColor(th.muted); cd.setTextColor(th.sand); ram.setTextColor(th.muted); ramL.setTextColor(th.muted); ramN.setTextColor(th.sand); ramU.setTextColor(th.muted);
         mApp.setTextColor(th.muted); mTitle.setTextColor(th.fg); mArtist.setTextColor(th.muted); mEmpty.setTextColor(th.muted);
