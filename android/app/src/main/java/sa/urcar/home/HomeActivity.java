@@ -264,30 +264,6 @@ public class HomeActivity extends Activity {
         return true;
     }
 
-    // ---------------------------------------------------------------- the voice
-    /**
-     * The microphone: Android's speech recognition in Arabic, and Voice does what was said. Without a recognizer on
-     * the screen: the phone's own assistant (Google's), as it is.
-     */
-    void listen() {
-        Intent i = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "ar-SA")
-                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "قل مثلًا: شغّل في يوتيوب سورة الكهف، ودّني إلى البيت، افتح واتساب")
-                .putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 3);
-        try { startActivityForResult(i, 21); return; } catch (Exception ignored) { }
-        for (String a : new String[]{Intent.ACTION_VOICE_COMMAND, Intent.ACTION_ASSIST})
-            try { startActivity(new Intent(a).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); return; } catch (Exception ignored) { }
-        android.widget.Toast.makeText(this, "لا يوجد في الشاشة تعرّف على الصوت ولا مساعد صوتي", android.widget.Toast.LENGTH_LONG).show();
-    }
-    @Override protected void onActivityResult(int code, int result, Intent data) {
-        super.onActivityResult(code, result, data);
-        if (code != 21 || result != RESULT_OK || data == null || PanelService.live == null) return;
-        java.util.List<String> heard = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
-        String say = Voice.run(PanelService.live, heard == null ? new java.util.ArrayList<>() : heard);
-        android.widget.Toast.makeText(this, say, android.widget.Toast.LENGTH_SHORT).show();
-    }
-
     // ---------------------------------------------------------------- the owner's places
     /** A place the car keeps stopping at: its name makes it a destination; «ليس وجهة» drops it for good. */
     void namePlace(int index) {

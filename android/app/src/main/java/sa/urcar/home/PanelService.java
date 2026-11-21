@@ -575,13 +575,6 @@ public class PanelService extends Service implements Panel.Actions {
         launch(i != null ? i : new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
     }
     @Override public void settings() { launch(new Intent(this, SettingsActivity.class)); }
-    @Override public void voice() { if (HomeActivity.live != null) HomeActivity.live.listen(); }
-    /** For Voice: an app opened from here (the strip follows it); false when nothing takes the intent. */
-    boolean startApp(Intent i) {
-        if (i == null || i.resolveActivity(getPackageManager()) == null) return false;
-        launch(i);
-        return true;
-    }
     @Override public void clock() { if (HomeActivity.live != null) HomeActivity.live.showClock(); }
     @Override public void apps() { launch(new Intent(this, AppsActivity.class)); }
     /** «البيت» / «العمل»: the place saved in the settings, in the chosen navigation app. */
