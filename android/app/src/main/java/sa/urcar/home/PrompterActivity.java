@@ -26,6 +26,7 @@ import android.widget.TextView;
 public class PrompterActivity extends Activity {
     static final String HOST = "prompter.alketab.app";
     private WebView web;
+    private PermissionRequest pending;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -48,12 +49,18 @@ public class PrompterActivity extends Activity {
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onPermissionRequest(PermissionRequest r) {
-                boolean ours = r.getOrigin() != null && HOST.equals(r.getOrigin().getHost());
-                boolean mic = false;
-                for (String x : r.getResources()) if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(x)) mic = true;
-                if (ours && mic && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
-                    r.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
-                else r.deny();
+                runOnUiThread(() -> {
+                    boolean ours = r.getOrigin() != null && HOST.equals(r.getOrigin().getHost());
+                    boolean mic = false;
+                    for (String x : r.getResources()) if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(x)) mic = true;
+                    if (!ours || !mic) { r.deny(); return; }
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        r.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                        return;
+                    }
+                    pending = r;   // Android asks the owner first; the page's request is answered after
+                    requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 3);
+                });
             }
         });
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
@@ -71,7 +78,11 @@ public class PrompterActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 3);
         web.loadUrl("https://" + HOST + "/");
     }
-    @Override public void onRequestPermissionsResult(int code, String[] p, int[] r) { if (web != null) web.reload(); }
+    @Override public void onRequestPermissionsResult(int code, String[] p, int[] r) {
+        boolean ok = r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED;
+        if (pending != null) { if (ok) pending.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE}); else pending.deny(); pending = null; }
+        else if (ok && web != null) web.reload();
+    }
     @Override public void onBackPressed() { if (web.canGoBack()) web.goBack(); else finish(); }
     @Override protected void onPause() { web.onPause(); super.onPause(); }
     @Override protected void onResume() { super.onResume(); web.onResume(); }
