@@ -21,7 +21,7 @@ import android.widget.TextView;
  * «ملقّن القرآن» (prompter.alketab.app, by AlKetab): their web app as it is, in a window of the screen's own — it
  * listens to the recitation (the recognition runs in the page, the voice sent nowhere, they say), finds the place in
  * the mushaf and moves the page along. Nothing of it is copied here. The microphone is given to that site only.
- * Opened with the car standing: it is read from the screen.
+ * Opened at any speed (the owner's choice: a passenger follows or recites).
  */
 public class PrompterActivity extends Activity {
     static final String HOST = "prompter.alketab.app";

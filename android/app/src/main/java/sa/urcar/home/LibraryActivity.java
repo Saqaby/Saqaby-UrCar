@@ -56,11 +56,8 @@ public class LibraryActivity extends Activity {
         nl.setMarginStart(28);
         top.addView(now, nl);
         pause = chip("إيقاف مؤقت", false, () -> { Listen l = listen(); if (l != null) l.toggle(); refresh(); });
-        top.addView(chip("ملقّن القرآن", false, () -> {   // read from the screen: with the car standing
-            float[] d = PanelService.live != null ? PanelService.live.driveNow() : null;
-            if (d != null && d[0] >= 10) { android.widget.Toast.makeText(this, "الملقّن يُقرأ من الشاشة: يُفتح والسيارة واقفة", android.widget.Toast.LENGTH_LONG).show(); return; }
-            startActivity(new android.content.Intent(this, PrompterActivity.class));
-        }));
+        // at any speed: the owner recites while driving with a passenger following on the screen, or the passenger recites
+        top.addView(chip("ملقّن القرآن", false, () -> startActivity(new android.content.Intent(this, PrompterActivity.class))));
         top.addView(pause);
         top.addView(chip("إيقاف", false, () -> { Listen l = listen(); if (l != null) l.stop(); refresh(); }));
         top.addView(chip("رجوع", false, this::finish));
