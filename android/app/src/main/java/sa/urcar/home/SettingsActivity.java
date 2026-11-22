@@ -123,7 +123,7 @@ public class SettingsActivity extends Activity {
         head("الألوان");
         LinearLayout pal = grid();
         String pc = Ui.palette;
-        for (String[] o : new String[][]{{"gold", "الذهبي"}, {"steel", "الفولاذي"}, {"copper", "النحاسي"}})
+        for (String[] o : new String[][]{{"gold", "الذهبي"}, {"silver", "الفضي"}, {"copper", "النحاسي"}, {"burgundy", "العنابي"}, {"green", "الأخضر"}})
             pal.addView(chip(o[1], pc.equals(o[0]), () -> { Prefs.put(this, "palette", o[0]); Ui.palette(this); changed(); recreate(); }));
         list.addView(pal);
         list.addView(note("ألوان الواجهة كلها: الخلفية والبطاقات واللون البارز، في النهار والليل."));

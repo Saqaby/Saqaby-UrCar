@@ -24,11 +24,11 @@ final class Ui {
         return Icon.CLOUD;
     }
 
-    /** The colours chosen in the settings («الشاشة»): "gold" (the first), "steel" or "copper". */
+    /** The colours chosen in the settings («الشاشة»): "gold" (the first), "silver", "copper", "burgundy" or "green". */
     static volatile String palette = "gold";
     static void palette(Context c) {
         String p = Prefs.of(c).getString("palette", "gold");
-        palette = p.equals("azure") ? "steel" : p.equals("emerald") ? "copper" : p;   // v106's names
+        palette = p.equals("azure") || p.equals("steel") ? "silver" : p.equals("emerald") ? "green" : p;   // earlier names
     }
 
     static final class Theme {
@@ -36,13 +36,33 @@ final class Ui {
         Theme(boolean day) {
             // like the gold: a dark ground with little colour in it, and one muted, warm or cool accent (a car screen
             // seen at night: no bright, saturated colour); the first blue and emerald (v106) were too loud
-            if (palette.equals("steel")) {   // graphite and steel blue
+            if (palette.equals("silver")) {   // silver, the accent a dark lead grey by day, silver on gunmetal by night
                 if (day) {
-                    bg = 0xffeef1f4; panel = 0xffffffff; panel2 = 0xfff6f8fa; line = 0xffd5dbe1;
-                    fg = 0xff131a22; muted = 0xff5c6874; sand = 0xff3d6a95; sandInk = 0xffffffff; go = 0xff1d8a62;
+                    bg = 0xffe6e8eb; panel = 0xfff4f5f7; panel2 = 0xffffffff; line = 0xffc9cdd2;
+                    fg = 0xff1c1f23; muted = 0xff5f656c; sand = 0xff3c4148; sandInk = 0xfff4f5f7; go = 0xff1d8a62;
                 } else {
-                    bg = 0xff0d1116; panel = 0xff141a21; panel2 = 0xff1a222b; line = 0xff26313d;
-                    fg = 0xffe9edf1; muted = 0xff8e9aa6; sand = 0xff9fbfdc; sandInk = 0xff0b1118; go = 0xff58c49a;
+                    bg = 0xff15171a; panel = 0xff1f2226; panel2 = 0xff2a2e33; line = 0xff3a3f45;
+                    fg = 0xfff2f3f5; muted = 0xff9aa0a7; sand = 0xffc9ced4; sandInk = 0xff15171a; go = 0xff58c49a;
+                }
+                return;
+            }
+            if (palette.equals("burgundy")) {   // deep burgundy grounds, a muted wine-rose accent
+                if (day) {
+                    bg = 0xfff5eef0; panel = 0xffffffff; panel2 = 0xfffaf5f6; line = 0xffe5d3d8;
+                    fg = 0xff1f1215; muted = 0xff745c62; sand = 0xff7d1f35; sandInk = 0xffffffff; go = 0xff1d8a62;
+                } else {
+                    bg = 0xff140a0d; panel = 0xff1e1014; panel2 = 0xff28151b; line = 0xff3d2129;
+                    fg = 0xfff4ecee; muted = 0xffad959b; sand = 0xffc2536b; sandInk = 0xff1a070c; go = 0xff58c49a;
+                }
+                return;
+            }
+            if (palette.equals("green")) {   // greens from forest to sage, gold the second colour
+                if (day) {
+                    bg = 0xffeef3ef; panel = 0xffffffff; panel2 = 0xfff5f9f6; line = 0xffd3e0d6;
+                    fg = 0xff122018; muted = 0xff5b6c61; sand = 0xff2f6b45; sandInk = 0xffffffff; go = 0xff9a6d1c;
+                } else {
+                    bg = 0xff0b120e; panel = 0xff121c16; panel2 = 0xff18261d; line = 0xff26382c;
+                    fg = 0xffecf2ee; muted = 0xff92a598; sand = 0xff7fbf8e; sandInk = 0xff07130b; go = 0xffd9b46a;
                 }
                 return;
             }
