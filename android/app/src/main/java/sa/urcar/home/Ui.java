@@ -24,9 +24,33 @@ final class Ui {
         return Icon.CLOUD;
     }
 
+    /** The colours chosen in the settings («الشاشة»): "gold" (the first), "azure" or "emerald". */
+    static volatile String palette = "gold";
+    static void palette(Context c) { palette = Prefs.of(c).getString("palette", "gold"); }
+
     static final class Theme {
         final int bg, panel, panel2, line, fg, muted, sand, sandInk, go;
         Theme(boolean day) {
+            if (palette.equals("azure")) {   // night blue and ice, the accent a clear sky blue
+                if (day) {
+                    bg = 0xffeef2f8; panel = 0xffffffff; panel2 = 0xfff5f8fc; line = 0xffd3dbe8;
+                    fg = 0xff111b2e; muted = 0xff5b6780; sand = 0xff1f6fd1; sandInk = 0xffffffff; go = 0xff1d8a62;
+                } else {
+                    bg = 0xff0a1120; panel = 0xff111a2e; panel2 = 0xff17233c; line = 0xff24324f;
+                    fg = 0xffeef2f8; muted = 0xff93a0b8; sand = 0xff6cb4ff; sandInk = 0xff06111f; go = 0xff58c49a;
+                }
+                return;
+            }
+            if (palette.equals("emerald")) {   // deep green and mint, gold as the second colour
+                if (day) {
+                    bg = 0xffeef4f1; panel = 0xffffffff; panel2 = 0xfff5faf7; line = 0xffd2e0d8;
+                    fg = 0xff10201a; muted = 0xff5a6c64; sand = 0xff12805a; sandInk = 0xffffffff; go = 0xff9a6d1c;
+                } else {
+                    bg = 0xff08130f; panel = 0xff0f1d18; panel2 = 0xff15281f; line = 0xff22392f;
+                    fg = 0xffecf3ee; muted = 0xff8fa59a; sand = 0xff3fc79a; sandInk = 0xff04140d; go = 0xffd9b46a;
+                }
+                return;
+            }
             if (day) {
                 // white with a cool cast: car screens render warm, and the owner saw the old grey-green as light brown
                 bg = 0xffeef2f6; panel = 0xffffffff; panel2 = 0xfff6f8fb; line = 0xffd3dbe3;

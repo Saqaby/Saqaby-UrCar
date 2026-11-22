@@ -229,28 +229,83 @@ public class HomeActivity extends Activity {
                 .withEndAction(() -> { if (card.getParent() != null) root.removeView(card); }).start(), 4700);
     }
 
-    // ---------------------------------------------------------------- two fingers: the sound, without looking
-    private boolean two;
-    private float gx, gy;
+    // ---------------------------------------------------------------- gestures: the sound, without looking
+    private boolean two, three, held;
+    private float gx, gy, dx0, dy0;
     private long gAt;
+    private int volDir;
+    /** The volume one step, again every 300 ms while the fingers stay (Android's own volume bar shows it). */
+    private final Runnable volStep = new Runnable() {
+        @Override public void run() {
+            if (volDir == 0) return;
+            android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+            am.adjustStreamVolume(android.media.AudioManager.STREAM_MUSIC,
+                    volDir > 0 ? android.media.AudioManager.ADJUST_RAISE : android.media.AudioManager.ADJUST_LOWER, android.media.AudioManager.FLAG_SHOW_UI);
+            root.postDelayed(this, 300);
+        }
+    };
+    /** One finger held still: after 0.7 s the volume goes down, and the finger presses nothing. */
+    private final Runnable holdOne = () -> {
+        if (two || three || held) return;
+        held = true;
+        cancelUnder();
+        volDir = -1;
+        volStep.run();
+    };
+    /** Three fingers held: after 0.5 s the volume goes up. */
+    private final Runnable holdThree = () -> { if (three) { volDir = 1; volStep.run(); } };
+    private android.view.MotionEvent last;
+    private void cancelUnder() {
+        if (last == null) return;
+        android.view.MotionEvent cancel = android.view.MotionEvent.obtain(last);
+        cancel.setAction(android.view.MotionEvent.ACTION_CANCEL);
+        super.dispatchTouchEvent(cancel);
+        cancel.recycle();
+    }
+    private void endGestures() {
+        root.removeCallbacks(holdOne); root.removeCallbacks(holdThree); root.removeCallbacks(volStep);
+        volDir = 0; two = false; three = false; held = false;
+    }
     /**
-     * Two fingers anywhere on the home screen: a tap stops the sound or plays it again, a sweep to the right or the left
-     * goes to the next or the previous track. From the second finger on, what is under the fingers is not pressed.
+     * Anywhere on the home screen. Two fingers: a tap stops the sound or plays it again, a sweep to the right or the
+     * left goes to the next or the previous track. One finger held still: the volume down; three fingers held: up. From
+     * the moment a gesture is seen, what is under the fingers is not pressed.
      */
     @Override public boolean dispatchTouchEvent(android.view.MotionEvent e) {
-        if (!Smart.on(this, "gestures", true) || full != null) return super.dispatchTouchEvent(e);
+        if (!Smart.on(this, "gestures", true) || full != null || clockFull != null) return super.dispatchTouchEvent(e);
         int a = e.getActionMasked();
-        if (!two && a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 2) {
-            two = true;
-            gx = (e.getX(0) + e.getX(1)) / 2; gy = (e.getY(0) + e.getY(1)) / 2; gAt = e.getEventTime();
-            android.view.MotionEvent cancel = android.view.MotionEvent.obtain(e);
-            cancel.setAction(android.view.MotionEvent.ACTION_CANCEL);
-            super.dispatchTouchEvent(cancel);
-            cancel.recycle();
+        if (last != null) last.recycle();
+        last = android.view.MotionEvent.obtain(e);
+        if (a == android.view.MotionEvent.ACTION_DOWN) {
+            endGestures();
+            dx0 = e.getX(); dy0 = e.getY();
+            root.postDelayed(holdOne, 700);
+            return super.dispatchTouchEvent(e);
+        }
+        if (held) {   // the volume going down: the finger only lets go
+            if (a == android.view.MotionEvent.ACTION_UP || a == android.view.MotionEvent.ACTION_CANCEL) endGestures();
             return true;
         }
-        if (!two) return super.dispatchTouchEvent(e);
-        if (a == android.view.MotionEvent.ACTION_POINTER_UP && e.getPointerCount() == 2 && gAt > 0) {
+        if (a == android.view.MotionEvent.ACTION_MOVE && !two && Math.abs(e.getX() - dx0) + Math.abs(e.getY() - dy0) > 30)
+            root.removeCallbacks(holdOne);   // a finger that moves is not held (the card's swipe)
+        if (a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 3) {
+            three = true; gAt = 0;
+            root.removeCallbacks(holdOne);
+            root.postDelayed(holdThree, 500);
+            return true;
+        }
+        if (!two && a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 2) {
+            two = true;
+            root.removeCallbacks(holdOne);
+            gx = (e.getX(0) + e.getX(1)) / 2; gy = (e.getY(0) + e.getY(1)) / 2; gAt = e.getEventTime();
+            cancelUnder();
+            return true;
+        }
+        if (!two && !three) {
+            if (a == android.view.MotionEvent.ACTION_UP || a == android.view.MotionEvent.ACTION_CANCEL) root.removeCallbacks(holdOne);
+            return super.dispatchTouchEvent(e);
+        }
+        if (!three && a == android.view.MotionEvent.ACTION_POINTER_UP && e.getPointerCount() == 2 && gAt > 0) {
             float dx = (e.getX(0) + e.getX(1)) / 2 - gx, dy = (e.getY(0) + e.getY(1)) / 2 - gy;
             long ms = e.getEventTime() - gAt;
             gAt = 0;
@@ -260,7 +315,8 @@ public class HomeActivity extends Activity {
                 else if (ms < 600 && Math.abs(dx) < 40 && Math.abs(dy) < 40) s.soundToggle();
             }
         }
-        if (a == android.view.MotionEvent.ACTION_UP || a == android.view.MotionEvent.ACTION_CANCEL) two = false;
+        if (three && a == android.view.MotionEvent.ACTION_POINTER_UP) { root.removeCallbacks(holdThree); root.removeCallbacks(volStep); volDir = 0; }
+        if (a == android.view.MotionEvent.ACTION_UP || a == android.view.MotionEvent.ACTION_CANCEL) endGestures();
         return true;
     }
 

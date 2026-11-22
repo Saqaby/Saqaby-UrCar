@@ -20,6 +20,7 @@ public class SettingsActivity extends Activity {
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Ui.palette(this);
         th = new Ui.Theme(false);
         // the sections down the side (the start, RTL), the chosen one's cards beside them
         LinearLayout root = new LinearLayout(this);
@@ -118,6 +119,14 @@ public class SettingsActivity extends Activity {
         look.addView(chip("نهاري", t.equals("light"), () -> { Prefs.put(this, "theme", "light"); changed(); }));
         look.addView(chip("ليلي", t.equals("dark"), () -> { Prefs.put(this, "theme", "dark"); changed(); }));
         list.addView(look);
+
+        head("الألوان");
+        LinearLayout pal = grid();
+        String pc = Prefs.of(this).getString("palette", "gold");
+        for (String[] o : new String[][]{{"gold", "الذهبي"}, {"azure", "الأزرق"}, {"emerald", "الزمردي"}})
+            pal.addView(chip(o[1], pc.equals(o[0]), () -> { Prefs.put(this, "palette", o[0]); Ui.palette(this); changed(); recreate(); }));
+        list.addView(pal);
+        list.addView(note("ألوان الواجهة كلها: الخلفية والبطاقات واللون البارز، في النهار والليل."));
 
     }
 
@@ -318,7 +327,7 @@ public class SettingsActivity extends Activity {
 
         head("إيماءات الصوت");
         toggle("gestures", true, null);
-        list.addView(note("في الشاشة الرئيسية بإصبعين معًا في أي مكان: لمسة توقف الصوت أو تعيده (الختمة، الإذاعة، التلاوة، أو تطبيق الصوت)، وسحبة إلى اليسار للمقطع التالي وإلى اليمين للسابق. لا تحتاج النظر إلى الشاشة."));
+        list.addView(note("في الشاشة الرئيسية بإصبعين معًا في أي مكان: لمسة توقف الصوت أو تعيده (الختمة، الإذاعة، التلاوة، أو تطبيق الصوت)، وسحبة إلى اليسار للمقطع التالي وإلى اليمين للسابق. ولمسة مطوّلة بإصبع واحد تخفض الصوت، وبثلاث أصابع ترفعه، ما دامت الأصابع على الشاشة. لا تحتاج النظر إلى الشاشة."));
 
         head("الشريط العائم فوق الملاحة");
         boolean may = Settings.canDrawOverlays(this);
