@@ -234,7 +234,11 @@ public class HomeActivity extends Activity {
     private float gx, gy, dx0, dy0;
     private long gAt;
     private int volDir;
-    /** The volume one step, again every 300 ms while the fingers stay (Android's own volume bar shows it). */
+    /**
+     * Version 106 held one finger (down) or three (up) for the volume: it moved Android's own media volume, which on
+     * this screen only feeds the screen's master volume (set by its own system, out of the apps' reach): at the bottom
+     * no sound came whatever the master. The gestures are gone; the media volume is put back to the top once.
+     */
     private final Runnable volStep = new Runnable() {
         @Override public void run() {
             if (volDir == 0) return;
@@ -279,7 +283,6 @@ public class HomeActivity extends Activity {
         if (a == android.view.MotionEvent.ACTION_DOWN) {
             endGestures();
             dx0 = e.getX(); dy0 = e.getY();
-            root.postDelayed(holdOne, 700);
             return super.dispatchTouchEvent(e);
         }
         if (held) {   // the volume going down: the finger only lets go
@@ -288,12 +291,7 @@ public class HomeActivity extends Activity {
         }
         if (a == android.view.MotionEvent.ACTION_MOVE && !two && Math.abs(e.getX() - dx0) + Math.abs(e.getY() - dy0) > 30)
             root.removeCallbacks(holdOne);   // a finger that moves is not held (the card's swipe)
-        if (a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 3) {
-            three = true; gAt = 0;
-            root.removeCallbacks(holdOne);
-            root.postDelayed(holdThree, 500);
-            return true;
-        }
+        if (a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 3) { three = true; gAt = 0; return true; }
         if (!two && a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 2) {
             two = true;
             root.removeCallbacks(holdOne);

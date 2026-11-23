@@ -106,6 +106,11 @@ public class PanelService extends Service implements Panel.Actions {
         library.changed = () -> h.post(this::drawRadio);
         PrayerMath.method = Prefs.of(this).getString("calc", "isna");
         Ui.palette(this);
+        if (!Prefs.of(this).getBoolean("vol_restored", false)) {   // the volume gestures (v106-109) may have left it low
+            android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+            am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC), 0);
+            Prefs.of(this).edit().putBoolean("vol_restored", true).apply();
+        }
         day.lat = Prefs.of(this).getFloat("lat", (float) day.lat);
         day.lon = Prefs.of(this).getFloat("lon", (float) day.lon);
         startLocation();
