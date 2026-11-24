@@ -1,0 +1,29 @@
+name: probe-apk
+# Builds «فحص سيارتك» (android/probe) and publishes it as the release «probe-latest»:
+# https://github.com/Saqaby/Saqaby-UrCar/releases/download/probe-latest/urcar-probe.apk
+on:
+  push:
+    paths: ['android/**', '.github/workflows/probe-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.7'}
+      - run: gradle -p android :probe:assembleDebug --no-daemon
+      - run: cp android/probe/build/outputs/apk/debug/probe-debug.apk urcar-probe.apk
+      - uses: actions/upload-artifact@v4
+        with: {name: urcar-probe, path: urcar-probe.apk}
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: probe-latest
+          name: فحص سيارتك
+          body: "تطبيق فحص الشاشة. نزّله على الشاشة وافتحه. يقرأ فقط ولا يغيّر شيئًا."
+          files: urcar-probe.apk
+          prerelease: true

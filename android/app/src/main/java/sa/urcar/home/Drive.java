@@ -1,0 +1,450 @@
+package sa.urcar.home;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+/**
+ * The other side of the home screen: the speed and the car's heading from GPS, a Radarbot alert when it has one,
+ * and the quote card that changes every hour. Tapping the speed opens the navigation app.
+ */
+final class Drive extends LinearLayout {
+    private final float H;
+    private Ui.Theme th;
+    private final LinearLayout top, alertBox, quoteBox, speedCard;
+    private final TextView speed, unit, trip, heading, qibla, alert, remind, qTitle, qText, qSrc;
+    private boolean mosqueHot, moving;
+    private final Compass compass;
+    private LinearLayout cp, navBox;
+    private android.widget.ImageView navArrow;
+    private TextView navDist, navStep, navEta;
+    private boolean navOn;
+    private final Sign sign;
+    private int lastLimit = -1;
+    private final LinearLayout dests;
+    private final LinearLayout[] destViews = new LinearLayout[4];
+    private final Ui.Icon[] destIcons = new Ui.Icon[4];
+    private TextView mosqueKm;
+    private LinearLayout navCell, placesCell, suggestBox;
+    private TextView suggestText;
+    private Ui.Icon placesIcon, suggestIcon;
+    private Runnable suggestRun;
+    private Ui.Icon navIcon;
+
+    /** openGauge / openQuote: the speed card and the quote card open to the whole screen (Full). */
+    Drive(Context c, int height, Runnable openGauge, Runnable openQuote, Runnable home, Runnable work, Runnable mosque, Runnable fuel, Runnable navApp, Runnable places) {
+        super(c);
+        H = height / 100f;
+        setOrientation(VERTICAL);
+        setLayoutDirection(LAYOUT_DIRECTION_RTL);
+        setPadding(px(2.6f), px(2), px(2.6f), px(2));
+
+        // ---- speed and heading
+        top = new LinearLayout(c);
+        top.setOrientation(HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.setPadding(px(4), px(1.6f), px(4), 0);
+        LinearLayout sp = new LinearLayout(c);
+        sp.setOrientation(VERTICAL);
+        sp.setGravity(Gravity.CENTER);
+        speed = Ui.text(c, px(17), Ui.display(c), 0);
+        speed.setGravity(Gravity.CENTER);
+        unit = Ui.text(c, px(3.6f), Ui.regular(c), 0);
+        unit.setText("كم/س");
+        trip = Ui.text(c, px(3), Ui.medium(c), 0);
+        trip.setGravity(Gravity.CENTER);
+        LinearLayout srow = new LinearLayout(c);   // the speed, and the road's limit beside it: centred over the unit
+        srow.setGravity(Gravity.CENTER);
+        unit.setGravity(Gravity.CENTER);
+        srow.addView(speed);
+        sign = new Sign(c);
+        LayoutParams sl = new LayoutParams(px(10), px(10));
+        sl.setMarginStart(px(1.6f));
+        srow.addView(sign, sl);
+        sign.setVisibility(GONE);
+        sp.addView(srow);
+        sp.addView(unit);
+        top.addView(sp, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        LinearLayout cp = new LinearLayout(c);
+        cp.setOrientation(VERTICAL);
+        cp.setGravity(Gravity.CENTER);
+        compass = new Compass(c);
+        heading = Ui.text(c, px(3.8f), Ui.medium(c), 0);
+        heading.setGravity(Gravity.CENTER);
+        cp.addView(compass, new LayoutParams(px(22), px(22)));
+        qibla = Ui.text(c, px(2.6f), Ui.regular(c), 0);
+        qibla.setGravity(Gravity.CENTER);
+        cp.addView(heading, lp(px(1.2f)));
+        cp.addView(qibla, lp(px(0.6f)));
+        top.addView(cp, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        this.cp = cp;
+        // the navigation's next step: shown while a navigation runs, in room taken from the compass
+        navBox = new LinearLayout(c);
+        navBox.setOrientation(VERTICAL);
+        navBox.setGravity(Gravity.CENTER_VERTICAL);
+        navBox.setPadding(px(1.6f), px(1), px(1.6f), px(1));
+        LinearLayout nrow = new LinearLayout(c);
+        nrow.setGravity(Gravity.CENTER_VERTICAL);
+        navArrow = new android.widget.ImageView(c);
+        nrow.addView(navArrow, new LayoutParams(px(9), px(9)));
+        navDist = Ui.text(c, px(5), Ui.display(c), 0);
+        LayoutParams dl = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
+        dl.setMarginStart(px(1.2f));
+        nrow.addView(navDist, dl);
+        navBox.addView(nrow);
+        navStep = Ui.text(c, px(3.2f), Ui.medium(c), 0);
+        navStep.setSingleLine(false);
+        navStep.setMaxLines(3);
+        navStep.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        navBox.addView(navStep, lp(px(0.8f)));
+        navEta = Ui.text(c, px(2.5f), Ui.regular(c), 0);
+        navEta.setSingleLine(true);
+        navEta.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        navBox.addView(navEta, lp(px(0.6f)));
+        navBox.setVisibility(GONE);
+        navBox.setOnClickListener(v -> NotiListener.openNav(getContext()));   // the next step opens the navigation
+        top.addView(navBox, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1.4f));
+        // the card: speed and compass side by side, the trip across the bottom (it had no room under the speed)
+        speedCard = new LinearLayout(c);
+        speedCard.setOrientation(VERTICAL);
+        speedCard.setPadding(0, 0, 0, px(1.6f));
+        speedCard.addView(top, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+        speedCard.addView(trip, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        speedCard.setOnClickListener(v -> openGauge.run());
+        top.setOnClickListener(v -> openGauge.run());
+        addView(speedCard, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1.25f));
+
+        // ---- the guessed destination when a trip starts («إلى العمل؟»), or an offer to name a place: one tap
+        suggestBox = new LinearLayout(c);
+        suggestBox.setGravity(Gravity.CENTER_VERTICAL);
+        suggestBox.setPadding(px(2.4f), 0, px(2.4f), 0);
+        suggestIcon = new Ui.Icon(c, Ui.Icon.NAVI, 0);
+        suggestBox.addView(suggestIcon, new LayoutParams(px(4.4f), px(4.4f)));
+        suggestText = Ui.text(c, px(3.8f), Ui.medium(c), 0);
+        suggestText.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LayoutParams stl = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
+        stl.setMarginStart(px(1.6f));
+        suggestBox.addView(suggestText, stl);
+        suggestBox.setVisibility(GONE);
+        suggestBox.setOnClickListener(v -> { Runnable r = suggestRun; showSuggest(null, null); if (r != null) r.run(); });
+        addView(suggestBox, new LayoutParams(LayoutParams.MATCH_PARENT, px(9)) {{ topMargin = px(1.6f); }});
+
+        // ---- Radarbot
+        alertBox = new LinearLayout(c);
+        alertBox.setGravity(Gravity.CENTER_VERTICAL);
+        alertBox.setPadding(px(2.4f), 0, px(2.4f), 0);
+        alert = Ui.text(c, px(3.6f), Ui.medium(c), 0);
+        alert.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        alertBox.addView(alert);
+        alertBox.setVisibility(GONE);
+        addView(alertBox, new LayoutParams(LayoutParams.MATCH_PARENT, px(8)) {{ topMargin = px(1.6f); }});
+
+        // ---- quick destinations as symbols: home (a house), work (a briefcase), the nearest mosque, the nearest station
+        dests = new LinearLayout(c);
+        dests.setOrientation(HORIZONTAL);
+        int[] icons = {Ui.Icon.HOUSE, Ui.Icon.BRIEFCASE, Ui.Icon.MOSQUE, Ui.Icon.FUEL};
+        String[] says = {"البيت", "العمل", "أقرب مسجد", "أقرب محطة وقود"};
+        Runnable[] go = {home, work, mosque, fuel};
+        for (int i = 0; i < 4; i++) {
+            LinearLayout cell = new LinearLayout(c);
+            cell.setGravity(Gravity.CENTER);
+            cell.setContentDescription(says[i]);
+            destIcons[i] = new Ui.Icon(c, icons[i], 0);
+            cell.addView(destIcons[i], new LayoutParams(px(6), px(6)));
+            if (i == 2) {   // «٣ كم» beside the mosque while one is ahead around an adhan
+                mosqueKm = Ui.text(c, px(3.2f), Ui.medium(c), 0);
+                mosqueKm.setVisibility(GONE);
+                LayoutParams ml = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                ml.setMarginStart(px(1));
+                cell.addView(mosqueKm, ml);
+            }
+            final Runnable r = go[i];
+            cell.setOnClickListener(v -> r.run());
+            LayoutParams l = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+            if (i > 0) l.setMarginStart(px(1.4f));
+            dests.addView(cell, l);
+            destViews[i] = cell;
+        }
+        // and the navigation app itself (the one chosen in the settings), set apart by a gold tint
+        navCell = new LinearLayout(c);
+        navCell.setGravity(Gravity.CENTER);
+        navCell.setContentDescription("تطبيق الملاحة");
+        navIcon = new Ui.Icon(c, Ui.Icon.NAVI, 0);
+        navCell.addView(navIcon, new LayoutParams(px(5.4f), px(5.4f)));
+        navCell.setOnClickListener(v -> navApp.run());
+        LayoutParams nl = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+        nl.setMarginStart(px(1.4f));
+        dests.addView(navCell, nl);
+        // the owner's own places (learned from the trips), when there are any: a star that lists them
+        placesCell = new LinearLayout(c);
+        placesCell.setGravity(Gravity.CENTER);
+        placesCell.setContentDescription("أماكني");
+        placesIcon = new Ui.Icon(c, Ui.Icon.STAR, 0);
+        placesCell.addView(placesIcon, new LayoutParams(px(5.6f), px(5.6f)));
+        placesCell.setOnClickListener(v -> places.run());
+        placesCell.setVisibility(GONE);
+        LayoutParams sl2 = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+        sl2.setMarginStart(px(1.4f));
+        dests.addView(placesCell, 4, sl2);
+        addView(dests, new LayoutParams(LayoutParams.MATCH_PARENT, px(9)) {{ topMargin = px(1.6f); }});
+
+        // ---- the quote of the hour
+        quoteBox = new LinearLayout(c);
+        quoteBox.setOrientation(VERTICAL);
+        quoteBox.setPadding(px(3), px(2), px(3), px(2));
+        remind = Ui.text(c, px(2.8f), Ui.medium(c), 0);
+        remind.setVisibility(GONE);
+
+        qTitle = Ui.text(c, px(2.8f), Ui.regular(c), 0);
+        qText = Ui.text(c, px(3.8f), Ui.medium(c), 0);
+        qText.setSingleLine(false);
+        qText.setMaxLines(4);
+        qText.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        qText.setLineSpacing(0, 1.35f);
+        qSrc = Ui.text(c, px(2.5f), Ui.regular(c), 0);
+        // the kind and the day's reminder across the top, the source at the foot, the text in the middle of what is left
+        LinearLayout qHead = new LinearLayout(c);
+        qHead.setGravity(Gravity.CENTER_VERTICAL);
+        qHead.addView(qTitle, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
+        qHead.addView(remind);
+        quoteBox.addView(qHead, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        qText.setGravity(Gravity.CENTER_VERTICAL);
+        quoteBox.addView(qText, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
+        quoteBox.addView(qSrc);
+        quoteBox.setOnClickListener(v -> openQuote.run());
+        addView(quoteBox, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1) {{ topMargin = px(1.6f); }});
+        setDay(false);
+    }
+    private int px(float h) { return Math.round(h * H); }
+    private LayoutParams lp(int top) { LayoutParams l = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT); l.topMargin = top; return l; }
+
+    void setDay(boolean d) {
+        th = new Ui.Theme(d);
+        setBackgroundColor(th.bg);
+        speedCard.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
+        speed.setTextColor(th.fg); unit.setTextColor(th.muted); heading.setTextColor(th.sand);
+        navDist.setTextColor(th.fg); navStep.setTextColor(th.fg); navEta.setTextColor(th.muted);
+        navBox.setBackground(Ui.box(th.panel2, th.line, px(2)));
+        if (navArrow.getDrawable() != null) navArrow.setColorFilter(th.sand, android.graphics.PorterDuff.Mode.SRC_IN);
+        compass.colors(th);
+        alertBox.setBackground(Ui.box(0xffe9a24b, 0, px(1.6f))); alert.setTextColor(0xff1b1408);
+        quoteBox.setBackground(Ui.box(th.panel, th.line, px(2.6f)));
+        qTitle.setTextColor(th.sand); qText.setTextColor(th.fg); qSrc.setTextColor(th.muted);
+        trip.setTextColor(th.muted); qibla.setTextColor(th.muted);
+        remind.setBackground(Ui.box(th.panel2, th.sand, px(1.4f))); remind.setPadding(px(1.6f), px(.8f), px(1.6f), px(.8f)); remind.setTextColor(th.sand);
+        paintDests();
+    }
+
+    /** The four destinations; the mosque stands out around each adhan (30 minutes before to 20 after). */
+    private void paintDests() {
+        for (int i = 0; i < 4; i++) {
+            boolean hot = i == 2 && mosqueHot;
+            destViews[i].setBackground(hot ? Ui.box(th.sand, 0, px(2)) : Ui.box(th.panel, th.line, px(2)));
+            destIcons[i].set(destIcons[i].kind, hot ? th.sandInk : th.sand);
+        }
+        mosqueKm.setTextColor(mosqueHot ? th.sandInk : th.fg);
+        navCell.setBackground(Ui.box(Ui.alpha(th.sand, .16f), Ui.alpha(th.sand, .55f), px(2)));
+        navIcon.set(Ui.Icon.NAVI, th.sand);
+        placesCell.setBackground(Ui.box(th.panel, th.line, px(2)));
+        placesIcon.set(Ui.Icon.STAR, th.sand);
+        suggestBox.setBackground(Ui.box(th.sand, 0, px(1.6f)));
+        suggestText.setTextColor(th.sandInk);
+        suggestIcon.set(Ui.Icon.NAVI, th.sandInk);
+    }
+    /**
+     * While a navigation runs: the speed, a smaller compass (no words under it) and the next step: the turn's arrow,
+     * the distance, the instruction and the arrival. Otherwise the speed and the compass as before.
+     */
+    void showNav(boolean on, String dist, String step, String eta, android.graphics.drawable.Drawable icon) {
+        if (on != navOn) {
+            navOn = on;
+            navBox.setVisibility(on ? VISIBLE : GONE);
+            speed.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px(on ? 13 : 17));   // three share the card
+            fit();
+            ((LayoutParams) cp.getLayoutParams()).weight = on ? 0.6f : 1f;
+            cp.requestLayout();
+        }
+        if (!on) return;
+        set(navDist, dist); set(navStep, step); set(navEta, eta);
+        navStep.setVisibility(step.isEmpty() ? GONE : VISIBLE);
+        navEta.setVisibility(eta.isEmpty() ? GONE : VISIBLE);
+        if (navArrow.getDrawable() != icon) {
+            navArrow.setImageDrawable(icon);
+            if (icon != null) navArrow.setColorFilter(th.sand, android.graphics.PorterDuff.Mode.SRC_IN);   // the arrow in the card's gold
+            navArrow.setVisibility(icon == null ? GONE : VISIBLE);
+        }
+    }
+
+    void setMosqueHot(boolean hot) { if (hot != mosqueHot) { mosqueHot = hot; paintDests(); } }
+    /** «٣ كم» beside the mosque's symbol while one is ahead around an adhan; null: the symbol alone. */
+    void setMosqueAhead(String km) {
+        mosqueKm.setVisibility(km == null ? GONE : VISIBLE);
+        if (km != null) set(mosqueKm, km);
+        destViews[2].setContentDescription(km == null ? "أقرب مسجد" : "مسجد بعد " + km);
+    }
+
+    /**
+     * The speed card gives its height to the lines under it (the gold one, the orange one): with one of them the words
+     * under the compass go (they ran into the trip's line), with both the compass shrinks; in a navigation as before.
+     */
+    private void fit() {
+        int bars = (suggestBox.getVisibility() == VISIBLE ? 1 : 0) + (alertBox.getVisibility() == VISIBLE ? 1 : 0);
+        heading.setVisibility(navOn || bars >= 2 ? GONE : VISIBLE);
+        qibla.setVisibility(navOn || bars >= 1 ? GONE : VISIBLE);
+        int size = px(navOn ? 14 : bars >= 2 ? 17 : 22);
+        LayoutParams cl = (LayoutParams) compass.getLayoutParams();
+        if (cl.width != size) { cl.width = cl.height = size; compass.setLayoutParams(cl); }
+    }
+    /** The gold line: a text and what its tap does; null: gone. */
+    void showSuggest(String text, Runnable r) {
+        suggestRun = r;
+        boolean was = suggestBox.getVisibility() == VISIBLE;
+        suggestBox.setVisibility(text == null ? GONE : VISIBLE);
+        if (text != null) set(suggestText, text);
+        if (was != (text != null)) fit();
+    }
+    void showPlaces(boolean any) { placesCell.setVisibility(any ? VISIBLE : GONE); }
+
+    void showTrip(String s) { set(trip, s); trip.setVisibility(s.isEmpty() ? GONE : VISIBLE); }
+
+    /** qiblaDeg: from north, at the car's place. Said relative to the car when its heading is known. */
+    void showQibla(float qiblaDeg) {
+        compass.qibla = qiblaDeg;
+        if (compass.bearing < 0) { set(qibla, "القبلة " + Ui.ar(Math.round(qiblaDeg)) + "° من الشمال"); return; }
+        int rel = Math.round(((qiblaDeg - compass.bearing) % 360 + 360) % 360);
+        String s;
+        if (rel <= 15 || rel >= 345) s = "القبلة أمام السيارة";
+        else if (rel >= 165 && rel <= 195) s = "القبلة خلف السيارة";
+        else if (rel < 180) s = "القبلة يمين السيارة بـ" + Ui.ar(rel) + "°";
+        else s = "القبلة يسار السيارة بـ" + Ui.ar(360 - rel) + "°";
+        set(qibla, s);
+    }
+
+    /** One line over the quote: «اليوم الجمعة: سورة الكهف», «غدًا الاثنين: يُستحب صيامه» … */
+    void showRemind(String s) { remind.setVisibility(s == null ? GONE : VISIBLE); if (s != null) set(remind, s); }
+
+    private static final String[] DIRS = {"شمال", "شمال شرق", "شرق", "جنوب شرق", "جنوب", "جنوب غرب", "غرب", "شمال غرب"};
+
+    /** kmh < 0: no GPS fix; bearing < 0: unknown (only while moving does GPS give one). */
+    void showSpeed(int kmh, float bearing, int limit) {
+        set(speed, kmh < 0 ? "—" : Ui.ar(kmh));
+        if (limit != lastLimit) { lastLimit = limit; sign.limit = limit; sign.setVisibility(limit > 0 ? VISIBLE : GONE); sign.invalidate(); }
+        speed.setTextColor(limit > 0 && kmh > limit ? 0xffe0533d : th.fg);   // over the limit: red
+        if (bearing >= 0) {
+            compass.bearing = bearing;
+            compass.invalidate();
+            set(heading, DIRS[Math.round(bearing / 45f) % 8]);
+        } else if (compass.bearing < 0) set(heading, "الاتجاه أثناء السير");
+    }
+    /** What a tap on the orange line does (the rest reminder: a search for a station); null: nothing. */
+    void setAlertAction(Runnable r) { alertBox.setOnClickListener(r == null ? null : v -> r.run()); alertBox.setClickable(r != null); }
+
+    void showAlert(String text) {
+        boolean was = alertBox.getVisibility() == VISIBLE;
+        alertBox.setVisibility(text == null ? GONE : VISIBLE);
+        if (text != null) set(alert, text);
+        if (was != (text != null)) fit();
+    }
+    /** Moving: one short text in a bigger letter, two lines at most; stopped: up to three lines. */
+    void showQuote(String[] q, boolean movingNow) {
+        if (movingNow != moving) {
+            moving = movingNow;
+            qText.setMaxLines(4);
+        }
+        int n = q[1].length();   // a short text in a bigger letter: it fills the card instead of floating in it
+        float size = px(n <= 70 ? 4.8f : n <= 130 ? 4.2f : 3.8f);
+        if (qText.getTextSize() != size) qText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, size);
+        set(qTitle, q[0]); set(qText, q[1]); set(qSrc, q[2]);
+    }
+
+    private static void set(TextView t, String s) { if (!s.contentEquals(t.getText())) t.setText(s); }
+
+    /** A road sign: the limit in black on white, in a red ring. */
+    static final class Sign extends View {
+        int limit;
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Sign(Context c) { super(c); p.setTextAlign(Paint.Align.CENTER); p.setTypeface(Ui.display(c)); }
+        @Override protected void onDraw(Canvas cv) { draw(cv, p, getWidth() / 2f, getHeight() / 2f, Math.min(getWidth(), getHeight()) / 2f - 1, limit); }
+        static void draw(Canvas cv, Paint p, float cx, float cy, float r, int limit) {
+            p.setStyle(Paint.Style.FILL); p.setColor(0xffffffff);
+            cv.drawCircle(cx, cy, r, p);
+            p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(r * .2f); p.setColor(0xffd7261e);
+            cv.drawCircle(cx, cy, r * .9f, p);
+            p.setStyle(Paint.Style.FILL); p.setColor(0xff111111);
+            String t = Ui.ar(limit);
+            p.setTextSize(r * (t.length() > 2 ? .78f : .95f));
+            Paint.FontMetrics fm = p.getFontMetrics();
+            cv.drawText(t, cx, cy - (fm.ascent + fm.descent) / 2, p);
+        }
+    }
+
+    /** A small house (roof and walls) centred at x, y: the home's mark on the compasses. */
+    static void house(Canvas cv, float x, float y, float s, int color) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(color);
+        Path h = new Path();
+        h.moveTo(x, y - s); h.lineTo(x + s, y - s * .1f); h.lineTo(x + s * .7f, y - s * .1f); h.lineTo(x + s * .7f, y + s);
+        h.lineTo(x - s * .7f, y + s); h.lineTo(x - s * .7f, y - s * .1f); h.lineTo(x - s, y - s * .1f); h.close();
+        cv.drawPath(h, p);
+    }
+    void showHome(float b) { if (Math.abs(compass.home - b) > .5f) { compass.home = b; compass.invalidate(); } }
+
+    /** A compass rose that turns: the car's arrow points up, north («ش») moves around it. */
+    static final class Compass extends View {
+        float bearing = -1, qibla = -1, home = -1;
+        private final Paint kaaba = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG), mark = new Paint(Paint.ANTI_ALIAS_FLAG),
+                car = new Paint(Paint.ANTI_ALIAS_FLAG), label = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Compass(Context c) {
+            super(c);
+            ring.setStyle(Paint.Style.STROKE);
+            label.setTextAlign(Paint.Align.CENTER);
+            label.setTypeface(Ui.medium(c));
+        }
+        void colors(Ui.Theme th) {
+            ring.setColor(th.line); mark.setColor(th.muted); car.setColor(th.fg); label.setColor(th.sand); kaaba.setColor(th.sand);
+            invalidate();
+        }
+        @Override protected void onDraw(Canvas cv) {
+            float w = getWidth(), cx = w / 2, cy = getHeight() / 2f, r = Math.min(w, getHeight()) / 2f - 4;
+            ring.setStrokeWidth(r * .08f);
+            cv.drawCircle(cx, cy, r, ring);
+            cv.save();
+            cv.rotate(bearing < 0 ? 0 : -bearing, cx, cy);   // north turns against the heading
+            for (int i = 0; i < 8; i++) {
+                cv.save();
+                cv.rotate(i * 45, cx, cy);
+                mark.setStrokeWidth(i % 2 == 0 ? r * .06f : r * .03f);
+                cv.drawLine(cx, cy - r, cx, cy - r * (i % 2 == 0 ? .8f : .88f), mark);
+                cv.restore();
+            }
+            label.setTextSize(r * .3f);
+            cv.drawText("ش", cx, cy - r * .5f, label);
+            if (home >= 0) { cv.save(); cv.rotate(home, cx, cy); house(cv, cx, cy - r * .9f, r * .15f, 0xff4fbf7a); cv.restore(); }   // the home, green
+            if (qibla >= 0) {   // the qibla: a gold mark on the rim, in the same turning frame as north
+                cv.save();
+                cv.rotate(qibla, cx, cy);
+                kaaba.setStyle(Paint.Style.FILL);
+                cv.drawRect(cx - r * .11f, cy - r * 1.0f, cx + r * .11f, cy - r * .78f, kaaba);
+                kaaba.setStyle(Paint.Style.STROKE);
+                kaaba.setStrokeWidth(r * .04f);
+                cv.drawLine(cx, cy - r * .74f, cx, cy - r * .5f, kaaba);
+                cv.restore();
+            }
+            cv.restore();
+            Path p = new Path();   // the car: an arrow pointing up
+            p.moveTo(cx, cy - r * .42f);
+            p.lineTo(cx + r * .26f, cy + r * .32f);
+            p.lineTo(cx, cy + r * .16f);
+            p.lineTo(cx - r * .26f, cy + r * .32f);
+            p.close();
+            car.setAlpha(bearing < 0 ? 110 : 255);
+            cv.drawPath(p, car);
+        }
+    }
+}

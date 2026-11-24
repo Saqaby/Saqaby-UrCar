@@ -1,0 +1,21 @@
+# Checks the candidate sayings of the salaf against turath.io (src/verify_salaf.py) and commits the report.
+name: verify-salaf
+on:
+  push:
+    paths: ["src/verify_salaf.py", "src/quotes/salaf_candidates.json", ".github/workflows/verify-salaf.yml"]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 src/verify_salaf.py
+      - run: |
+          cp src/quotes/salaf_report.json /tmp/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch -q origin "$GITHUB_REF_NAME" && git reset -q --hard "origin/$GITHUB_REF_NAME"
+          cp /tmp/salaf_report.json src/quotes/
+          git add src/quotes/salaf_report.json
+          git commit -m "src/quotes/salaf_report.json from turath.io (src/verify_salaf.py)" && git push || echo "no change"

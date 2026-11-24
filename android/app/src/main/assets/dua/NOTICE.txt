@@ -1,0 +1,5 @@
+riding.mp3 (11 s: 2 s of silence, then 9 s): the riding dhikr (Az-Zukhruf 43:13-14). travel.mp3 (37.5 s: 2 s of silence, then 35.5 s): the travel du'a (Sunan Abi Dawud 2598).
+Both made for this app by its owner with an AI voice tool and given by him as free of others' rights (2026-11-05).
+Their texts are in assets/duas.json with their sources. Which file is which was told by their length (the files had no names inside).
+The 2 s of silence at the start (2026-11-06) let the screen's sound wake up before the first word, which it cut off.
+home.mp3 (12.4 s: 2 s of silence, then 10.4 s): the du'a for entering the home (Sunan Abi Dawud 5096), recorded and given by the owner (2026-11-06).
