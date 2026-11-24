@@ -7,6 +7,7 @@ import android.provider.Settings;
 import android.text.InputType;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -30,8 +31,13 @@ public class SettingsActivity extends Activity {
         side = new LinearLayout(this);
         side.setOrientation(LinearLayout.VERTICAL);
         side.setPadding(28, 32, 28, 28);
-        side.setBackgroundColor(th.panel);
-        root.addView(side, new LinearLayout.LayoutParams(300, -1));
+        // the sections in a column that scrolls when the screen is too short for them all (a colleague's small screen
+        // showed three, and «الجهاز والتطبيقات» could not be reached); on a tall one it fills it as before, «رجوع» at its foot
+        ScrollView sideScroll = new ScrollView(this);
+        sideScroll.setFillViewport(true);
+        sideScroll.setBackgroundColor(th.panel);
+        sideScroll.addView(side, new FrameLayout.LayoutParams(-1, -2));
+        root.addView(sideScroll, new LinearLayout.LayoutParams(300, -1));
         body = new ScrollView(this);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
